@@ -1,0 +1,18 @@
+[
+  {
+    "modid": "essential",
+    "name": "Essential",
+    "description": "Provides essential features to Minecraft and our Partners.",
+    "version": "${version}",
+    "mcversion": "${mcVersionStr}",
+    "url": "https://essential.gg/",
+    "updateUrl": "",
+    "authorList": [
+      "ModCore Inc"
+    ],
+    "credits": "",
+    "logoFile": "",
+    "screenshots": [],
+    "dependencies": []
+  }
+]

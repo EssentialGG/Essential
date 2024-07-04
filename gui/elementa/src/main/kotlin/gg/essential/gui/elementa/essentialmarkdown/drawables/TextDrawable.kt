@@ -1,0 +1,455 @@
+/*
+ * Copyright (c) 2024 ModCore Inc. All rights reserved.
+ *
+ * This code is part of ModCore Inc.'s Essential Mod repository and is protected
+ * under copyright registration # TX0009138511. For the full license, see:
+ * https://github.com/EssentialGG/Essential/blob/main/LICENSE
+ *
+ * You may not use, copy, reproduce, modify, sell, license, distribute,
+ * commercialize, or otherwise exploit, or create derivative works based
+ * upon, this file or any other in this repository, all of which is reserved by Essential.
+ */
+package gg.essential.gui.elementa.essentialmarkdown.drawables
+
+import gg.essential.elementa.components.UIBlock
+import gg.essential.elementa.components.UIRoundedRectangle
+import gg.essential.elementa.dsl.*
+import gg.essential.elementa.font.FontProvider
+import gg.essential.gui.elementa.essentialmarkdown.DrawState
+import gg.essential.gui.elementa.essentialmarkdown.EssentialMarkdown
+import gg.essential.gui.elementa.essentialmarkdown.HeaderLevelConfig
+import gg.essential.gui.elementa.essentialmarkdown.MarkdownConfig
+import gg.essential.gui.elementa.essentialmarkdown.selection.TextCursor
+import gg.essential.universal.UMatrixStack
+import gg.essential.universal.UMouse
+import java.awt.Color
+
+class TextDrawable(
+    md: EssentialMarkdown,
+    text: String,
+    val style: Style
+) : Drawable(md) {
+    // Used by HeaderDrawable
+    var scaleModifier = 1f
+    // FIXME: Should probably be handled by [Style] at some point.
+    internal var headerConfig: HeaderLevelConfig? = null
+        set(value) {
+            field = value
+            scaleModifier = value?.textScale ?: scaleModifier
+        }
+
+    var formattedText: String = style.formattingSymbols + text
+        private set
+
+    // Used by the selection API to tell this Drawable how it is
+    // selected. These do not consider style characters
+    var selectionStart = -1
+    var selectionEnd = -1
+
+    // Used to store the Text classes to render between beforeDraw and draw
+    private var texts = mutableListOf<Text>()
+
+    // Stores whether or not this component is hovered
+    private var isHovered = false
+
+    // Populated with any text drawables which used to be part of this
+    // drawable, but were split with a call to split(). Used to show
+    // hovered links across newline boundaries
+    var linkedTexts: LinkedTexts? = null
+
+    fun plainText() = formattedText.drop(style.numFormattingChars)
+
+    fun ensureTrimmed() {
+        // TODO: We shouldn't mutate formattedText here, because this is used
+        // conditionally based on the position this text drawable _happens_ to
+        // be rendered in its parent ParagraphDrawable. This may change if the
+        // MarkdownComponent re-layouts, which can happen at any time.
+
+        val styleChars = style.numFormattingChars
+        formattedText = formattedText.substring(0, styleChars) +
+                formattedText.substring(styleChars, formattedText.length).trimStart()
+    }
+
+    fun width() = formattedText.width(scaleModifier) + if (style.isCode) {
+        config.inlineCodeConfig.let {
+            (it.outlineWidth + it.horizontalPadding) * 2f
+        }
+    } else 0f
+
+    // Returns null if this drawable cannot be split in a way that doesn't
+    // break a word. This means that the drawable should just be drawn on
+    // the next line
+    fun split(maxWidth: Float, breakWords: Boolean = false): Pair<TextDrawable, TextDrawable>? {
+        val styleChars = style.numFormattingChars
+        val plainText = plainText()
+
+        if (plainText.length <= 1) {
+            return null
+        }
+
+        var splitPoint = formattedText.indices.drop(styleChars).firstOrNull {
+            formattedText.substring(0, it + 1).width(scaleModifier) > maxWidth
+        } ?: throw IllegalStateException("TextDrawable#split called when it should not have been called")
+
+        splitPoint -= styleChars
+
+        if (!breakWords) {
+            while (splitPoint > styleChars && formattedText[splitPoint] != ' ') {
+                splitPoint--
+            }
+
+            if (splitPoint == styleChars) {
+                return null
+            }
+        }
+
+        if (splitPoint <= 0) {
+            splitPoint = 1
+        }
+
+        val first = TextDrawable(md, plainText.substring(0, splitPoint).trimEnd(), style)
+        val second = TextDrawable(md, plainText.substring(splitPoint, plainText.length), style)
+
+        val linkedTexts = this.linkedTexts?.also {
+            // We are splitting this text drawable, so in effect this
+            // drawable no longer "exists", because it isn't relevant.
+            // Therefore, we remove it from this linked text group
+            it.unlinkText(this)
+        } ?: LinkedTexts()
+
+        linkedTexts.linkText(first)
+        linkedTexts.linkText(second)
+
+        first.linkedTexts = linkedTexts
+        second.linkedTexts = linkedTexts
+
+        first.scaleModifier = scaleModifier
+        second.scaleModifier = scaleModifier
+
+        return first to second
+    }
+
+    override fun layoutImpl(x: Float, y: Float, width: Float): Layout {
+        return Layout(
+            x,
+            y,
+            width,
+            9f * scaleModifier + if (style.isCode) {
+                (config.inlineCodeConfig.let { it.verticalPadding + it.outlineWidth }) * 2f
+            } else 0f
+        )
+    }
+
+    fun beforeDraw(state: DrawState) {
+        texts.clear()
+
+        if (selectionStart == -1 && selectionEnd == -1) {
+            texts.add(Text(formattedText, x, y, false))
+        } else if (selectionStart == -1 || selectionEnd == -1) {
+            throw IllegalStateException()
+        } else {
+            val start = selectionStart + style.numFormattingChars
+            val end = selectionEnd + style.numFormattingChars
+
+            val formatChars = formattedText.substring(0, style.numFormattingChars)
+
+            val nextX = if (selectionStart > 0) {
+                texts.add(
+                    Text(
+                        formattedText.substring(0, start),
+                        x,
+                        y,
+                        false
+                    )
+                )
+                x + formattedText.substring(0, start).width(scaleModifier)
+            } else x
+
+            val selectedString = formatChars + formattedText.substring(start, end)
+            texts.add(
+                Text(
+                    selectedString,
+                    nextX,
+                    y,
+                    true
+                )
+            )
+
+            if (end < formattedText.length) {
+                texts.add(
+                    Text(
+                        formatChars + formattedText.substring(end),
+                        nextX + selectedString.width(scaleModifier),
+                        y,
+                        false
+                    )
+                )
+            }
+        }
+
+        val mouseX = UMouse.Scaled.x - state.xShift
+        val mouseY = UMouse.Scaled.y - state.yShift
+        isHovered = if (style.linkLocation != null) {
+            isHovered(mouseX.toFloat(), mouseY.toFloat())
+        } else false
+    }
+
+    override fun draw(matrixStack: UMatrixStack, state: DrawState) {
+        val hovered = isHovered || (linkedTexts?.isHovered() ?: false)
+
+        if (style.isCode) {
+            val x1 = x + state.xShift
+            val y1 = y + state.yShift - 1f
+            val x2 = x1 + width
+            val y2 = y1 + height + config.inlineCodeConfig.verticalPadding * 2 - 1f
+            val outlineWidth = config.inlineCodeConfig.outlineWidth
+
+            UIRoundedRectangle.drawRoundedRectangle(
+                matrixStack,
+                x1,
+                y1,
+                x2,
+                y2,
+                config.inlineCodeConfig.cornerRadius,
+                config.inlineCodeConfig.outlineColor
+            )
+
+            UIRoundedRectangle.drawRoundedRectangle(
+                matrixStack,
+                x1 + outlineWidth,
+                y1 + outlineWidth,
+                x2 - outlineWidth,
+                y2 - outlineWidth,
+                config.inlineCodeConfig.cornerRadius,
+                config.inlineCodeConfig.backgroundColor
+            )
+        }
+
+        val xShift = state.xShift + if (style.isCode) config.inlineCodeConfig.horizontalPadding else 0f
+        val yShift = state.yShift + if (style.isCode) config.inlineCodeConfig.verticalPadding else 0f
+
+        texts.forEach {
+            matrixStack.scale(scaleModifier, scaleModifier, 1f)
+            drawString(
+                matrixStack,
+                config,
+                md.getFontProvider(),
+                it.string,
+                (it.x + xShift) / scaleModifier,
+                (it.y + yShift) / scaleModifier,
+                it.selected,
+                style.linkLocation != null,
+                hovered,
+                style.color,
+                headerConfig
+            )
+            matrixStack.scale(1f / scaleModifier, 1f / scaleModifier, 1f)
+        }
+    }
+
+    data class Text(
+        val string: String,
+        val x: Float,
+        val y: Float,
+        val selected: Boolean
+    )
+
+    // TextDrawable mouse selection is managed by ParagraphDrawable#select
+    override fun cursorAt(mouseX: Float, mouseY: Float, dragged: Boolean, mouseButton: Int) = throw IllegalStateException("never called")
+
+    override fun cursorAtStart() = TextCursor(this, 0)
+    override fun cursorAtEnd() = TextCursor(this, plainText().length)
+
+    override fun selectedText(asMarkdown: Boolean): String {
+        if (selectionStart == -1 || selectionEnd == -1)
+            return ""
+
+        val selectedText = plainText().substring(selectionStart, selectionEnd)
+        if (!asMarkdown)
+            return selectedText
+
+        return "${style.markdownSymbols}$selectedText${style.markdownSymbols}"
+    }
+
+    override fun toString() = formattedText
+
+    class LinkedTexts {
+        private val texts = mutableSetOf<TextDrawable>()
+
+        fun isHovered() = texts.any { it.isHovered }
+
+        fun linkText(text: TextDrawable) {
+            texts.add(text)
+        }
+
+        fun unlinkText(text: TextDrawable) {
+            texts.remove(text)
+        }
+
+        companion object {
+            fun merge(linked1: LinkedTexts?, linked2: LinkedTexts?): LinkedTexts {
+                return when {
+                    linked1 == null && linked2 == null -> LinkedTexts()
+                    linked1 == null -> linked2!!
+                    linked2 == null -> linked1
+                    else -> {
+                        linked2.texts.forEach {
+                            linked1.linkText(it)
+                        }
+                        linked1
+                    }
+                }
+            }
+        }
+    }
+
+    data class Style(
+        val isBold: Boolean,
+        val isItalic: Boolean,
+        val isStrikethrough: Boolean,
+        val isUnderline: Boolean,
+        val isCode: Boolean,
+        val color: Color?,
+        val linkLocation: String?
+    ) {
+        val formattingSymbols = buildString {
+            if (isCode)
+                return@buildString
+            if (isBold)
+                append("§l")
+            if (isItalic)
+                append("§o")
+            if (isStrikethrough)
+                append("§m")
+            if (isUnderline)
+                append("§n")
+        }
+
+        val markdownSymbols = buildString {
+            if (isCode)
+                append("`")
+            if (isBold)
+                append("**")
+            if (isItalic)
+                append("*")
+            if (isStrikethrough)
+                append("~~")
+            if (isUnderline)
+                append("++")
+        }
+
+        val numFormattingChars: Int get() = formattingSymbols.length
+
+        companion object {
+            val EMPTY = Style(
+                isBold = false,
+                isItalic = false,
+                isStrikethrough = false,
+                isUnderline = false,
+                isCode = false,
+                color = null,
+                linkLocation = null
+            )
+        }
+    }
+
+    companion object {
+        @Deprecated(
+            UMatrixStack.Compat.DEPRECATED,
+            ReplaceWith("drawString(matrixStack, config, fontProvider, string, x, y, selected, isLink, isHovered)"),
+        )
+        fun drawString(
+            config: MarkdownConfig,
+            fontProvider: FontProvider,
+            string: String,
+            x: Float,
+            y: Float,
+            selected: Boolean = false,
+            isLink: Boolean = false,
+            isHovered: Boolean = false
+        ) = drawString(UMatrixStack(), config, fontProvider, string, x, y, selected, isLink, isHovered)
+
+        fun drawString(
+            matrixStack: UMatrixStack,
+            config: MarkdownConfig,
+            fontProvider: FontProvider,
+            string: String,
+            x: Float,
+            y: Float,
+            selected: Boolean = false,
+            isLink: Boolean = false,
+            isHovered: Boolean = false,
+            color: Color? = null,
+            headerConfig: HeaderLevelConfig? = null
+        ) {
+            if (selected) {
+                UIBlock.drawBlockSized(
+                    matrixStack,
+                    config.textConfig.selectionBackgroundColor,
+                    x.toDouble(),
+                    y.toDouble(),
+                    string.width(1f, fontProvider).toDouble(),
+                    9.0
+                )
+            }
+
+            val foregroundColor = when {
+                isLink && isHovered -> config.urlConfig.fontColorOnHover.rgb
+                isLink -> config.urlConfig.fontColor.rgb
+                selected -> config.textConfig.selectionForegroundColor.rgb
+                headerConfig != null -> headerConfig.fontColor.rgb
+                color != null -> color.rgb
+                else -> config.textConfig.color.rgb
+            }
+
+            if (config.textConfig.hasShadow) {
+                fontProvider.drawString(
+                    matrixStack,
+                    string,
+                    Color(foregroundColor),
+                    x,
+                    y,
+                    10f,
+                    1f,
+                    true,
+                    Color(config.textConfig.shadowColor.rgb)
+                )
+            } else {
+                fontProvider.drawString(
+                    matrixStack,
+                    string,
+                    Color(foregroundColor),
+                    x,
+                    y,
+                    10f,
+                    1f,
+                    false
+                )
+            }
+
+            // Underline if link is:
+            // - not hovered and 'underline' is true
+            // - hovered and 'underlineOnHover' is true
+            if (isLink && ((!isHovered && config.urlConfig.underline) || (isHovered && config.urlConfig.underlineOnHover))) {
+                if (config.textConfig.hasShadow) {
+                    UIBlock.drawBlockSized(
+                        matrixStack,
+                        config.textConfig.shadowColor,
+                        x.toDouble() + 1,
+                        y.toDouble() + 9,
+                        string.width().toDouble(),
+                        1.0,
+                    )
+                }
+                UIBlock.drawBlockSized(
+                    matrixStack,
+                    if (isHovered) config.urlConfig.fontColorOnHover else config.urlConfig.fontColor,
+                    x.toDouble(),
+                    y.toDouble() + 8,
+                    string.width().toDouble(),
+                    1.0
+                )
+            }
+        }
+    }
+}

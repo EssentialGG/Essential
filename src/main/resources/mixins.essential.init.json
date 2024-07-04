@@ -1,0 +1,17 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  //#if MC>=11700
+  //$$ "compatibilityLevel": "JAVA_16",
+  //#else
+  "compatibilityLevel": "JAVA_8",
+  //#endif
+  "package": "gg.essential.mixins.init",
+  //#if MC<11400
+  "target": "@env(INIT)",
+  //#endif
+  "plugin" : "gg.essential.mixins.InitPlugin",
+  "mixins": [
+    "Mixin_MixIntoNonCoremods"
+  ]
+}

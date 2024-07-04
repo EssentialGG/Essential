@@ -1,0 +1,17 @@
+{
+  "screenshot": {
+    "sounds": [
+      "essential:screenshot"
+    ]
+  },
+  "coin_fill_up": {
+    "sounds": [
+      "essential:coin_fill_up"
+    ]
+  },
+  "purchase_confirmation": {
+    "sounds": [
+      "essential:purchase_confirmation"
+    ]
+  }
+}

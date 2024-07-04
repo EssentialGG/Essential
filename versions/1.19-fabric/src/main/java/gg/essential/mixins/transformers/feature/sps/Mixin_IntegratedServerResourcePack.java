@@ -1,0 +1,47 @@
+/*
+ * Copyright (c) 2024 ModCore Inc. All rights reserved.
+ *
+ * This code is part of ModCore Inc.'s Essential Mod repository and is protected
+ * under copyright registration # TX0009138511. For the full license, see:
+ * https://github.com/EssentialGG/Essential/blob/main/LICENSE
+ *
+ * You may not use, copy, reproduce, modify, sell, license, distribute,
+ * commercialize, or otherwise exploit, or create derivative works based
+ * upon, this file or any other in this repository, all of which is reserved by Essential.
+ */
+package gg.essential.mixins.transformers.feature.sps;
+
+import gg.essential.Essential;
+import gg.essential.network.connectionmanager.sps.SPSManager;
+import net.minecraft.server.MinecraftServer;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+import java.util.Optional;
+
+//#if MC>=12004
+//$$ import java.nio.charset.StandardCharsets;
+//$$ import java.util.UUID;
+//#endif
+
+@Mixin(MinecraftServer.class)
+public class Mixin_IntegratedServerResourcePack {
+
+    @Inject(method = "getResourcePackProperties", at = @At("HEAD"), cancellable = true)
+    private void getResourcePackProperties(CallbackInfoReturnable<Optional<MinecraftServer.ServerResourcePackProperties>> info) {
+        final SPSManager spsManager = Essential.getInstance().getConnectionManager().getSpsManager();
+        final String resourcePackUrl = spsManager.getResourcePackUrl();
+        final String resourcePackChecksum = spsManager.getResourcePackChecksum();
+        if (spsManager.isShareResourcePack() && resourcePackUrl != null && resourcePackChecksum != null) {
+            info.setReturnValue(Optional.of(new MinecraftServer.ServerResourcePackProperties(
+                //#if MC>=12004
+                //$$ // Server resource packs are now given a unique ID for caching purposes.
+                //$$ // Vanilla uses this fallback when the ID is not present.
+                //$$ UUID.nameUUIDFromBytes(resourcePackUrl.getBytes(StandardCharsets.UTF_8)),
+                //#endif
+                resourcePackUrl, resourcePackChecksum, false, null)));
+        }
+    }
+}

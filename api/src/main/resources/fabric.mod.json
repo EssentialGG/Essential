@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "essential-api",
+  "version": "0",
+  "environment": "client",
+  "description": "Dummy fabric.mod.json to allow Loom to remap this jar file. DO NOT DEPEND ON THIS.",
+  "custom": {
+    "modmenu": {
+      "badges": ["library"],
+      "parent": "essential"
+    }
+  }
+}

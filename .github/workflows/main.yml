@@ -1,0 +1,85 @@
+name: Build
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest-16-cores
+    env:
+      GRADLE_ARGS: --stacktrace
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: |
+            8
+            16
+            17
+            21
+
+      - name: Build
+        run: ./gradlew build ${{ env.GRADLE_ARGS }}
+
+      - name: Generate checksums
+        run: sha256sum versions/*/build/libs/* loader/{container,stage{0,1,2}}/{fabric,launchwrapper,modlauncher{8,9}}/build/libs/* | tee checksums.txt
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: checksums
+          path: checksums.txt
+
+      - name: Verify deployed checksums
+        id: verify
+        shell: bash
+        run: |
+          declare -A platform_checksums
+          for file in versions/*/build/libs/Essential*; do
+            platform=$(echo "$file" | cut -d / -f2)
+            checksum=$(sha256sum < "$file" | awk '{print $1}')
+            platform_checksums["$platform"]="$checksum"
+          done
+          while read -r alias source; do
+            platform_checksums["$alias"]="${platform_checksums["$source"]}"
+          done < versions/aliases.txt
+          
+          # 1.16.2 are only published as 1.16.5
+          unset platform_checksums["1.16.2-fabric"]
+          unset platform_checksums["1.16.2-forge"]
+
+          version="$(grep "^version=" gradle.properties | cut -d'=' -f2)"
+
+          success=true
+          for platform in "${!platform_checksums[@]}"; do
+            expected_checksum="${platform_checksums["$platform"]}"
+            infra_platform="$(echo "$platform" | sed -r 's/(.+)-(.+)/\2_\1/g' | sed 's/\./-/g' )"
+            meta_url="https://api.essential.gg/mods/v1/essential:essential/versions/$version/platforms/$infra_platform/download"
+            echo "Checking $meta_url"
+            download_url="$(curl -s "$meta_url" | jq -r .url)"
+            echo " -> $download_url"
+            actual_checksum="$(curl -s "$download_url" | sha256sum | awk '{print $1}')"
+            echo " -> $actual_checksum"
+            if [[ "$expected_checksum" == "$actual_checksum" ]]; then
+              echo " -> OK"
+            else
+              echo " -> MISMATCH, expected $expected_checksum"
+              success=false
+            fi
+          done
+
+          if [[ "$success" != true ]]; then
+            exit 1
+          fi
+
+      # Upload the raw jars to aid in debugging non-determinism issues if we got a checksum mismatch
+      - uses: actions/upload-artifact@v3
+        if: ${{ failure() && steps.verify.conclusion == 'failure' }}
+        with:
+          name: mod-jars
+          path: versions/*/build/libs/Essential*
+          # These are fairly large, so we do not want to keep them around for particularly long.
+          # Once fully deployed, one can simply fetch the jar from Essential infrastructure instead.
+          retention-days: 1

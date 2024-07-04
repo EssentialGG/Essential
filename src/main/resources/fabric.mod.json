@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "essential",
+  "version": "${version}",
+  "environment": "client",
+  "mixins": [
+    "mixins.essential.json"
+  ],
+  "entrypoints": {
+    "modmenu": ["gg.essential.compatibility.ModMenuCompat"]
+  },
+  "jars": [
+    {
+      "file": "essential-loader.jar"
+    }
+  ],
+  "name": "Essential",
+  "description": "Provides essential features to Minecraft and our Partners.",
+  "icon": "assets/essential/textures/essential.png",
+  "authors": ["ModCore Inc"],
+  "contact": {
+    "homepage": "https://essential.gg/",
+    "issues": "https://essential.gg/support"
+  },
+  "depends": {
+    "fabricloader": ">0.12"
+  }
+}

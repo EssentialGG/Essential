@@ -1,0 +1,42 @@
+/*
+ * Copyright (c) 2024 ModCore Inc. All rights reserved.
+ *
+ * This code is part of ModCore Inc.'s Essential Mod repository and is protected
+ * under copyright registration # TX0009138511. For the full license, see:
+ * https://github.com/EssentialGG/Essential/blob/main/LICENSE
+ *
+ * You may not use, copy, reproduce, modify, sell, license, distribute,
+ * commercialize, or otherwise exploit, or create derivative works based
+ * upon, this file or any other in this repository, all of which is reserved by Essential.
+ */
+package gg.essential.gui.image
+
+import gg.essential.config.LoadsResources
+import gg.essential.elementa.components.UIImage
+import gg.essential.elementa.utils.ResourceCache
+
+/**
+ * An ImageFactory that returns images resulting from the specified [resource].
+ * Utilizes a [ResourceCache] to decrease loading time
+ */
+class ResourceImageFactory @LoadsResources("%resource%") constructor(
+    private val resource: String,
+    preload: Boolean = true
+) : ImageFactory() {
+
+    init {
+        if (preload) {
+            generate()
+        }
+    }
+
+    override fun generate(): UIImage {
+        return UIImage.ofResourceCached(resource, cache)
+    }
+
+    private companion object {
+
+        val cache: ResourceCache = ResourceCache(Int.MAX_VALUE)
+
+    }
+}

@@ -1,0 +1,725 @@
+/**
+ * essential-gg / mod-pages
+ *
+ * Copyright (c) 2013-2022 Panascais Inc. and / or subsidiaries. All rights reserved.
+ *
+ * All information contained herein is, and remains the property
+ * of Panascais Inc. and its suppliers, if any.
+ * The intellectual and technical concepts contained herein are
+ * proprietary to Panascais Inc. and its suppliers and may
+ * be covered by European, U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.
+ * Dissemination of this information or reproduction of this material
+ * is strictly forbidden unless prior written permission is obtained
+ * from Panascais Inc.
+ *
+ * License:
+ *
+ * You are not allowed to copy, modify, merge, publish, distribute,
+ * sublicense, and / or sell copies of this software.
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the software.
+ */
+/*
+ * General
+*/
+/**
+ * essential-gg / mod-pages
+ *
+ * Copyright (c) 2013-2022 Panascais Inc. and / or subsidiaries. All rights reserved.
+ *
+ * All information contained herein is, and remains the property
+ * of Panascais Inc. and its suppliers, if any.
+ * The intellectual and technical concepts contained herein are
+ * proprietary to Panascais Inc. and its suppliers and may
+ * be covered by European, U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.
+ * Dissemination of this information or reproduction of this material
+ * is strictly forbidden unless prior written permission is obtained
+ * from Panascais Inc.
+ *
+ * License:
+ *
+ * You are not allowed to copy, modify, merge, publish, distribute,
+ * sublicense, and / or sell copies of this software.
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the software.
+ */
+@font-face {
+  font-display: swap;
+  font-family: "gilroy";
+  font-style: italic;
+  font-weight: 100;
+  src: url("https://static.sparkuniverse.com/static/fonts/gilroy/standard/100/italic.eot");
+  src: local(Gilroy Thin Italic Gilroy-ThinItalic);
+  /* stylelint-disable declaration-colon-newline-after */
+  src: url("https://static.sparkuniverse.com/fonts/gilroy/standard/100/italic.eot?#iefix") format("embedded-opentype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/100/italic.woff2") format("woff2"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/100/italic.woff") format("woff"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/100/italic.ttf") format("truetype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/100/italic.svg#Gilroy") format("svg");
+  /* stylelint-enable declaration-colon-newline-after */
+}
+@font-face {
+  font-display: swap;
+  font-family: "gilroy";
+  font-style: italic;
+  font-weight: 200;
+  src: url("https://static.sparkuniverse.com/static/fonts/gilroy/standard/200/italic.eot");
+  src: local(Gilroy UltraLight Italic Gilroy-UltraLightItalic);
+  /* stylelint-disable declaration-colon-newline-after */
+  src: url("https://static.sparkuniverse.com/fonts/gilroy/standard/200/italic.eot?#iefix") format("embedded-opentype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/200/italic.woff2") format("woff2"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/200/italic.woff") format("woff"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/200/italic.ttf") format("truetype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/200/italic.svg#Gilroy") format("svg");
+  /* stylelint-enable declaration-colon-newline-after */
+}
+@font-face {
+  font-display: swap;
+  font-family: "gilroy";
+  font-style: italic;
+  font-weight: 300;
+  src: url("https://static.sparkuniverse.com/static/fonts/gilroy/standard/300/italic.eot");
+  src: local(Gilroy Light Italic Gilroy-LightItalic);
+  /* stylelint-disable declaration-colon-newline-after */
+  src: url("https://static.sparkuniverse.com/fonts/gilroy/standard/300/italic.eot?#iefix") format("embedded-opentype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/300/italic.woff2") format("woff2"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/300/italic.woff") format("woff"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/300/italic.ttf") format("truetype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/300/italic.svg#Gilroy") format("svg");
+  /* stylelint-enable declaration-colon-newline-after */
+}
+@font-face {
+  font-display: swap;
+  font-family: "gilroy";
+  font-style: italic;
+  font-weight: 400;
+  src: url("https://static.sparkuniverse.com/static/fonts/gilroy/standard/400/italic.eot");
+  src: local(Gilroy Regular Italic Gilroy-RegularItalic);
+  /* stylelint-disable declaration-colon-newline-after */
+  src: url("https://static.sparkuniverse.com/fonts/gilroy/standard/400/italic.eot?#iefix") format("embedded-opentype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/400/italic.woff2") format("woff2"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/400/italic.woff") format("woff"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/400/italic.ttf") format("truetype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/400/italic.svg#Gilroy") format("svg");
+  /* stylelint-enable declaration-colon-newline-after */
+}
+@font-face {
+  font-display: swap;
+  font-family: "gilroy";
+  font-style: italic;
+  font-weight: 500;
+  src: url("https://static.sparkuniverse.com/static/fonts/gilroy/standard/500/italic.eot");
+  src: local(Gilroy Medium Italic Gilroy-MediumItalic);
+  /* stylelint-disable declaration-colon-newline-after */
+  src: url("https://static.sparkuniverse.com/fonts/gilroy/standard/500/italic.eot?#iefix") format("embedded-opentype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/500/italic.woff2") format("woff2"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/500/italic.woff") format("woff"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/500/italic.ttf") format("truetype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/500/italic.svg#Gilroy") format("svg");
+  /* stylelint-enable declaration-colon-newline-after */
+}
+@font-face {
+  font-display: swap;
+  font-family: "gilroy";
+  font-style: italic;
+  font-weight: 600;
+  src: url("https://static.sparkuniverse.com/static/fonts/gilroy/standard/600/italic.eot");
+  src: local(Gilroy SemiBold Italic Gilroy-SemiBoldItalic);
+  /* stylelint-disable declaration-colon-newline-after */
+  src: url("https://static.sparkuniverse.com/fonts/gilroy/standard/600/italic.eot?#iefix") format("embedded-opentype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/600/italic.woff2") format("woff2"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/600/italic.woff") format("woff"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/600/italic.ttf") format("truetype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/600/italic.svg#Gilroy") format("svg");
+  /* stylelint-enable declaration-colon-newline-after */
+}
+@font-face {
+  font-display: swap;
+  font-family: "gilroy";
+  font-style: italic;
+  font-weight: 700;
+  src: url("https://static.sparkuniverse.com/static/fonts/gilroy/standard/700/italic.eot");
+  src: local(Gilroy Regular Italic Gilroy-RegularItalic);
+  /* stylelint-disable declaration-colon-newline-after */
+  src: url("https://static.sparkuniverse.com/fonts/gilroy/standard/700/italic.eot?#iefix") format("embedded-opentype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/700/italic.woff2") format("woff2"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/700/italic.woff") format("woff"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/700/italic.ttf") format("truetype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/700/italic.svg#Gilroy") format("svg");
+  /* stylelint-enable declaration-colon-newline-after */
+}
+@font-face {
+  font-display: swap;
+  font-family: "gilroy";
+  font-style: italic;
+  font-weight: 800;
+  src: url("https://static.sparkuniverse.com/static/fonts/gilroy/standard/800/italic.eot");
+  src: local(Gilroy ExtraBold Italic Gilroy-ExtraBoldItalic);
+  /* stylelint-disable declaration-colon-newline-after */
+  src: url("https://static.sparkuniverse.com/fonts/gilroy/standard/800/italic.eot?#iefix") format("embedded-opentype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/800/italic.woff2") format("woff2"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/800/italic.woff") format("woff"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/800/italic.ttf") format("truetype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/800/italic.svg#Gilroy") format("svg");
+  /* stylelint-enable declaration-colon-newline-after */
+}
+@font-face {
+  font-display: swap;
+  font-family: "gilroy";
+  font-style: italic;
+  font-weight: 900;
+  src: url("https://static.sparkuniverse.com/static/fonts/gilroy/standard/900/italic.eot");
+  src: local(Gilroy Black Italic Gilroy-BlackItalic);
+  /* stylelint-disable declaration-colon-newline-after */
+  src: url("https://static.sparkuniverse.com/fonts/gilroy/standard/900/italic.eot?#iefix") format("embedded-opentype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/900/italic.woff2") format("woff2"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/900/italic.woff") format("woff"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/900/italic.ttf") format("truetype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/900/italic.svg#Gilroy") format("svg");
+  /* stylelint-enable declaration-colon-newline-after */
+}
+@font-face {
+  font-display: swap;
+  font-family: "gilroy";
+  font-style: italic;
+  font-weight: 950;
+  src: url("https://static.sparkuniverse.com/static/fonts/gilroy/standard/950/italic.eot");
+  src: local(Gilroy Heavy Italic Gilroy-HeavyItalic);
+  /* stylelint-disable declaration-colon-newline-after */
+  src: url("https://static.sparkuniverse.com/fonts/gilroy/standard/950/italic.eot?#iefix") format("embedded-opentype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/950/italic.woff2") format("woff2"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/950/italic.woff") format("woff"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/950/italic.ttf") format("truetype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/950/italic.svg#Gilroy") format("svg");
+  /* stylelint-enable declaration-colon-newline-after */
+}
+@font-face {
+  font-display: swap;
+  font-family: "gilroy";
+  font-style: normal;
+  font-weight: 100;
+  src: url("https://static.sparkuniverse.com/static/fonts/gilroy/standard/100/roman.eot");
+  src: local(Gilroy Thin Gilroy-Thin);
+  /* stylelint-disable declaration-colon-newline-after */
+  src: url("https://static.sparkuniverse.com/fonts/gilroy/standard/100/roman.eot?#iefix") format("embedded-opentype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/100/roman.woff2") format("woff2"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/100/roman.woff") format("woff"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/100/roman.ttf") format("truetype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/100/roman.svg#Gilroy") format("svg");
+  /* stylelint-enable declaration-colon-newline-after */
+}
+@font-face {
+  font-display: swap;
+  font-family: "gilroy";
+  font-style: normal;
+  font-weight: 200;
+  src: url("https://static.sparkuniverse.com/static/fonts/gilroy/standard/200/roman.eot");
+  src: local(Gilroy UltraLight Gilroy-UltraLight);
+  /* stylelint-disable declaration-colon-newline-after */
+  src: url("https://static.sparkuniverse.com/fonts/gilroy/standard/200/roman.eot?#iefix") format("embedded-opentype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/200/roman.woff2") format("woff2"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/200/roman.woff") format("woff"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/200/roman.ttf") format("truetype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/200/roman.svg#Gilroy") format("svg");
+  /* stylelint-enable declaration-colon-newline-after */
+}
+@font-face {
+  font-display: swap;
+  font-family: "gilroy";
+  font-style: normal;
+  font-weight: 300;
+  src: url("https://static.sparkuniverse.com/static/fonts/gilroy/standard/300/roman.eot");
+  src: local(Gilroy Light Gilroy-Light);
+  /* stylelint-disable declaration-colon-newline-after */
+  src: url("https://static.sparkuniverse.com/fonts/gilroy/standard/300/roman.eot?#iefix") format("embedded-opentype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/300/roman.woff2") format("woff2"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/300/roman.woff") format("woff"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/300/roman.ttf") format("truetype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/300/roman.svg#Gilroy") format("svg");
+  /* stylelint-enable declaration-colon-newline-after */
+}
+@font-face {
+  font-display: swap;
+  font-family: "gilroy";
+  font-style: normal;
+  font-weight: 400;
+  src: url("https://static.sparkuniverse.com/static/fonts/gilroy/standard/400/roman.eot");
+  src: local(Gilroy Regular Gilroy-Regular);
+  /* stylelint-disable declaration-colon-newline-after */
+  src: url("https://static.sparkuniverse.com/fonts/gilroy/standard/400/roman.eot?#iefix") format("embedded-opentype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/400/roman.woff2") format("woff2"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/400/roman.woff") format("woff"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/400/roman.ttf") format("truetype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/400/roman.svg#Gilroy") format("svg");
+  /* stylelint-enable declaration-colon-newline-after */
+}
+@font-face {
+  font-display: swap;
+  font-family: "gilroy";
+  font-style: normal;
+  font-weight: 500;
+  src: url("https://static.sparkuniverse.com/static/fonts/gilroy/standard/500/roman.eot");
+  src: local(Gilroy Medium Gilroy-Medium);
+  /* stylelint-disable declaration-colon-newline-after */
+  src: url("https://static.sparkuniverse.com/fonts/gilroy/standard/500/roman.eot?#iefix") format("embedded-opentype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/500/roman.woff2") format("woff2"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/500/roman.woff") format("woff"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/500/roman.ttf") format("truetype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/500/roman.svg#Gilroy") format("svg");
+  /* stylelint-enable declaration-colon-newline-after */
+}
+@font-face {
+  font-display: swap;
+  font-family: "gilroy";
+  font-style: normal;
+  font-weight: 600;
+  src: url("https://static.sparkuniverse.com/static/fonts/gilroy/standard/600/roman.eot");
+  src: local(Gilroy SemiBold Gilroy-SemiBold);
+  /* stylelint-disable declaration-colon-newline-after */
+  src: url("https://static.sparkuniverse.com/fonts/gilroy/standard/600/roman.eot?#iefix") format("embedded-opentype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/600/roman.woff2") format("woff2"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/600/roman.woff") format("woff"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/600/roman.ttf") format("truetype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/600/roman.svg#Gilroy") format("svg");
+  /* stylelint-enable declaration-colon-newline-after */
+}
+@font-face {
+  font-display: swap;
+  font-family: "gilroy";
+  font-style: normal;
+  font-weight: 700;
+  src: url("https://static.sparkuniverse.com/static/fonts/gilroy/standard/700/roman.eot");
+  src: local(Gilroy Regular Gilroy-Regular);
+  /* stylelint-disable declaration-colon-newline-after */
+  src: url("https://static.sparkuniverse.com/fonts/gilroy/standard/700/roman.eot?#iefix") format("embedded-opentype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/700/roman.woff2") format("woff2"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/700/roman.woff") format("woff"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/700/roman.ttf") format("truetype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/700/roman.svg#Gilroy") format("svg");
+  /* stylelint-enable declaration-colon-newline-after */
+}
+@font-face {
+  font-display: swap;
+  font-family: "gilroy";
+  font-style: normal;
+  font-weight: 800;
+  src: url("https://static.sparkuniverse.com/static/fonts/gilroy/standard/800/roman.eot");
+  src: local(Gilroy ExtraBold Gilroy-ExtraBold);
+  /* stylelint-disable declaration-colon-newline-after */
+  src: url("https://static.sparkuniverse.com/fonts/gilroy/standard/800/roman.eot?#iefix") format("embedded-opentype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/800/roman.woff2") format("woff2"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/800/roman.woff") format("woff"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/800/roman.ttf") format("truetype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/800/roman.svg#Gilroy") format("svg");
+  /* stylelint-enable declaration-colon-newline-after */
+}
+@font-face {
+  font-display: swap;
+  font-family: "gilroy";
+  font-style: normal;
+  font-weight: 900;
+  src: url("https://static.sparkuniverse.com/static/fonts/gilroy/standard/900/roman.eot");
+  src: local(Gilroy Black Gilroy-Black);
+  /* stylelint-disable declaration-colon-newline-after */
+  src: url("https://static.sparkuniverse.com/fonts/gilroy/standard/900/roman.eot?#iefix") format("embedded-opentype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/900/roman.woff2") format("woff2"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/900/roman.woff") format("woff"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/900/roman.ttf") format("truetype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/900/roman.svg#Gilroy") format("svg");
+  /* stylelint-enable declaration-colon-newline-after */
+}
+@font-face {
+  font-display: swap;
+  font-family: "gilroy";
+  font-style: normal;
+  font-weight: 950;
+  src: url("https://static.sparkuniverse.com/static/fonts/gilroy/standard/950/roman.eot");
+  src: local(Gilroy Heavy Gilroy-Heavy);
+  /* stylelint-disable declaration-colon-newline-after */
+  src: url("https://static.sparkuniverse.com/fonts/gilroy/standard/950/roman.eot?#iefix") format("embedded-opentype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/950/roman.woff2") format("woff2"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/950/roman.woff") format("woff"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/950/roman.ttf") format("truetype"), url("https://static.sparkuniverse.com/fonts/gilroy/standard/950/roman.svg#Gilroy") format("svg");
+  /* stylelint-enable declaration-colon-newline-after */
+}
+/**
+ * essential-gg / mod-pages
+ *
+ * Copyright (c) 2013-2022 Panascais Inc. and / or subsidiaries. All rights reserved.
+ *
+ * All information contained herein is, and remains the property
+ * of Panascais Inc. and its suppliers, if any.
+ * The intellectual and technical concepts contained herein are
+ * proprietary to Panascais Inc. and its suppliers and may
+ * be covered by European, U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.
+ * Dissemination of this information or reproduction of this material
+ * is strictly forbidden unless prior written permission is obtained
+ * from Panascais Inc.
+ *
+ * License:
+ *
+ * You are not allowed to copy, modify, merge, publish, distribute,
+ * sublicense, and / or sell copies of this software.
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the software.
+ */
+*,
+::after,
+::before {
+  box-sizing: border-box;
+}
+
+html {
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  min-height: 100vh;
+  padding: 0;
+  margin: 0;
+  scroll-behavior: smooth;
+}
+
+h1,
+h2 {
+  font-weight: unset;
+}
+
+/* Media */
+picture,
+svg {
+  display: block;
+}
+
+video,
+img {
+  width: 100%;
+  height: auto;
+}
+
+/* Button */
+:focus {
+  outline: none;
+}
+
+textarea {
+  font-family: inherit;
+  resize: vertical;
+}
+
+button,
+input,
+textarea {
+  padding: 0;
+  margin: 0;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+  text-indent: inherit;
+  text-shadow: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  word-spacing: inherit;
+  background: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: unset;
+}
+
+/**
+ * essential-gg / mod-pages
+ *
+ * Copyright (c) 2013-2022 Panascais Inc. and / or subsidiaries. All rights reserved.
+ *
+ * All information contained herein is, and remains the property
+ * of Panascais Inc. and its suppliers, if any.
+ * The intellectual and technical concepts contained herein are
+ * proprietary to Panascais Inc. and its suppliers and may
+ * be covered by European, U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.
+ * Dissemination of this information or reproduction of this material
+ * is strictly forbidden unless prior written permission is obtained
+ * from Panascais Inc.
+ *
+ * License:
+ *
+ * You are not allowed to copy, modify, merge, publish, distribute,
+ * sublicense, and / or sell copies of this software.
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the software.
+ */
+/* Base colors */
+/* Custom colors */
+/* Fonts */
+/**
+ * essential-gg / mod-pages
+ *
+ * Copyright (c) 2013-2022 Panascais Inc. and / or subsidiaries. All rights reserved.
+ *
+ * All information contained herein is, and remains the property
+ * of Panascais Inc. and its suppliers, if any.
+ * The intellectual and technical concepts contained herein are
+ * proprietary to Panascais Inc. and its suppliers and may
+ * be covered by European, U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.
+ * Dissemination of this information or reproduction of this material
+ * is strictly forbidden unless prior written permission is obtained
+ * from Panascais Inc.
+ *
+ * License:
+ *
+ * You are not allowed to copy, modify, merge, publish, distribute,
+ * sublicense, and / or sell copies of this software.
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the software.
+ */
+html,
+body {
+  font-size: 27px;
+  font-family: "Gilroy", "Futura", "Avenir", "Century Gothic", "Avant Garde", "Gill Sans", "Poppins", -apple-system, BlinkMacSystemFont, Helvetica, "Segoe UI", "Roboto", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  color: #fff;
+  background-color: #000;
+}
+html > svg,
+body > svg {
+  display: none;
+}
+@media (max-width: 900px) {
+  html,
+body {
+    font-size: 24.3px;
+  }
+}
+@media (max-width: 600px) {
+  html,
+body {
+    font-size: 22.95px;
+  }
+}
+
+wrapper-content {
+  display: block;
+  width: 100%;
+  padding: 5rem;
+}
+@media (max-width: 900px) {
+  wrapper-content {
+    padding: 3rem;
+    padding-top: 5rem;
+  }
+}
+@media (max-width: 600px) {
+  wrapper-content {
+    padding: 1.5rem;
+    padding-top: 5rem;
+  }
+}
+
+logo-frame {
+  display: block;
+  width: 20rem;
+  max-width: 100%;
+}
+logo-frame svg {
+  fill: #1d6aff;
+}
+logo-frame:hover svg {
+  fill: #2589ff;
+}
+
+header {
+  width: 100%;
+}
+@media (min-height: 1000px) {
+  header {
+    position: absolute;
+  }
+}
+header wrapper-content {
+  padding-top: 4rem;
+  padding-bottom: 1rem;
+}
+
+footer wrapper-content {
+  padding-top: 0;
+  padding-bottom: 1rem;
+}
+
+@media (min-height: 1000px) {
+  footer {
+    position: absolute;
+    bottom: 2rem;
+  }
+
+  main {
+    display: grid;
+    height: 100vh;
+    align-items: center;
+  }
+}
+a {
+  color: #fff;
+  transition: color 200ms ease-in-out;
+  text-decoration: none;
+}
+a p {
+  opacity: 0.5;
+  transition: opacity 200ms ease-in-out;
+}
+a:hover p {
+  opacity: 1;
+}
+
+button {
+  display: flex;
+  width: max-content;
+  color: #1d6aff;
+  cursor: pointer;
+}
+button:hover {
+  color: #fff;
+}
+button:focus {
+  color: #fff;
+}
+button button-text {
+  transition: 200ms color ease-in-out;
+}
+button svg {
+  height: 1rem;
+  transform: translateY(0.125rem);
+  stroke: currentColor;
+  stroke-width: 0.1rem;
+  transition: 200ms color ease-in-out;
+}
+
+/**
+ * essential-gg / mod-pages
+ *
+ * Copyright (c) 2013-2022 Panascais Inc. and / or subsidiaries. All rights reserved.
+ *
+ * All information contained herein is, and remains the property
+ * of Panascais Inc. and its suppliers, if any.
+ * The intellectual and technical concepts contained herein are
+ * proprietary to Panascais Inc. and its suppliers and may
+ * be covered by European, U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.
+ * Dissemination of this information or reproduction of this material
+ * is strictly forbidden unless prior written permission is obtained
+ * from Panascais Inc.
+ *
+ * License:
+ *
+ * You are not allowed to copy, modify, merge, publish, distribute,
+ * sublicense, and / or sell copies of this software.
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the software.
+ */
+h1 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+p {
+  margin: 0;
+}
+
+[text~=xxl] {
+  font-size: 2.6rem;
+  font-weight: 600;
+}
+@media (max-width: 600px) {
+  [text~=xxl] {
+    font-size: 1.7rem;
+  }
+}
+
+[text~=primary] {
+  color: #1d6aff;
+}
+
+[text~=customizer] {
+  color: #02d98e;
+}
+
+[text~=friends] {
+  color: #ffee3e;
+}
+
+[text~=creators] {
+  color: #ff4f51;
+}
+
+[text~=auth] {
+  color: #ffb73e;
+}
+
+[text~=accounts] {
+  color: #4f37d7;
+}
+
+[text~=community] {
+  color: #1299ff;
+}
+
+[text~=light-gray] {
+  color: #797979;
+}
+
+spacer-s {
+  display: block;
+  height: 1rem;
+}
+
+/*
+ * Pages
+*/
+/**
+ * essential-gg / mod-pages
+ *
+ * Copyright (c) 2013-2022 Panascais Inc. and / or subsidiaries. All rights reserved.
+ *
+ * All information contained herein is, and remains the property
+ * of Panascais Inc. and its suppliers, if any.
+ * The intellectual and technical concepts contained herein are
+ * proprietary to Panascais Inc. and its suppliers and may
+ * be covered by European, U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.
+ * Dissemination of this information or reproduction of this material
+ * is strictly forbidden unless prior written permission is obtained
+ * from Panascais Inc.
+ *
+ * License:
+ *
+ * You are not allowed to copy, modify, merge, publish, distribute,
+ * sublicense, and / or sell copies of this software.
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the software.
+ */
+.home-action {
+  display: flex;
+  margin-top: 2rem;
+}
+.home-action > :first-child {
+  margin-right: 1rem;
+}
+.home-grid {
+  display: grid;
+  grid-template-areas: "a b";
+  grid-template-columns: 3fr 2fr;
+  align-items: center;
+}
+.home-grid wrapper-content {
+  grid-area: a;
+}
+.home-grid picture {
+  max-height: 30rem;
+  transform: translateX(-4rem) translateY(1rem);
+  grid-area: b;
+  object-fit: contain;
+}
+.home-grid picture img {
+  height: 100%;
+}
+@media (max-width: 1500px) {
+  .home-grid {
+    grid-template-areas: "a";
+    grid-template-columns: 1fr;
+  }
+  .home-grid picture {
+    display: none;
+  }
+}
+
+/**
+ * essential-gg / mod-pages
+ *
+ * Copyright (c) 2013-2022 Panascais Inc. and / or subsidiaries. All rights reserved.
+ *
+ * All information contained herein is, and remains the property
+ * of Panascais Inc. and its suppliers, if any.
+ * The intellectual and technical concepts contained herein are
+ * proprietary to Panascais Inc. and its suppliers and may
+ * be covered by European, U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.
+ * Dissemination of this information or reproduction of this material
+ * is strictly forbidden unless prior written permission is obtained
+ * from Panascais Inc.
+ *
+ * License:
+ *
+ * You are not allowed to copy, modify, merge, publish, distribute,
+ * sublicense, and / or sell copies of this software.
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the software.
+ */
+/**
+ * essential-gg / mod-pages
+ *
+ * Copyright (c) 2013-2022 Panascais Inc. and / or subsidiaries. All rights reserved.
+ *
+ * All information contained herein is, and remains the property
+ * of Panascais Inc. and its suppliers, if any.
+ * The intellectual and technical concepts contained herein are
+ * proprietary to Panascais Inc. and its suppliers and may
+ * be covered by European, U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.
+ * Dissemination of this information or reproduction of this material
+ * is strictly forbidden unless prior written permission is obtained
+ * from Panascais Inc.
+ *
+ * License:
+ *
+ * You are not allowed to copy, modify, merge, publish, distribute,
+ * sublicense, and / or sell copies of this software.
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the software.
+ */
+/**
+ * essential-gg / mod-pages
+ *
+ * Copyright (c) 2013-2022 Panascais Inc. and / or subsidiaries. All rights reserved.
+ *
+ * All information contained herein is, and remains the property
+ * of Panascais Inc. and its suppliers, if any.
+ * The intellectual and technical concepts contained herein are
+ * proprietary to Panascais Inc. and its suppliers and may
+ * be covered by European, U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.
+ * Dissemination of this information or reproduction of this material
+ * is strictly forbidden unless prior written permission is obtained
+ * from Panascais Inc.
+ *
+ * License:
+ *
+ * You are not allowed to copy, modify, merge, publish, distribute,
+ * sublicense, and / or sell copies of this software.
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the software.
+ */

@@ -1,0 +1,729 @@
+public abstract class gg/essential/api/DI : org/kodein/di/DIAware {
+	public fun <init> ()V
+	public abstract fun addModule (Lorg/kodein/di/DI$Module;)V
+	public fun getDiContext ()Lorg/kodein/di/DIContext;
+	public fun getDiTrigger ()Lorg/kodein/di/DITrigger;
+	protected final fun init ()V
+}
+
+public abstract interface class gg/essential/api/EssentialAPI {
+	public static final field Companion Lgg/essential/api/EssentialAPI$Companion;
+	public abstract fun commandRegistry ()Lgg/essential/api/commands/CommandRegistry;
+	public abstract fun componentFactory ()Lgg/essential/api/gui/EssentialComponentFactory;
+	public abstract fun config ()Lgg/essential/api/config/EssentialConfig;
+	public abstract fun di ()Lgg/essential/api/DI;
+	public static fun getCommandRegistry ()Lgg/essential/api/commands/CommandRegistry;
+	public static fun getConfig ()Lgg/essential/api/config/EssentialConfig;
+	public static fun getDI ()Lgg/essential/api/DI;
+	public static fun getEssentialComponentFactory ()Lgg/essential/api/gui/EssentialComponentFactory;
+	public static fun getGuiUtil ()Lgg/essential/api/utils/GuiUtil;
+	public static fun getImageCache ()Lgg/essential/elementa/components/image/ImageCache;
+	public static fun getInstance ()Lgg/essential/api/EssentialAPI;
+	public static fun getMinecraftUtil ()Lgg/essential/api/utils/MinecraftUtils;
+	public static fun getMojangAPI ()Lgg/essential/api/utils/mojang/MojangAPI;
+	public static fun getNotifications ()Lgg/essential/api/gui/Notifications;
+	public static fun getOnboardingData ()Lgg/essential/api/data/OnboardingData;
+	public static fun getShutdownHookUtil ()Lgg/essential/api/utils/ShutdownHookUtil;
+	public static fun getTrustedHostsUtil ()Lgg/essential/api/utils/TrustedHostsUtil;
+	public abstract fun guiUtil ()Lgg/essential/api/utils/GuiUtil;
+	public abstract fun imageCache ()Lgg/essential/elementa/components/image/ImageCache;
+	public abstract fun minecraftUtil ()Lgg/essential/api/utils/MinecraftUtils;
+	public abstract fun mojangAPI ()Lgg/essential/api/utils/mojang/MojangAPI;
+	public abstract fun notifications ()Lgg/essential/api/gui/Notifications;
+	public abstract fun onboardingData ()Lgg/essential/api/data/OnboardingData;
+	public abstract fun shutdownHookUtil ()Lgg/essential/api/utils/ShutdownHookUtil;
+	public abstract fun trustedHostsUtil ()Lgg/essential/api/utils/TrustedHostsUtil;
+}
+
+public final class gg/essential/api/EssentialAPI$Companion {
+	public final fun getCommandRegistry ()Lgg/essential/api/commands/CommandRegistry;
+	public final fun getConfig ()Lgg/essential/api/config/EssentialConfig;
+	public final fun getDI ()Lgg/essential/api/DI;
+	public final fun getEssentialComponentFactory ()Lgg/essential/api/gui/EssentialComponentFactory;
+	public final fun getGuiUtil ()Lgg/essential/api/utils/GuiUtil;
+	public final fun getImageCache ()Lgg/essential/elementa/components/image/ImageCache;
+	public final fun getInstance ()Lgg/essential/api/EssentialAPI;
+	public final fun getMinecraftUtil ()Lgg/essential/api/utils/MinecraftUtils;
+	public final fun getMojangAPI ()Lgg/essential/api/utils/mojang/MojangAPI;
+	public final fun getNotifications ()Lgg/essential/api/gui/Notifications;
+	public final fun getOnboardingData ()Lgg/essential/api/data/OnboardingData;
+	public final fun getShutdownHookUtil ()Lgg/essential/api/utils/ShutdownHookUtil;
+	public final fun getTrustedHostsUtil ()Lgg/essential/api/utils/TrustedHostsUtil;
+}
+
+public abstract interface class gg/essential/api/commands/ArgumentParser {
+	public fun complete (Lgg/essential/api/commands/ArgumentQueue;Ljava/lang/reflect/Parameter;)Ljava/util/List;
+	public abstract fun parse (Lgg/essential/api/commands/ArgumentQueue;Ljava/lang/reflect/Parameter;)Ljava/lang/Object;
+}
+
+@1.12.2-forge,1.8.9-forge
+public final class gg/essential/api/commands/ArgumentParser$DefaultImpls {
+	public static fun complete (Lgg/essential/api/commands/ArgumentParser;Lgg/essential/api/commands/ArgumentQueue;Ljava/lang/reflect/Parameter;)Ljava/util/List;
+}
+
+public abstract interface class gg/essential/api/commands/ArgumentQueue {
+	public abstract fun isEmpty ()Z
+	public abstract fun peek ()Ljava/lang/String;
+	public abstract fun poll ()Ljava/lang/String;
+}
+
+public abstract class gg/essential/api/commands/Command {
+	public fun <init> (Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;Z)V
+	public fun <init> (Ljava/lang/String;ZZ)V
+	public synthetic fun <init> (Ljava/lang/String;ZZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getAutoHelpSubcommand ()Z
+	public fun getCommandAliases ()Ljava/util/Set;
+	public final fun getDefaultHandler ()Lgg/essential/api/commands/Command$Handler;
+	public final fun getHideFromAutocomplete ()Z
+	public final fun getName ()Ljava/lang/String;
+	public final fun getSubCommands ()Ljava/util/Map;
+	public final fun getUniqueSubCommands ()Ljava/util/List;
+	public final fun register ()V
+}
+
+public final class gg/essential/api/commands/Command$Alias {
+	public fun <init> (Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;Z)V
+	public synthetic fun <init> (Ljava/lang/String;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Z
+	public final fun copy (Ljava/lang/String;Z)Lgg/essential/api/commands/Command$Alias;
+	public static synthetic fun copy$default (Lgg/essential/api/commands/Command$Alias;Ljava/lang/String;ZILjava/lang/Object;)Lgg/essential/api/commands/Command$Alias;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAlias ()Ljava/lang/String;
+	public final fun getHideFromAutocomplete ()Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class gg/essential/api/commands/Command$Handler {
+	public fun <init> (Ljava/lang/reflect/Method;)V
+	public final fun getKParams ()Ljava/util/List;
+	public final fun getMethod ()Ljava/lang/reflect/Method;
+	public final fun getParams ()[Ljava/lang/reflect/Parameter;
+}
+
+public abstract interface class gg/essential/api/commands/CommandRegistry {
+	public abstract fun registerCommand (Lgg/essential/api/commands/Command;)V
+	public abstract fun registerParser (Ljava/lang/Class;Lgg/essential/api/commands/ArgumentParser;)V
+	public abstract fun unregisterCommand (Lgg/essential/api/commands/Command;)V
+}
+
+public abstract interface annotation class gg/essential/api/commands/DefaultHandler : java/lang/annotation/Annotation {
+}
+
+public abstract interface annotation class gg/essential/api/commands/DisplayName : java/lang/annotation/Annotation {
+	public abstract fun value ()Ljava/lang/String;
+}
+
+public abstract interface annotation class gg/essential/api/commands/Greedy : java/lang/annotation/Annotation {
+}
+
+public abstract interface annotation class gg/essential/api/commands/Options : java/lang/annotation/Annotation {
+	public abstract fun value ()[Ljava/lang/String;
+}
+
+public abstract interface annotation class gg/essential/api/commands/Quotable : java/lang/annotation/Annotation {
+}
+
+public abstract interface annotation class gg/essential/api/commands/SubCommand : java/lang/annotation/Annotation {
+	public abstract fun aliases ()[Ljava/lang/String;
+	public abstract fun description ()Ljava/lang/String;
+	public abstract fun value ()Ljava/lang/String;
+}
+
+public abstract interface annotation class gg/essential/api/commands/Take : java/lang/annotation/Annotation {
+	public abstract fun allowLess ()Z
+	public abstract fun value ()I
+}
+
+public abstract interface class gg/essential/api/config/EssentialConfig {
+	public abstract fun getAutoRefreshSession ()Z
+	public abstract fun getCosmeticArmorSetting ()I
+	public abstract fun getCurrentMultiplayerTab ()I
+	public abstract fun getDisableAllNotifications ()Z
+	public abstract fun getDiscordAllowAskToJoin ()Z
+	public abstract fun getDiscordRichPresence ()Z
+	public abstract fun getDiscordSdk ()Z
+	public abstract fun getDiscordShowCurrentServer ()Z
+	public abstract fun getDiscordShowUsernameAndAvatar ()Z
+	public abstract fun getEnableVanillaScreenshotMessage ()Z
+	public abstract fun getEssentialFull ()Z
+	public abstract fun getEssentialGuiScale ()I
+	public abstract fun getEssentialScreenshots ()Z
+	public abstract fun getFriendConnectionStatus ()Z
+	public abstract fun getFriendRequestPrivacy ()I
+	public abstract fun getGroupMessageReceivedNotifications ()Z
+	public abstract fun getHideCosmeticsWhenServerOverridesSkin ()Z
+	public abstract fun getLinkWarning ()Z
+	public abstract fun getMessageReceivedNotifications ()Z
+	public abstract fun getMessageSound ()Z
+	public abstract fun getModCoreWarning ()Z
+	public abstract fun getOpenToFriends ()Z
+	public abstract fun getOverrideGuiScale ()Z
+	public abstract fun getScreenshotSounds ()Z
+	public abstract fun getSendServerUpdates ()Z
+	public abstract fun getShowEssentialIndicatorOnNametag ()Z
+	public abstract fun getShowEssentialIndicatorOnTab ()Z
+	public abstract fun getSmoothZoomAlgorithm ()I
+	public abstract fun getSmoothZoomAnimation ()Z
+	public abstract fun getStreamerMode ()Z
+	public abstract fun getTimeFormat ()I
+	public abstract fun getToggleToZoom ()Z
+	public abstract fun getUpdateModal ()Z
+	@1.12.2-forge,1.8.9-forge
+	public abstract fun getWindowedFullscreen ()Z
+	public abstract fun getZoomSmoothCamera ()Z
+	public abstract fun setAutoRefreshSession (Z)V
+	public abstract fun setCosmeticArmorSetting (I)V
+	public abstract fun setCurrentMultiplayerTab (I)V
+	public abstract fun setDisableAllNotifications (Z)V
+	public abstract fun setDiscordAllowAskToJoin (Z)V
+	public abstract fun setDiscordRichPresence (Z)V
+	public abstract fun setDiscordSdk (Z)V
+	public abstract fun setDiscordShowCurrentServer (Z)V
+	public abstract fun setDiscordShowUsernameAndAvatar (Z)V
+	public abstract fun setEnableVanillaScreenshotMessage (Z)V
+	public abstract fun setEssentialFull (Z)V
+	public abstract fun setEssentialGuiScale (I)V
+	public abstract fun setEssentialScreenshots (Z)V
+	public abstract fun setFriendConnectionStatus (Z)V
+	public abstract fun setFriendRequestPrivacy (I)V
+	public abstract fun setGroupMessageReceivedNotifications (Z)V
+	public abstract fun setHideCosmeticsWhenServerOverridesSkin (Z)V
+	public abstract fun setLinkWarning (Z)V
+	public abstract fun setMessageReceivedNotifications (Z)V
+	public abstract fun setMessageSound (Z)V
+	public abstract fun setModCoreWarning (Z)V
+	public abstract fun setOpenToFriends (Z)V
+	public abstract fun setOverrideGuiScale (Z)V
+	public abstract fun setScreenshotSounds (Z)V
+	public abstract fun setSendServerUpdates (Z)V
+	public abstract fun setShowEssentialIndicatorOnNametag (Z)V
+	public abstract fun setShowEssentialIndicatorOnTab (Z)V
+	public abstract fun setSmoothZoomAlgorithm (I)V
+	public abstract fun setSmoothZoomAnimation (Z)V
+	public abstract fun setStreamerMode (Z)V
+	public abstract fun setTimeFormat (I)V
+	public abstract fun setToggleToZoom (Z)V
+	public abstract fun setUpdateModal (Z)V
+	@1.12.2-forge,1.8.9-forge
+	public abstract fun setWindowedFullscreen (Z)V
+	public abstract fun setZoomSmoothCamera (Z)V
+}
+
+public abstract interface class gg/essential/api/cosmetics/RenderCosmetic {
+}
+
+public abstract interface class gg/essential/api/data/OnboardingData {
+	public abstract fun hasAcceptedEssentialTOS ()Z
+	public abstract fun hasDeniedEssentialTOS ()Z
+}
+
+public final class gg/essential/api/gui/ConfirmationModalBuilder {
+	public fun <init> ()V
+	public final fun build ()Lgg/essential/elementa/UIComponent;
+	public final fun build (Lgg/essential/api/gui/EssentialComponentFactory;)Lgg/essential/elementa/UIComponent;
+	public static synthetic fun build$default (Lgg/essential/api/gui/ConfirmationModalBuilder;Lgg/essential/api/gui/EssentialComponentFactory;ILjava/lang/Object;)Lgg/essential/elementa/UIComponent;
+	public final fun getConfirmButtonText ()Ljava/lang/String;
+	public final fun getDenyButtonText ()Ljava/lang/String;
+	public final fun getInputPlaceholder ()Ljava/lang/String;
+	public final fun getOnConfirm ()Lkotlin/jvm/functions/Function1;
+	public final fun getOnDeny ()Lkotlin/jvm/functions/Function0;
+	public final fun getSecondaryText ()Ljava/lang/String;
+	public final fun getText ()Ljava/lang/String;
+	public final fun setConfirmButtonText (Ljava/lang/String;)V
+	public final fun setDenyButtonText (Ljava/lang/String;)V
+	public final fun setInputPlaceholder (Ljava/lang/String;)V
+	public final fun setOnConfirm (Lkotlin/jvm/functions/Function1;)V
+	public final fun setOnDeny (Lkotlin/jvm/functions/Function0;)V
+	public final fun setSecondaryText (Ljava/lang/String;)V
+	public final fun setText (Ljava/lang/String;)V
+}
+
+public final class gg/essential/api/gui/EmulatedPlayerBuilder {
+	public fun <init> ()V
+	public final fun build ()Lgg/essential/elementa/UIComponent;
+	public final fun build (Lgg/essential/api/gui/EssentialComponentFactory;)Lgg/essential/elementa/UIComponent;
+	public static synthetic fun build$default (Lgg/essential/api/gui/EmulatedPlayerBuilder;Lgg/essential/api/gui/EssentialComponentFactory;ILjava/lang/Object;)Lgg/essential/elementa/UIComponent;
+	public final fun getDraggable ()Z
+	public final fun getDraggableState ()Lgg/essential/elementa/state/State;
+	public final fun getProfile ()Lcom/mojang/authlib/GameProfile;
+	public final fun getProfileState ()Lgg/essential/elementa/state/State;
+	public final fun getRenderNameTag ()Z
+	public final fun getRenderNameTagState ()Lgg/essential/elementa/state/State;
+	public final fun getShowCape ()Z
+	public final fun getShowCapeState ()Lgg/essential/elementa/state/State;
+	public final fun getWrappedProfileState ()Lgg/essential/elementa/state/State;
+	public final fun setDraggable (Z)V
+	public final fun setDraggableState (Lgg/essential/elementa/state/State;)V
+	public final fun setProfile (Lcom/mojang/authlib/GameProfile;)V
+	public final fun setProfileState (Lgg/essential/elementa/state/State;)V
+	public final fun setRenderNameTag (Z)V
+	public final fun setRenderNameTagState (Lgg/essential/elementa/state/State;)V
+	public final fun setShowCape (Z)V
+	public final fun setShowCapeState (Lgg/essential/elementa/state/State;)V
+	public final fun setWrappedProfileState (Lgg/essential/elementa/state/State;)V
+}
+
+public abstract interface class gg/essential/api/gui/EssentialComponentFactory {
+	public abstract fun build (Lgg/essential/api/gui/ConfirmationModalBuilder;)Lgg/essential/elementa/UIComponent;
+	public abstract fun build (Lgg/essential/api/gui/EmulatedPlayerBuilder;)Lgg/essential/elementa/UIComponent;
+	public fun buildEmulatedPlayer (ZZ)Lgg/essential/elementa/UIComponent;
+	public static synthetic fun buildEmulatedPlayer$default (Lgg/essential/api/gui/EssentialComponentFactory;ZZILjava/lang/Object;)Lgg/essential/elementa/UIComponent;
+}
+
+@1.12.2-forge,1.8.9-forge
+public final class gg/essential/api/gui/EssentialComponentFactory$DefaultImpls {
+	public static fun buildEmulatedPlayer (Lgg/essential/api/gui/EssentialComponentFactory;ZZ)Lgg/essential/elementa/UIComponent;
+	public static synthetic fun buildEmulatedPlayer$default (Lgg/essential/api/gui/EssentialComponentFactory;ZZILjava/lang/Object;)Lgg/essential/elementa/UIComponent;
+}
+
+public final class gg/essential/api/gui/EssentialComponentFactoryKt {
+	public static final fun buildConfirmationModal (Lgg/essential/api/gui/EssentialComponentFactory;Lkotlin/jvm/functions/Function1;)Lgg/essential/elementa/UIComponent;
+	public static final fun buildEmulatedPlayer (Lgg/essential/api/gui/EssentialComponentFactory;Lkotlin/jvm/functions/Function1;)Lgg/essential/elementa/UIComponent;
+}
+
+public class gg/essential/api/gui/EssentialGUI : gg/essential/elementa/WindowScreen {
+	public fun <init> ()V
+	public fun <init> (Lgg/essential/elementa/ElementaVersion;)V
+	public fun <init> (Lgg/essential/elementa/ElementaVersion;Ljava/lang/String;)V
+	public fun <init> (Lgg/essential/elementa/ElementaVersion;Ljava/lang/String;I)V
+	public fun <init> (Lgg/essential/elementa/ElementaVersion;Ljava/lang/String;IZ)V
+	public synthetic fun <init> (Lgg/essential/elementa/ElementaVersion;Ljava/lang/String;IZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lgg/essential/elementa/ElementaVersion;Ljava/lang/String;IZLjava/lang/String;)V
+	public synthetic fun <init> (Lgg/essential/elementa/ElementaVersion;Ljava/lang/String;IZLjava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;I)V
+	public fun <init> (Ljava/lang/String;IZ)V
+	public synthetic fun <init> (Ljava/lang/String;IZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getBackButtonVisible ()Z
+	public final fun getContent ()Lgg/essential/elementa/components/UIContainer;
+	public final fun getDiscordActivityDescription ()Ljava/lang/String;
+	public final fun getRightDivider ()Lgg/essential/elementa/components/UIBlock;
+	public final fun getScissorBox ()Lgg/essential/elementa/components/UIContainer;
+	public final fun getTitleBar ()Lgg/essential/elementa/components/UIBlock;
+	public final fun getTitleText ()Lgg/essential/elementa/components/UIWrappedText;
+	public final fun setBackButtonVisible (Z)V
+	public final fun setTitle (Ljava/lang/String;)V
+}
+
+public abstract interface class gg/essential/api/gui/GuiRequiresTOS {
+}
+
+public abstract interface class gg/essential/api/gui/NotificationBuilder {
+	public abstract fun getDismissNotification ()Lkotlin/jvm/functions/Function0;
+	public abstract fun getDismissNotificationInstantly ()Lkotlin/jvm/functions/Function0;
+	public abstract fun getDuration ()F
+	public abstract fun getElementaVersion ()Lgg/essential/elementa/ElementaVersion;
+	public abstract fun getOnAction ()Lkotlin/jvm/functions/Function0;
+	public abstract fun getOnClose ()Lkotlin/jvm/functions/Function0;
+	public abstract fun getTimerEnabled ()Lgg/essential/elementa/state/State;
+	public abstract fun getTrimMessage ()Z
+	public abstract fun getTrimTitle ()Z
+	public abstract fun getType ()Lgg/essential/api/gui/NotificationType;
+	public abstract fun getUniqueId ()Ljava/lang/Object;
+	public abstract fun setDuration (F)V
+	public abstract fun setElementaVersion (Lgg/essential/elementa/ElementaVersion;)V
+	public abstract fun setOnAction (Lkotlin/jvm/functions/Function0;)V
+	public abstract fun setOnClose (Lkotlin/jvm/functions/Function0;)V
+	public abstract fun setTimerEnabled (Lgg/essential/elementa/state/State;)V
+	public abstract fun setTrimMessage (Z)V
+	public abstract fun setTrimTitle (Z)V
+	public abstract fun setType (Lgg/essential/api/gui/NotificationType;)V
+	public abstract fun setUniqueId (Ljava/lang/Object;)V
+	public abstract fun withCustomComponent (Lgg/essential/api/gui/Slot;Lgg/essential/elementa/UIComponent;)Lgg/essential/api/gui/NotificationBuilder;
+	public fun withElementaVersion (Lgg/essential/elementa/ElementaVersion;)Lgg/essential/api/gui/NotificationBuilder;
+}
+
+@1.12.2-forge,1.8.9-forge
+public final class gg/essential/api/gui/NotificationBuilder$DefaultImpls {
+	public static fun withElementaVersion (Lgg/essential/api/gui/NotificationBuilder;Lgg/essential/elementa/ElementaVersion;)Lgg/essential/api/gui/NotificationBuilder;
+}
+
+public final class gg/essential/api/gui/NotificationType : java/lang/Enum {
+	public static final field DISCORD Lgg/essential/api/gui/NotificationType;
+	public static final field ERROR Lgg/essential/api/gui/NotificationType;
+	public static final field GENERAL Lgg/essential/api/gui/NotificationType;
+	public static final field INFO Lgg/essential/api/gui/NotificationType;
+	public static final field WARNING Lgg/essential/api/gui/NotificationType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lgg/essential/api/gui/NotificationType;
+	public static fun values ()[Lgg/essential/api/gui/NotificationType;
+}
+
+public abstract interface class gg/essential/api/gui/Notifications {
+	public abstract fun push (Ljava/lang/String;Ljava/lang/String;)V
+	public abstract fun push (Ljava/lang/String;Ljava/lang/String;F)V
+	public abstract fun push (Ljava/lang/String;Ljava/lang/String;FLkotlin/jvm/functions/Function0;)V
+	public abstract fun push (Ljava/lang/String;Ljava/lang/String;FLkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function0;)V
+	public abstract fun push (Ljava/lang/String;Ljava/lang/String;FLkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function1;)V
+	public abstract fun push (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function0;)V
+	public abstract fun push (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
+	public static synthetic fun push$default (Lgg/essential/api/gui/Notifications;Ljava/lang/String;Ljava/lang/String;FILjava/lang/Object;)V
+	public static synthetic fun push$default (Lgg/essential/api/gui/Notifications;Ljava/lang/String;Ljava/lang/String;FLkotlin/jvm/functions/Function0;ILjava/lang/Object;)V
+	public static synthetic fun push$default (Lgg/essential/api/gui/Notifications;Ljava/lang/String;Ljava/lang/String;FLkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function0;ILjava/lang/Object;)V
+	public static synthetic fun push$default (Lgg/essential/api/gui/Notifications;Ljava/lang/String;Ljava/lang/String;FLkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+	public static synthetic fun push$default (Lgg/essential/api/gui/Notifications;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function0;ILjava/lang/Object;)V
+	public static synthetic fun push$default (Lgg/essential/api/gui/Notifications;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+}
+
+@1.12.2-forge,1.8.9-forge
+public final class gg/essential/api/gui/Notifications$DefaultImpls {
+	public static synthetic fun push$default (Lgg/essential/api/gui/Notifications;Ljava/lang/String;Ljava/lang/String;FILjava/lang/Object;)V
+	public static synthetic fun push$default (Lgg/essential/api/gui/Notifications;Ljava/lang/String;Ljava/lang/String;FLkotlin/jvm/functions/Function0;ILjava/lang/Object;)V
+	public static synthetic fun push$default (Lgg/essential/api/gui/Notifications;Ljava/lang/String;Ljava/lang/String;FLkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function0;ILjava/lang/Object;)V
+	public static synthetic fun push$default (Lgg/essential/api/gui/Notifications;Ljava/lang/String;Ljava/lang/String;FLkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+	public static synthetic fun push$default (Lgg/essential/api/gui/Notifications;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function0;ILjava/lang/Object;)V
+	public static synthetic fun push$default (Lgg/essential/api/gui/Notifications;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+}
+
+public final class gg/essential/api/gui/Slot : java/lang/Enum {
+	public static final field ACTION Lgg/essential/api/gui/Slot;
+	public static final field ICON Lgg/essential/api/gui/Slot;
+	public static final field LARGE_PREVIEW Lgg/essential/api/gui/Slot;
+	public static final field PREVIEW Lgg/essential/api/gui/Slot;
+	public static final field SMALL_PREVIEW Lgg/essential/api/gui/Slot;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lgg/essential/api/gui/Slot;
+	public static fun values ()[Lgg/essential/api/gui/Slot;
+}
+
+public final class gg/essential/api/profile/WrappedGameProfile {
+	public fun <init> (Lcom/mojang/authlib/GameProfile;)V
+	public fun <init> (Ljava/util/UUID;Ljava/lang/String;)V
+	public final fun copy ()Lgg/essential/api/profile/WrappedGameProfile;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getId ()Ljava/util/UUID;
+	public final fun getName ()Ljava/lang/String;
+	public final fun getProfile ()Lcom/mojang/authlib/GameProfile;
+	public final fun getProperties ()Lcom/mojang/authlib/properties/PropertyMap;
+	public fun hashCode ()I
+}
+
+public final class gg/essential/api/profile/WrappedGameProfileKt {
+	public static final fun wrapped (Lcom/mojang/authlib/GameProfile;)Lgg/essential/api/profile/WrappedGameProfile;
+}
+
+public final class gg/essential/api/utils/DiKt {
+	public static final fun getEssentialDI ()Lgg/essential/api/DI;
+	public static final fun getInitialised ()Z
+}
+
+public abstract interface class gg/essential/api/utils/GuiUtil {
+	public static final field Companion Lgg/essential/api/utils/GuiUtil$Companion;
+	public abstract fun getGuiScale ()I
+	public abstract fun getGuiScale (I)I
+	@1.17.1-forge,1.18.2-forge,1.19.2-forge,1.19.3-forge,1.19.4-forge,1.20.1-forge,1.20.2-forge,1.20.4-forge
+	public static fun getOpenedScreen ()Lnet/minecraft/client/gui/screens/Screen;
+	@1.17.1-forge,1.18.2-forge,1.19.2-forge,1.19.3-forge,1.19.4-forge,1.20.1-forge,1.20.2-forge,1.20.4-forge
+	public static fun open (Lnet/minecraft/client/gui/screens/Screen;)V
+	@1.17.1-forge,1.18.2-forge,1.19.2-forge,1.19.3-forge,1.19.4-forge,1.20.1-forge,1.20.2-forge,1.20.4-forge
+	public abstract fun openScreen (Lnet/minecraft/client/gui/screens/Screen;)V
+	@1.17.1-forge,1.18.2-forge,1.19.2-forge,1.19.3-forge,1.19.4-forge,1.20.1-forge,1.20.2-forge,1.20.4-forge
+	public abstract fun openedScreen ()Lnet/minecraft/client/gui/screens/Screen;
+	@1.16.2-fabric,1.16.2-forge,1.17.1-fabric,1.18.1-fabric,1.18.2-fabric,1.19-fabric,1.19.2-fabric,1.19.3-fabric,1.19.4-fabric,1.20-fabric,1.20.1-fabric,1.20.2-fabric,1.20.4-fabric,1.20.6-fabric,1.21-fabric
+	public static fun getOpenedScreen ()Lnet/minecraft/client/gui/screen/Screen;
+	@1.16.2-fabric,1.16.2-forge,1.17.1-fabric,1.18.1-fabric,1.18.2-fabric,1.19-fabric,1.19.2-fabric,1.19.3-fabric,1.19.4-fabric,1.20-fabric,1.20.1-fabric,1.20.2-fabric,1.20.4-fabric,1.20.6-fabric,1.21-fabric
+	public static fun open (Lnet/minecraft/client/gui/screen/Screen;)V
+	@1.16.2-fabric,1.16.2-forge,1.17.1-fabric,1.18.1-fabric,1.18.2-fabric,1.19-fabric,1.19.2-fabric,1.19.3-fabric,1.19.4-fabric,1.20-fabric,1.20.1-fabric,1.20.2-fabric,1.20.4-fabric,1.20.6-fabric,1.21-fabric
+	public abstract fun openScreen (Lnet/minecraft/client/gui/screen/Screen;)V
+	@1.16.2-fabric,1.16.2-forge,1.17.1-fabric,1.18.1-fabric,1.18.2-fabric,1.19-fabric,1.19.2-fabric,1.19.3-fabric,1.19.4-fabric,1.20-fabric,1.20.1-fabric,1.20.2-fabric,1.20.4-fabric,1.20.6-fabric,1.21-fabric
+	public abstract fun openedScreen ()Lnet/minecraft/client/gui/screen/Screen;
+	@1.12.2-forge,1.8.9-forge
+	public static fun getOpenedScreen ()Lnet/minecraft/client/gui/GuiScreen;
+	@1.12.2-forge,1.8.9-forge
+	public static fun open (Lnet/minecraft/client/gui/GuiScreen;)V
+	@1.12.2-forge,1.8.9-forge
+	public abstract fun openScreen (Lnet/minecraft/client/gui/GuiScreen;)V
+	@1.12.2-forge,1.8.9-forge
+	public abstract fun openedScreen ()Lnet/minecraft/client/gui/GuiScreen;
+}
+
+public final class gg/essential/api/utils/GuiUtil$Companion {
+	@1.17.1-forge,1.18.2-forge,1.19.2-forge,1.19.3-forge,1.19.4-forge,1.20.1-forge,1.20.2-forge,1.20.4-forge
+	public final fun getOpenedScreen ()Lnet/minecraft/client/gui/screens/Screen;
+	@1.17.1-forge,1.18.2-forge,1.19.2-forge,1.19.3-forge,1.19.4-forge,1.20.1-forge,1.20.2-forge,1.20.4-forge
+	public final fun open (Lnet/minecraft/client/gui/screens/Screen;)V
+	@1.16.2-fabric,1.16.2-forge,1.17.1-fabric,1.18.1-fabric,1.18.2-fabric,1.19-fabric,1.19.2-fabric,1.19.3-fabric,1.19.4-fabric,1.20-fabric,1.20.1-fabric,1.20.2-fabric,1.20.4-fabric,1.20.6-fabric,1.21-fabric
+	public final fun getOpenedScreen ()Lnet/minecraft/client/gui/screen/Screen;
+	@1.16.2-fabric,1.16.2-forge,1.17.1-fabric,1.18.1-fabric,1.18.2-fabric,1.19-fabric,1.19.2-fabric,1.19.3-fabric,1.19.4-fabric,1.20-fabric,1.20.1-fabric,1.20.2-fabric,1.20.4-fabric,1.20.6-fabric,1.21-fabric
+	public final fun open (Lnet/minecraft/client/gui/screen/Screen;)V
+	@1.12.2-forge,1.8.9-forge
+	public final fun getOpenedScreen ()Lnet/minecraft/client/gui/GuiScreen;
+	@1.12.2-forge,1.8.9-forge
+	public final fun open (Lnet/minecraft/client/gui/GuiScreen;)V
+}
+
+public class gg/essential/api/utils/JsonHolder {
+	public static field printFormattingException Ljava/lang/ThreadLocal;
+	public fun <init> ()V
+	public fun <init> (Lcom/google/gson/JsonObject;)V
+	public fun <init> (Ljava/lang/String;)V
+	public fun defaultOptJSONArray (Ljava/lang/String;Lcom/google/gson/JsonArray;)Lcom/google/gson/JsonArray;
+	public fun defaultOptString (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+	public fun ensureJsonArray (Ljava/lang/String;)V
+	public fun ensureJsonHolder (Ljava/lang/String;)V
+	public fun getKeys ()Ljava/util/List;
+	public fun getObject ()Lcom/google/gson/JsonObject;
+	public fun getSize ()I
+	public fun has (Ljava/lang/String;)Z
+	public fun isNull (Ljava/lang/String;)Z
+	public fun merge (Lgg/essential/api/utils/JsonHolder;Z)V
+	public fun mergeNotOverride (Lgg/essential/api/utils/JsonHolder;)V
+	public fun mergeOverride (Lgg/essential/api/utils/JsonHolder;)V
+	public fun optActualJSONObject (Ljava/lang/String;)Lcom/google/gson/JsonObject;
+	public fun optBoolean (Ljava/lang/String;)Z
+	public fun optBoolean (Ljava/lang/String;Z)Z
+	public fun optDouble (Ljava/lang/String;)D
+	public fun optDouble (Ljava/lang/String;D)D
+	public fun optInt (Ljava/lang/String;)I
+	public fun optInt (Ljava/lang/String;I)I
+	public fun optJSONArray (Ljava/lang/String;)Lcom/google/gson/JsonArray;
+	public fun optJSONObject (Ljava/lang/String;)Lgg/essential/api/utils/JsonHolder;
+	public fun optLong (Ljava/lang/String;)J
+	public fun optLong (Ljava/lang/String;J)J
+	public fun optOrCreateJsonArray (Ljava/lang/String;)Lcom/google/gson/JsonArray;
+	public fun optOrCreateJsonHolder (Ljava/lang/String;)Lgg/essential/api/utils/JsonHolder;
+	public fun optString (Ljava/lang/String;)Ljava/lang/String;
+	public fun put (Ljava/lang/String;D)Lgg/essential/api/utils/JsonHolder;
+	public fun put (Ljava/lang/String;I)Lgg/essential/api/utils/JsonHolder;
+	public fun put (Ljava/lang/String;J)Lgg/essential/api/utils/JsonHolder;
+	public fun put (Ljava/lang/String;Lcom/google/gson/JsonArray;)Lgg/essential/api/utils/JsonHolder;
+	public fun put (Ljava/lang/String;Lcom/google/gson/JsonObject;)Lgg/essential/api/utils/JsonHolder;
+	public fun put (Ljava/lang/String;Lgg/essential/api/utils/JsonHolder;)Lgg/essential/api/utils/JsonHolder;
+	public fun put (Ljava/lang/String;Ljava/lang/String;)Lgg/essential/api/utils/JsonHolder;
+	public fun put (Ljava/lang/String;Z)Lgg/essential/api/utils/JsonHolder;
+	public fun remove (Ljava/lang/String;)V
+	public fun removeAndGet (Ljava/lang/String;)Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+@1.12.2-forge,1.8.9-forge
+public final class gg/essential/api/utils/KotlinAdapter : net/minecraftforge/fml/common/ILanguageAdapter {
+	public fun <init> ()V
+	public fun getNewInstance (Lnet/minecraftforge/fml/common/FMLModContainer;Ljava/lang/Class;Ljava/lang/ClassLoader;Ljava/lang/reflect/Method;)Ljava/lang/Object;
+	public fun setInternalProxies (Lnet/minecraftforge/fml/common/ModContainer;Lnet/minecraftforge/fml/relauncher/Side;Ljava/lang/ClassLoader;)V
+	public fun setProxy (Ljava/lang/reflect/Field;Ljava/lang/Class;Ljava/lang/Object;)V
+	public fun supportsStatics ()Z
+}
+
+public abstract interface class gg/essential/api/utils/MinecraftUtils {
+	@1.17.1-forge,1.18.2-forge,1.19.2-forge,1.19.3-forge,1.19.4-forge,1.20.1-forge,1.20.2-forge,1.20.4-forge
+	public abstract fun getResourceImage (Lnet/minecraft/resources/ResourceLocation;)Ljava/awt/image/BufferedImage;
+	@1.16.2-fabric,1.17.1-fabric,1.18.1-fabric,1.18.2-fabric,1.19-fabric,1.19.2-fabric,1.19.3-fabric,1.19.4-fabric,1.20-fabric,1.20.1-fabric,1.20.2-fabric,1.20.4-fabric,1.20.6-fabric,1.21-fabric
+	public abstract fun getResourceImage (Lnet/minecraft/util/Identifier;)Ljava/awt/image/BufferedImage;
+	@1.12.2-forge,1.16.2-forge,1.8.9-forge
+	public abstract fun getResourceImage (Lnet/minecraft/util/ResourceLocation;)Ljava/awt/image/BufferedImage;
+	public abstract fun isDevelopment ()Z
+	public abstract fun isHypixel ()Z
+	public abstract fun sendChatMessageAndFormat (Ljava/lang/String;)V
+	public abstract fun sendChatMessageAndFormat (Ljava/lang/String;[Ljava/lang/Object;)V
+	public abstract fun sendMessage (Lgg/essential/universal/wrappers/message/UTextComponent;)V
+	public abstract fun sendMessage (Ljava/lang/String;)V
+	public abstract fun sendMessage (Ljava/lang/String;Ljava/lang/String;)V
+}
+
+public final class gg/essential/api/utils/Multithreading {
+	public static final field INSTANCE Lgg/essential/api/utils/Multithreading;
+	public final fun getPOOL ()Ljava/util/concurrent/ThreadPoolExecutor;
+	public static final fun getPool ()Ljava/util/concurrent/ThreadPoolExecutor;
+	public static final fun getScheduledPool ()Ljava/util/concurrent/ScheduledExecutorService;
+	public static final fun runAsync (Ljava/lang/Runnable;)V
+	public final fun schedule (Ljava/lang/Runnable;JJLjava/util/concurrent/TimeUnit;)Ljava/util/concurrent/ScheduledFuture;
+	public static final fun schedule (Ljava/lang/Runnable;JLjava/util/concurrent/TimeUnit;)Ljava/util/concurrent/ScheduledFuture;
+	public final fun setPOOL (Ljava/util/concurrent/ThreadPoolExecutor;)V
+	public final fun submit (Ljava/lang/Runnable;)Ljava/util/concurrent/Future;
+}
+
+public abstract interface class gg/essential/api/utils/ShutdownHookUtil {
+	public abstract fun register (Ljava/lang/Runnable;)V
+	public abstract fun unregister (Ljava/lang/Runnable;)V
+}
+
+public abstract interface class gg/essential/api/utils/TrustedHostsUtil {
+	public abstract fun addTrustedHost (Lgg/essential/api/utils/TrustedHostsUtil$TrustedHost;)V
+	public abstract fun getTrustedHostByID (Ljava/lang/String;)Lgg/essential/api/utils/TrustedHostsUtil$TrustedHost;
+	public abstract fun getTrustedHosts ()Ljava/util/Set;
+	public abstract fun removeTrustedHost (Ljava/lang/String;)V
+}
+
+public final class gg/essential/api/utils/TrustedHostsUtil$TrustedHost {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Set;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/util/Set;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/Set;)Lgg/essential/api/utils/TrustedHostsUtil$TrustedHost;
+	public static synthetic fun copy$default (Lgg/essential/api/utils/TrustedHostsUtil$TrustedHost;Ljava/lang/String;Ljava/lang/String;Ljava/util/Set;ILjava/lang/Object;)Lgg/essential/api/utils/TrustedHostsUtil$TrustedHost;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDomains ()Ljava/util/Set;
+	public final fun getId ()Ljava/lang/String;
+	public final fun getName ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class gg/essential/api/utils/WebUtil {
+	public static final field INSTANCE Lgg/essential/api/utils/WebUtil;
+	public static final fun downloadToFile (Ljava/lang/String;Ljava/io/File;Ljava/lang/String;)V
+	public static final fun fetchJSON (Ljava/lang/String;)Lgg/essential/api/utils/JsonHolder;
+	public static final fun fetchString (Ljava/lang/String;)Ljava/lang/String;
+	public static final fun getLOG ()Z
+	public static final fun setLOG (Z)V
+}
+
+public final class gg/essential/api/utils/mojang/Model : java/lang/Enum {
+	public static final field ALEX Lgg/essential/api/utils/mojang/Model;
+	public static final field Companion Lgg/essential/api/utils/mojang/Model$Companion;
+	public static final field STEVE Lgg/essential/api/utils/mojang/Model;
+	public static final fun byType (Ljava/lang/String;)Lgg/essential/api/utils/mojang/Model;
+	public static final fun byTypeOrDefault (Ljava/lang/String;)Lgg/essential/api/utils/mojang/Model;
+	public static final fun byVariant (Ljava/lang/String;)Lgg/essential/api/utils/mojang/Model;
+	public static final fun byVariantOrDefault (Ljava/lang/String;)Lgg/essential/api/utils/mojang/Model;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public final fun getModel ()Ljava/lang/String;
+	public final fun getType ()Ljava/lang/String;
+	public final fun getVariant ()Ljava/lang/String;
+	public static fun valueOf (Ljava/lang/String;)Lgg/essential/api/utils/mojang/Model;
+	public static fun values ()[Lgg/essential/api/utils/mojang/Model;
+}
+
+public final class gg/essential/api/utils/mojang/Model$Companion {
+	public final fun byType (Ljava/lang/String;)Lgg/essential/api/utils/mojang/Model;
+	public final fun byTypeOrDefault (Ljava/lang/String;)Lgg/essential/api/utils/mojang/Model;
+	public final fun byVariant (Ljava/lang/String;)Lgg/essential/api/utils/mojang/Model;
+	public final fun byVariantOrDefault (Ljava/lang/String;)Lgg/essential/api/utils/mojang/Model;
+}
+
+public abstract interface class gg/essential/api/utils/mojang/MojangAPI {
+	public abstract fun changeSkin (Ljava/lang/String;Ljava/util/UUID;Lgg/essential/api/utils/mojang/Model;Ljava/lang/String;)Lgg/essential/api/utils/mojang/SkinResponse;
+	public abstract fun getName (Ljava/util/UUID;)Ljava/util/concurrent/CompletableFuture;
+	public abstract fun getNameHistory (Ljava/util/UUID;)Ljava/util/List;
+	public abstract fun getProfile (Ljava/util/UUID;)Lgg/essential/api/utils/mojang/Profile;
+	public abstract fun getUUID (Ljava/lang/String;)Ljava/util/concurrent/CompletableFuture;
+}
+
+public final class gg/essential/api/utils/mojang/Name {
+	public fun <init> (Ljava/lang/String;Ljava/lang/Long;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/Long;
+	public final fun copy (Ljava/lang/String;Ljava/lang/Long;)Lgg/essential/api/utils/mojang/Name;
+	public static synthetic fun copy$default (Lgg/essential/api/utils/mojang/Name;Ljava/lang/String;Ljava/lang/Long;ILjava/lang/Object;)Lgg/essential/api/utils/mojang/Name;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getChangedToAt ()Ljava/lang/Long;
+	public final fun getName ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class gg/essential/api/utils/mojang/Profile {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/util/List;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;)Lgg/essential/api/utils/mojang/Profile;
+	public static synthetic fun copy$default (Lgg/essential/api/utils/mojang/Profile;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;ILjava/lang/Object;)Lgg/essential/api/utils/mojang/Profile;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getId ()Ljava/lang/String;
+	public final fun getName ()Ljava/lang/String;
+	public final fun getProperties ()Ljava/util/List;
+	public final fun getTextures ()Lgg/essential/api/utils/mojang/ProfileTextures;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class gg/essential/api/utils/mojang/ProfileTextures {
+	public static final field Companion Lgg/essential/api/utils/mojang/ProfileTextures$Companion;
+	public fun <init> (Ljava/lang/Long;Ljava/lang/String;Ljava/lang/String;Lgg/essential/api/utils/mojang/Textures;)V
+	public final fun component1 ()Ljava/lang/Long;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Lgg/essential/api/utils/mojang/Textures;
+	public final fun copy (Ljava/lang/Long;Ljava/lang/String;Ljava/lang/String;Lgg/essential/api/utils/mojang/Textures;)Lgg/essential/api/utils/mojang/ProfileTextures;
+	public static synthetic fun copy$default (Lgg/essential/api/utils/mojang/ProfileTextures;Ljava/lang/Long;Ljava/lang/String;Ljava/lang/String;Lgg/essential/api/utils/mojang/Textures;ILjava/lang/Object;)Lgg/essential/api/utils/mojang/ProfileTextures;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getProfileId ()Ljava/lang/String;
+	public final fun getProfileName ()Ljava/lang/String;
+	public final fun getTextures ()Lgg/essential/api/utils/mojang/Textures;
+	public final fun getTimestamp ()Ljava/lang/Long;
+	public fun hashCode ()I
+	public final fun toJson ()Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class gg/essential/api/utils/mojang/ProfileTextures$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lgg/essential/api/utils/mojang/ProfileTextures;
+}
+
+public final class gg/essential/api/utils/mojang/Property {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lgg/essential/api/utils/mojang/Property;
+	public static synthetic fun copy$default (Lgg/essential/api/utils/mojang/Property;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lgg/essential/api/utils/mojang/Property;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getName ()Ljava/lang/String;
+	public final fun getValue ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class gg/essential/api/utils/mojang/Skin {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lgg/essential/api/utils/mojang/Skin;
+	public static synthetic fun copy$default (Lgg/essential/api/utils/mojang/Skin;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lgg/essential/api/utils/mojang/Skin;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getId ()Ljava/lang/String;
+	public final fun getState ()Ljava/lang/String;
+	public final fun getUrl ()Ljava/lang/String;
+	public final fun getVariant ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class gg/essential/api/utils/mojang/SkinResponse {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/util/List;
+	public final fun component4 ()Ljava/util/List;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;)Lgg/essential/api/utils/mojang/SkinResponse;
+	public static synthetic fun copy$default (Lgg/essential/api/utils/mojang/SkinResponse;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;ILjava/lang/Object;)Lgg/essential/api/utils/mojang/SkinResponse;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCapes ()Ljava/util/List;
+	public final fun getId ()Ljava/lang/String;
+	public final fun getName ()Ljava/lang/String;
+	public final fun getSkins ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class gg/essential/api/utils/mojang/TextureURL {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lgg/essential/api/utils/mojang/TextureURL;
+	public static synthetic fun copy$default (Lgg/essential/api/utils/mojang/TextureURL;Ljava/lang/String;ILjava/lang/Object;)Lgg/essential/api/utils/mojang/TextureURL;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getUrl ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class gg/essential/api/utils/mojang/Textures {
+	public fun <init> (Lgg/essential/api/utils/mojang/TextureURL;Lgg/essential/api/utils/mojang/TextureURL;)V
+	public final fun component1 ()Lgg/essential/api/utils/mojang/TextureURL;
+	public final fun component2 ()Lgg/essential/api/utils/mojang/TextureURL;
+	public final fun copy (Lgg/essential/api/utils/mojang/TextureURL;Lgg/essential/api/utils/mojang/TextureURL;)Lgg/essential/api/utils/mojang/Textures;
+	public static synthetic fun copy$default (Lgg/essential/api/utils/mojang/Textures;Lgg/essential/api/utils/mojang/TextureURL;Lgg/essential/api/utils/mojang/TextureURL;ILjava/lang/Object;)Lgg/essential/api/utils/mojang/Textures;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCape ()Lgg/essential/api/utils/mojang/TextureURL;
+	public final fun getSkin ()Lgg/essential/api/utils/mojang/TextureURL;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+

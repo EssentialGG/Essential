@@ -1,0 +1,3 @@
+com.mojang.authlib.properties.Property name() getName()
+com.mojang.authlib.properties.Property value() getValue()
+com.mojang.authlib.properties.Property signature() getSignature()

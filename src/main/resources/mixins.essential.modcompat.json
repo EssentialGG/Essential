@@ -1,0 +1,22 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  //#if MC>=11700
+  //$$ "compatibilityLevel": "JAVA_16",
+  //#else
+  "compatibilityLevel": "JAVA_8",
+  //#endif
+  "package": "gg.essential.mixins.modcompat.transformers",
+  "plugin": "gg.essential.mixins.modcompat.Plugin",
+  "refmap": "mixins.essential.refmap.json",
+  "mixins": [
+    "cmm.CMMGuiConfigAccessor",
+    "cmm.MixinCMMGuiCustom_Events",
+    "epicfightmod.Mixin_BypassEpicFightMod_EmulatedPlayers",
+    "minecraftcapes.Mixin_EmulatedPlayerCapes",
+    "minecraftcapes.Mixin_EmulatedPlayerEars",
+    "neat.MixinHealthBarRenderer",
+    "oldanimationsmod.MixinCustomLayerBipedArmor",
+    "oldanimationsmod.MixinModelMethods"
+  ]
+}

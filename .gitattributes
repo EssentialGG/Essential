@@ -1,0 +1,6 @@
+*   eol=lf
+*.der   binary
+*.otf	binary
+*.ttf	binary
+*.png	binary
+*.jar   binary

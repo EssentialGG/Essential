@@ -1,0 +1,4 @@
+1.18-fabric 1.18.1-fabric
+1.19.1-fabric 1.19.2-fabric
+1.16.5-forge 1.16.2-forge
+1.16.5-fabric 1.16.2-fabric

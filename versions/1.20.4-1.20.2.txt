@@ -1,0 +1,2 @@
+net.minecraft.util.NetworkUtils net.minecraft.client.util.NetworkUtils
+net.minecraft.util.NetworkUtils download() net.minecraft.client.util.NetworkUtils downloadResourcePack()
