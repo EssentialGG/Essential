@@ -31,7 +31,7 @@ Be sure to run `git submodule update --init --recursive` after cloning the repos
 To build all of Essential for all Minecraft versions, run `./gradlew build`.
 Depending on your system and internet connection the first build may take anywhere from 10 minutes to an hour.
 
-To build for a specific Minecraft version, run `./gradlew :<version>-<loader>:build`, e.g. for Minecraft 1.12.2 run
+To build for a specific Minecraft version, run `./gradlew :<version>-<loader>:build`, e.g. for Minecraft 1.12.2, run
 `./gradlew :1.12.2-forge:build`.
 Note that building any version other than the main version (currently 1.12.2) will require all versions between it and
 the main version to be set up regardless, so the time saved over building for all versions may vary wildly.
