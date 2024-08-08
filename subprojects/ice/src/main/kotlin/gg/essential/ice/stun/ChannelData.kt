@@ -20,10 +20,10 @@ class ChannelData(val channelId: UShort, val data: ByteArray) {
         fun tryDecode(bytes: ByteArray): ChannelData? {
             if (bytes.size < HEADER_SIZE) return null
 
-            val channelId = bytes[0].toUInt().shl(8).or(bytes[1].toUInt()).toUShort()
+            val channelId = bytes[0].toUByte().toUInt().shl(8).or(bytes[1].toUByte().toUInt()).toUShort()
             if (channelId !in 0x4000u until 0x5000u) return null
 
-            val len = bytes[2].toInt().shl(8).or(bytes[3].toInt())
+            val len = bytes[2].toUByte().toInt().shl(8).or(bytes[3].toUByte().toInt())
             if (HEADER_SIZE + len > bytes.size) return null
 
             return ChannelData(channelId, bytes.sliceArray(HEADER_SIZE until HEADER_SIZE + len))

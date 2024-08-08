@@ -111,8 +111,7 @@ abstract class IceManagerImpl(
     private val stunManager = StunManager(connectionsScope)
     private var candidateManager: SharedCandidateManager? = null
 
-    private var outgoingConnection: IceConnection? = null
-    private val incomingConnections = mutableMapOf<UUID, IceConnection>()
+    private val connections = mutableMapOf<UUID, IceConnection>()
 
     protected abstract var integratedServerVoicePort: Int
 
@@ -144,7 +143,7 @@ abstract class IceManagerImpl(
 
     private fun handlePacket(packet: IceSessionPacket) {
         val user = packet.user
-        val outgoingConnection = outgoingConnection?.takeIf { it.user == user }
+        val outgoingConnection = connections[user]?.takeIf { it.job.isActive && !it.remoteCreds.isCompleted }
         if (outgoingConnection != null) {
             outgoingConnection.remoteCreds.complete(Pair(packet.ufrag, packet.password.encodeToByteArray()))
         } else if (isInvited(user)) {
@@ -156,7 +155,7 @@ abstract class IceManagerImpl(
 
     private fun handlePacket(packet: IceCandidatePacket) {
         val user = packet.user
-        val connection = outgoingConnection?.takeIf { it.user == user } ?: incomingConnections[user]
+        val connection = connections[user]
         if (connection == null) {
             LOGGER.debug("Ignoring candidate from {} because they have no active session.", user)
             return
@@ -187,9 +186,10 @@ abstract class IceManagerImpl(
             }
         }
 
-        outgoingConnection?.job?.cancel()
+        connections.forEach { it.value.job.cancel() }
+        connections.clear()
         val connection = createIceConnection(connectionsScope, user, true, Telemetry.None)
-        outgoingConnection = connection
+        connections[user] = connection
 
         connection.connectJob.await()
     }
@@ -205,9 +205,9 @@ abstract class IceManagerImpl(
     ): Deferred<McConnectionArgs> {
         LOGGER.info("Creating server-side ICE agent at request from {} (ufrag: {}, pwd: {})", user, ufrag, password)
 
-        incomingConnections.remove(user)?.job?.cancel()
+        connections.remove(user)?.job?.cancel()
         val connection = createIceConnection(scope, user, false, telemetry)
-        incomingConnections[user] = connection
+        connections[user] = connection
         
         connection.remoteCreds.complete(Pair(ufrag, password.encodeToByteArray()))
 

@@ -18,8 +18,11 @@ import gg.essential.network.pingproxy.ProxyPingServerKt;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.local.LocalChannel;
+import kotlin.coroutines.EmptyCoroutineContext;
+import kotlinx.coroutines.Dispatchers;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.network.NetworkManager;
 import org.spongepowered.asm.mixin.Mixin;
@@ -29,6 +32,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.SocketAddress;
 import java.util.UUID;
 
 import static gg.essential.network.connectionmanager.ice.IceManager.ICE_CLIENT_EVENT_LOOP_GROUP;
@@ -84,7 +88,17 @@ public abstract class Mixin_RedirectToLocalConnection {
         if (user != null) {
             // ICE connection
             IIceManager iceManager = Essential.getInstance().getConnectionManager().getIceManager();
-            return bootstrap.connect(iceManager.createClientAgent(user));
+            Channel channel = bootstrap.register().syncUninterruptibly().channel();
+            ChannelPromise connectPromise = channel.newPromise();
+            Dispatchers.getIO().dispatch(EmptyCoroutineContext.INSTANCE, () -> {
+                try {
+                    SocketAddress iceAddress = iceManager.createClientAgent(user);
+                    channel.eventLoop().execute(() -> channel.connect(iceAddress, connectPromise));
+                } catch (Throwable t) {
+                    connectPromise.setFailure(t);
+                }
+            });
+            return connectPromise;
         }
 
         // regular connection
