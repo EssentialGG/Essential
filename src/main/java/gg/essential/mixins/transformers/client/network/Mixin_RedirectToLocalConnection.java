@@ -12,6 +12,7 @@
 package gg.essential.mixins.transformers.client.network;
 
 import gg.essential.Essential;
+import gg.essential.config.FeatureFlags;
 import gg.essential.network.connectionmanager.ice.IIceManager;
 import gg.essential.network.pingproxy.ProxyPingServer;
 import gg.essential.network.pingproxy.ProxyPingServerKt;
@@ -88,6 +89,15 @@ public abstract class Mixin_RedirectToLocalConnection {
         if (user != null) {
             // ICE connection
             IIceManager iceManager = Essential.getInstance().getConnectionManager().getIceManager();
+            boolean asyncSafe =
+                //#if FORGE && MC>=11400
+                //$$ FeatureFlags.NEW_ICE_BACKEND_ENABLED;
+                //#else
+                true;
+                //#endif
+            if (!asyncSafe) {
+                return bootstrap.connect(iceManager.createClientAgent(user));
+            }
             Channel channel = bootstrap.register().syncUninterruptibly().channel();
             ChannelPromise connectPromise = channel.newPromise();
             Dispatchers.getIO().dispatch(EmptyCoroutineContext.INSTANCE, () -> {
