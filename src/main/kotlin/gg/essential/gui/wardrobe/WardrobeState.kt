@@ -53,7 +53,7 @@ import gg.essential.gui.wardrobe.components.handleBundleRightClick
 import gg.essential.gui.wardrobe.components.handleCosmeticOrEmoteLeftClick
 import gg.essential.gui.wardrobe.components.handleCosmeticOrEmoteRightClick
 import gg.essential.gui.wardrobe.components.handleOutfitLeftClick
-import gg.essential.gui.wardrobe.components.handleOutfitRightClick
+import gg.essential.gui.wardrobe.components.displayOutfitOptions
 import gg.essential.gui.wardrobe.components.handleSkinLeftClick
 import gg.essential.gui.wardrobe.components.handleSkinRightClick
 import gg.essential.gui.wardrobe.components.hasBundleOptionsButton
@@ -282,7 +282,6 @@ class WardrobeState(
 
     /** Currently selected emote */
     val selectedEmote: State<Item.CosmeticOrEmote?> = memo {
-        return@memo null
         (selectedItem() as? Item.CosmeticOrEmote)?.takeIf { it.cosmetic.type.slot == CosmeticSlot.EMOTE && it.id !in unlockedCosmetics() }
     }.apply {
         onChange(component) {
@@ -321,7 +320,9 @@ class WardrobeState(
     /** Show purchase animation if true. **/
     val purchaseAnimationState = mutableStateOf(false)
 
-    val draggingEmoteSlot = mutableStateOf<Int?>(null)
+    val draggingEmoteSlot = mutableStateOf<Int?>(null).apply {
+        onChange(component) { inEmoteWheel.set(true) }
+    }
 
     /** Slot that a drag&drop is currently hovering on top of. `-1` for "Remove". */
     val draggingOntoEmoteSlot = mutableStateOf<Int?>(null)
@@ -393,15 +394,7 @@ class WardrobeState(
         getUnownedCosmetics(equippedCosmeticsState().values.toList()) { it.isPurchasable }
     }.toListState()
 
-    @Deprecated("No longer purchasing emotes using the emote wheel.")
-    val equippedEmotesPurchasable = memo {
-        getUnownedCosmetics(emoteWheel().filterNotNull()) { it.isPurchasable }
-    }.toListState()
-
     val equippedCosmeticsTotalCost = getTotalCost(equippedCosmeticsPurchasable)
-
-    @Deprecated("No longer purchasing emotes using the emote wheel.")
-    val equippedEmotesTotalCost = getTotalCost(equippedEmotesPurchasable)
 
     val itemIdToCategoryMap: MutableMap<CosmeticId, WardrobeCategory> = mutableMapOf()
 
@@ -459,7 +452,6 @@ class WardrobeState(
         when {
             bundle != null -> bundle.getCost(this@WardrobeState)() ?: 0
             emote != null -> emote.getCost(this@WardrobeState)() ?: 0
-            inEmoteWheel() -> equippedEmotesTotalCost()
             else -> equippedCosmeticsTotalCost()
         }
     }
@@ -634,7 +626,7 @@ class WardrobeState(
         when (item) {
             is Item.Bundle -> handleBundleRightClick(item, this, event)
             is Item.CosmeticOrEmote -> handleCosmeticOrEmoteRightClick(item, category, this, event)
-            is Item.OutfitItem -> handleOutfitRightClick(item, this, event)
+            is Item.OutfitItem -> displayOutfitOptions(item, this, event)
             is Item.SkinItem -> handleSkinRightClick(item, this, event)
         }
     }

@@ -36,29 +36,40 @@ if (!System.getenv().containsKey("NO_GIT_SUBMODULES")) {
 rootProject.name = "Essential"
 rootProject.buildFileName = "root.gradle.kts"
 
-include(":cosmetics")
-include(":feature-flags")
 include(":elementa:statev2")
 include(":elementa:layoutdsl")
 include(":gui:elementa")
 include(":gui:essential")
 include(":gui:vigilance")
-include(":infra")
-include(":libs")
-include(":mixin-compat")
-include(":quic-connector")
-include(":slf4j-to-log4j")
-include(":lwjgl3")
-include(":lwjgl3:impl")
-include(":kdiscordipc")
-include(":clipboard")
-include(":utils")
-include(":plasmo")
-include(":immediatelyfast")
 
 include(":api")
 project(":api").buildFileName = "root.gradle.kts"
 
+
+val subprojects = listOf(
+    // Please keep these sorted in alphabetical order, thank you.
+    ":classloaders",
+    ":clipboard",
+    ":cosmetics",
+    ":feature-flags",
+    ":ice",
+    ":immediatelyfast",
+    ":infra",
+    ":kdiscordipc",
+    ":libs",
+    ":lwjgl3",
+    ":lwjgl3:impl",
+    ":mixin-compat",
+    ":plasmo",
+    ":quic-connector",
+    ":slf4j-to-log4j",
+    ":utils",
+)
+
+for (fullName in subprojects) {
+    include(fullName)
+    project(fullName).projectDir = file("subprojects" + fullName.replace(':', '/'))
+}
 
 listOf(
     "1.8.9-forge",

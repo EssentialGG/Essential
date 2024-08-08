@@ -46,7 +46,7 @@ class ModelLoader(
     fun getAssets(cosmetic: Cosmetic, variant: String, skinType: Model, priority: AssetLoader.Priority): List<AssetLoader.Asset<*>> =
         getModelState(cosmetic, variant, skinType, priority).dependencies
 
-    fun getCape(cosmetic: Cosmetic, variant: String, priority: AssetLoader.Priority): CompletableFuture<List<UIdentifier>> {
+    fun getCape(cosmetic: Cosmetic, variant: String, priority: AssetLoader.Priority): CompletableFuture<Pair<List<UIdentifier>, List<UIdentifier>?>> {
         val key = "${cosmetic.id}-$variant"
         val state = capes.compute(key) { _, state ->
             state?.takeUnless { it.cosmetic != cosmetic } ?: CapeState(cosmetic, variant)
@@ -71,8 +71,9 @@ class ModelLoader(
         private val particles = assets.particles.mapValues { assetLoader.getAsset(it.value, AssetLoader.Priority.Passive, AssetLoader.AssetType.Particle) }
         private val soundDefinitions = assets.soundDefinitions?.let { assetLoader.getAsset(it, AssetLoader.Priority.Passive, AssetLoader.AssetType.SoundDefinitions) }
         private val texture = assets.texture?.let { assetLoader.getAsset(it, AssetLoader.Priority.Passive, AssetLoader.AssetType.Texture) }
+        private val emissiveTexture = assets.emissiveTexture?.let { assetLoader.getAsset(it, AssetLoader.Priority.Passive, AssetLoader.AssetType.Texture) }
         private val skinMasks = skinMaskAssets.mapValues { assetLoader.getAsset(it.value, AssetLoader.Priority.Passive, AssetLoader.AssetType.Mask) }
-        val dependencies = listOfNotNull(model, animation, soundDefinitions, texture) + skinMasks.values + particles.values
+        val dependencies = listOfNotNull(model, animation, soundDefinitions, texture, emissiveTexture) + skinMasks.values + particles.values
 
         val future: CompletableFuture<BedrockModel> =
             CompletableFuture.allOf(*dependencies.map { it.parsed }.toTypedArray()).handleAsync { _, _ ->
@@ -84,6 +85,7 @@ class ModelLoader(
                     particles.mapValues { it.value.parsed.join() },
                     soundDefinitions?.parsed?.join(),
                     texture?.parsed?.join(),
+                    emissiveTexture?.parsed?.join(),
                     skinMasks.mapValues { it.value.parsed.join() },
                 )
             }.whenComplete { _, throwable ->
@@ -105,12 +107,16 @@ class ModelLoader(
 
     private inner class CapeState(val cosmetic: Cosmetic, val variant: String) {
         private val textureAsset = cosmetic.assets(variant).texture!!
+        private val emissiveTextureAsset = cosmetic.assets(variant).emissiveTexture
         private val textureFuture = assetLoader.getAssetBytes(textureAsset, AssetLoader.Priority.Passive)
+        private val emissiveTextureFuture = emissiveTextureAsset?.let { assetLoader.getAssetBytes(it, AssetLoader.Priority.Passive) }
 
-        val future: CompletableFuture<List<UIdentifier>> =
+        val future: CompletableFuture<Pair<List<UIdentifier>, List<UIdentifier>?>> =
             textureFuture.thenCompose { textureBytes ->
                 AnimatedCape.createFrames(cosmetic, textureAsset, textureBytes)
-            }.whenComplete { _, throwable ->
+            }.thenCombine(emissiveTextureFuture?.thenCompose { emissiveTextureBytes ->
+                AnimatedCape.createFrames(cosmetic, emissiveTextureAsset!!, emissiveTextureBytes)
+            } ?: CompletableFuture.completedFuture(null), ::Pair).whenComplete { _, throwable ->
                 if (throwable != null) {
                     LOGGER.error("Failed to load cape ${cosmetic.id}: ", (throwable as? CompletionException)?.cause ?: throwable)
                 }

@@ -1012,7 +1012,7 @@ abstract class AbstractTextInput(
         fun toScreenPos(): Pair<Float, Float> {
             val visualPos = toVisualPos()
             val x = visualLines[visualPos.line].text.substring(0, visualPos.column)
-                .width(getTextScale()) - horizontalScrollingOffset
+                .width(getTextScale(), getFontProvider()) - horizontalScrollingOffset
             val y = (lineHeightWithPadding * visualPos.line * getTextScale()) + verticalScrollingOffset
             return x to y
         }

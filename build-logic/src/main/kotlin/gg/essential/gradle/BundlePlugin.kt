@@ -53,7 +53,7 @@ private fun Project.createConfigurations(platform: Platform): Configurations {
     val bundle by configurations.creating {
         exclude(module = "fabric-loader") // specifying module only, so the yarn-mapped version in excluded as well
         exclude(group = "net.minecraftforge", module = "forge")
-        if (platform.mcVersion >= 11700) {
+        if (platform.mcVersion >= 11903) {
             exclude(group = "org.slf4j", module = "slf4j-api")
         }
     }

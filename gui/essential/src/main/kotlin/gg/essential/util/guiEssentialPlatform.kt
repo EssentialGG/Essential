@@ -15,6 +15,7 @@ import gg.essential.elementa.components.Window
 import gg.essential.gui.common.modal.Modal
 import gg.essential.gui.elementa.state.v2.MutableState
 import gg.essential.gui.elementa.state.v2.State
+import gg.essential.gui.overlay.ModalManager
 import gg.essential.model.backend.RenderBackend
 import gg.essential.network.CMConnection
 import gg.essential.universal.UImage
@@ -33,6 +34,8 @@ interface GuiEssentialPlatform {
     val renderBackend: RenderBackend
 
     val cmConnection: CMConnection
+
+    fun createModalManager(): ModalManager
 
     fun onResourceManagerReload(runnable: Runnable)
 

@@ -19,9 +19,7 @@ import gg.essential.connectionmanager.common.packet.cosmetic.ClientCosmeticBulkR
 import gg.essential.connectionmanager.common.packet.cosmetic.ServerCosmeticBulkRequestUnlockStateResponsePacket
 import gg.essential.connectionmanager.common.packet.response.ResponseActionPacket
 import gg.essential.elementa.components.UIContainer
-import gg.essential.elementa.constraints.ChildBasedMaxSizeConstraint
 import gg.essential.elementa.dsl.minus
-import gg.essential.elementa.dsl.pixel
 import gg.essential.elementa.dsl.plus
 import gg.essential.elementa.dsl.provideDelegate
 import gg.essential.gui.EssentialPalette
@@ -60,28 +58,6 @@ import gg.essential.util.UUIDUtil
 import gg.essential.util.executor
 import gg.essential.vigilance.utils.onLeftClick
 import java.util.UUID
-
-private class GiftReceivedNotificationComponent(uuid: UUID, username: String) : UIContainer() {
-    init {
-        layout(Modifier.childBasedWidth(1f).childBasedHeight()) {
-            column(Modifier.alignHorizontal(Alignment.End), horizontalAlignment = Alignment.Start) {
-                spacer(height = 1f)
-                row(BasicHeightModifier { ChildBasedMaxSizeConstraint() + 1.pixel }, verticalAlignment = Alignment.End) {
-                    spacer(width = 1f)
-                    CachedAvatarImage.ofUUID(uuid)(Modifier.alignVertical(Alignment.Start).width(8f).heightAspect(1f).shadow(EssentialPalette.TEXT_SHADOW_LIGHT))
-                    spacer(width = 5f)
-                    text(username)
-                }
-                spacer(height = 7f)
-                row(Arrangement.spacedBy(5f), Alignment.Start) {
-                    icon(EssentialPalette.WARDROBE_GIFT_7X, Modifier.color(EssentialPalette.TEXT).shadow(EssentialPalette.TEXT_SHADOW_LIGHT))
-                    text("Sent you a gift.", Modifier.color(EssentialPalette.TEXT))
-                }
-                spacer(height = 1f)
-            }
-        }
-    }
-}
 
 fun openGiftModal(item: Item.CosmeticOrEmote, state: WardrobeState) {
     val requiredCoinsSpent = state.cosmeticsManager.wardrobeSettings.giftingCoinSpendRequirement.get()
@@ -269,10 +245,18 @@ fun showGiftSentToast(cosmetic: Cosmetic, username: String) {
 
 fun showGiftReceivedToast(cosmeticId: String, uuid: UUID, username: String) {
     val cosmetic = Essential.getInstance().connectionManager.cosmeticsManager.getCosmetic(cosmeticId) ?: return
-    Notifications.push("", "", 4f, {
+    Notifications.push(username, "", 4f, {
         openWardrobeWithHighlight(Item.CosmeticOrEmote(cosmetic))
     }) {
-        withCustomComponent(Slot.ACTION, CosmeticPreviewToastComponent(cosmetic))
-        withCustomComponent(Slot.PREVIEW, GiftReceivedNotificationComponent(uuid, username))
+        withCustomComponent(Slot.ICON, CachedAvatarImage.create(uuid))
+        withCustomComponent(Slot.SMALL_PREVIEW, CosmeticPreviewToastComponent(cosmetic))
+        withCustomComponent(Slot.LARGE_PREVIEW, UIContainer().apply {
+            val colorModifier = Modifier.color(EssentialPalette.TEXT).shadow(EssentialPalette.TEXT_SHADOW_LIGHT)
+            layout(Modifier.fillWidth().childBasedHeight()) {
+                wrappedText("{gift} Sent you a gift", Modifier.alignHorizontal(Alignment.Start), colorModifier) {
+                    "gift" { icon(EssentialPalette.WARDROBE_GIFT_7X, colorModifier) }
+                }
+            }
+        })
     }
 }

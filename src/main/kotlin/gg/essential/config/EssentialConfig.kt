@@ -30,7 +30,6 @@ import gg.essential.gui.notification.error
 import gg.essential.gui.notification.sendTosNotification
 import gg.essential.gui.screenshot.ScreenshotPreviewActionSlot
 import gg.essential.gui.vigilancev2.VigilanceV2SettingsGui
-import gg.essential.network.connectionmanager.sps.SPSState
 import gg.essential.util.AutoUpdate
 import gg.essential.util.GuiUtil
 import gg.essential.util.GuiEssentialPlatform
@@ -723,7 +722,7 @@ object EssentialConfig : Vigilant2(), GuiEssentialPlatform.Config {
 
 
     private fun checkSPS(): Boolean {
-        return if (Essential.getInstance().connectionManager.spsManager.localState != SPSState.INACTIVE) {
+        return if (Essential.getInstance().connectionManager.spsManager.localSession != null) {
             Notifications.error("Error", "You cannot disable Essential while hosting a world.")
             false
         } else true

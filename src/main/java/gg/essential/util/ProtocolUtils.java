@@ -19,14 +19,14 @@ public class ProtocolUtils {
 
     // https://en.wikipedia.org/wiki/Internet_Protocol_version_4#Header
     // The IPv4 header can vary in length, but the shortest version is most common
-    private static final int IPV4_HEADER_SIZE = 20;
+    public static final int IPV4_HEADER_SIZE = 20;
 
     // https://en.wikipedia.org/wiki/IPv6_packet#Fixed_header
     // IPv6 has a fixed header size, optionally followed by some extensions, which we'll ignore
-    private static final int IPV6_HEADER_SIZE = 40;
+    public static final int IPV6_HEADER_SIZE = 40;
 
     // https://en.wikipedia.org/wiki/User_Datagram_Protocol#UDP_datagram_structure
-    private static final int UDP_HEADER_SIZE = 8;
+    public static final int UDP_HEADER_SIZE = 8;
 
     /**
      * Estimates the header size, in bytes, of a given {@link DatagramPacket}.

@@ -12,7 +12,7 @@
 package gg.essential.mixins.transformers.feature.sps;
 
 import gg.essential.Essential;
-import gg.essential.network.connectionmanager.ice.IceManager;
+import gg.essential.network.connectionmanager.ice.IIceManager;
 import gg.essential.network.connectionmanager.sps.SPSManager;
 import gg.essential.sps.quic.jvm.UtilKt;
 import net.minecraft.util.HttpUtil;
@@ -41,7 +41,7 @@ public class Mixin_ResolveSpsResourcePackUrl {
             return url;
         }
 
-        IceManager iceManager = Essential.getInstance().getConnectionManager().getIceManager();
+        IIceManager iceManager = Essential.getInstance().getConnectionManager().getIceManager();
         Integer proxyHttpPort = iceManager.getProxyHttpPort();
         if (proxyHttpPort == null) {
             Essential.logger.warn("Received resource pack url with SPS target but http proxy is not available: {}", url);

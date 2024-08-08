@@ -13,7 +13,7 @@ package gg.essential.gui.common
 
 import gg.essential.elementa.UIComponent
 import gg.essential.elementa.components.ScrollComponent
-import gg.essential.elementa.components.UIContainer
+import gg.essential.elementa.components.UIBlock
 import gg.essential.elementa.components.Window
 import gg.essential.elementa.constraints.*
 import gg.essential.elementa.dsl.*
@@ -34,7 +34,7 @@ class ContextOptionMenu(
     posY: Float,
     vararg options: Item,
     val maxHeight: Float = Float.POSITIVE_INFINITY,
-) : UIContainer() {
+) : UIBlock() {
 
     private val optionColumnPadding: Float = 3f
 
@@ -43,10 +43,6 @@ class ContextOptionMenu(
     private val outlineColor = EssentialPalette.BUTTON_HIGHLIGHT
 
     private val closeActions = mutableListOf<() -> Unit>()
-
-    // X and Y setup in init
-    // FIXME: Kotlin emits invalid bytecode if this is `val`, see https://youtrack.jetbrains.com/issue/KT-48757
-    private var optionContainer: UIComponent
 
     init {
         fun LayoutScope.divider() {
@@ -98,21 +94,19 @@ class ContextOptionMenu(
         val scrollComponent: ScrollComponent
         val scrollBar: UIComponent
 
-        this.layoutAsBox(Modifier.fillParent()) {
-            optionContainer = box(Modifier.childBasedMaxSize(2f).color(outlineColor).shadow(Color.BLACK)) {
-                scrollComponent = scrollable(Modifier.limitHeight(), vertical = true) {
-                    column(Modifier.customOptionMenuWidth().childBasedHeight(optionColumnPadding).color(componentBackgroundColor), Arrangement.spacedBy(0f, FloatPosition.CENTER)) {
-                        forEach(listState) {
-                            when (it) {
-                                is Divider -> divider()
-                                is Option -> option(it)
-                            }
+        this.layoutAsBox(Modifier.childBasedMaxSize(2f).color(outlineColor).shadow(Color.BLACK)) {
+            scrollComponent = scrollable(Modifier.limitHeight(), vertical = true) {
+                column(Modifier.customOptionMenuWidth().childBasedHeight(optionColumnPadding).color(componentBackgroundColor), Arrangement.spacedBy(0f, FloatPosition.CENTER)) {
+                    forEach(listState) {
+                        when (it) {
+                            is Divider -> divider()
+                            is Option -> option(it)
                         }
                     }
                 }
-                box(Modifier.maxSiblingHeight().width(2f).alignHorizontal(Alignment.End).alignVertical(Alignment.Center)) {
-                    scrollBar = box(Modifier.fillWidth().color(EssentialPalette.TEXT_DISABLED))
-                }
+            }
+            box(Modifier.maxSiblingHeight().width(2f).alignHorizontal(Alignment.End).alignVertical(Alignment.Center)) {
+                scrollBar = box(Modifier.fillWidth().color(EssentialPalette.TEXT_DISABLED))
             }
         }
 
@@ -120,8 +114,8 @@ class ContextOptionMenu(
 
         reposition(posX, posY)
 
-        this.onMouseClick {
-            handleClose()
+        onFocusLost {
+            handleClose(releaseFocus = false)
         }
         onKeyType { _, keyCode ->
             if (keyCode == UKeyboard.KEY_ESCAPE) {
@@ -130,11 +124,13 @@ class ContextOptionMenu(
         }
     }
 
-    private fun handleClose() {
+    private fun handleClose(releaseFocus: Boolean = true) {
         for (closeAction in closeActions) {
             closeAction()
         }
-        releaseWindowFocus()
+        if (releaseFocus) {
+            releaseWindowFocus()
+        }
         parent.removeChild(this)
     }
 
@@ -150,8 +146,8 @@ class ContextOptionMenu(
     fun reposition(x: Float, y: Float) = reposition(x.pixels, y.pixels)
 
     fun reposition(x: XConstraint, y: YConstraint) {
-        optionContainer.setX(x.coerceAtMost(0.pixels(alignOpposite = true)))
-        optionContainer.setY(y.coerceAtMost(0.pixels(alignOpposite = true)))
+        setX(x.coerceAtMost(0.pixels(alignOpposite = true)))
+        setY(y.coerceAtMost(0.pixels(alignOpposite = true)))
     }
 
     sealed interface Item

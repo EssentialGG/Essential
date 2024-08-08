@@ -49,7 +49,7 @@ import java.util.*
 class SocialMenu @JvmOverloads constructor(
     channelIdToOpen: Long? = null
 ): InternalEssentialGUI(
-    ElementaVersion.V5,
+    ElementaVersion.V6,
     "Social",
     discordActivityDescription = "Messaging friends",
 ), GuiRequiresTOS {

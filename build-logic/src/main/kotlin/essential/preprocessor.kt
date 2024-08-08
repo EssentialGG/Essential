@@ -18,6 +18,8 @@ import java.io.File
 
 fun Project.configurePreprocessTree(versions: File) {
     configure<RootPreprocessExtension> {
+        strictExtraMappings.set(true)
+
         val fabric12100 = createNode("1.21-fabric", 12100, "yarn")
         val fabric12006 = createNode("1.20.6-fabric", 12006, "yarn")
         val forge12004 = createNode("1.20.4-forge", 12004, "srg")
@@ -54,7 +56,7 @@ fun Project.configurePreprocessTree(versions: File) {
         fabric12001.link(fabric12000)
         fabric12000.link(fabric11904)
         forge11904.link(fabric11904)
-        fabric11904.link(fabric11903)
+        fabric11904.link(fabric11903, versions.resolve("1.19.4-1.19.3.txt"))
         forge11903.link(fabric11903)
         fabric11903.link(fabric11902, versions.resolve("1.19.3-1.19.2.txt"))
         forge11902.link(fabric11902)

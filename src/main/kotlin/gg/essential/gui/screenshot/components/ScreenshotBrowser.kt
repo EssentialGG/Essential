@@ -39,9 +39,9 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.function.Consumer
 
 class ScreenshotBrowser(editPath: Path? = null): InternalEssentialGUI(
-    ElementaVersion.V4,
-    "Screenshot Browser",
-    discordActivityDescription = "Browsing screenshots",
+    ElementaVersion.V6,
+    "Pictures",
+    discordActivityDescription = "Browsing pictures",
 ) {
 
     private val closeOperations = ConcurrentLinkedQueue<() -> Unit>()

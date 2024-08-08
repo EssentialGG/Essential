@@ -24,7 +24,6 @@ import gg.essential.event.network.server.SingleplayerJoinEvent
 import gg.essential.gui.EssentialPalette
 import gg.essential.gui.common.*
 import gg.essential.gui.common.modal.ConfirmDenyModal
-import gg.essential.gui.common.modal.EssentialModal
 import gg.essential.gui.common.modal.Modal
 import gg.essential.gui.common.modal.configure
 import gg.essential.gui.common.shadow.EssentialUIText
@@ -65,76 +64,6 @@ import java.util.*
 //#endif
 
 object InviteFriendsModal {
-    fun startSession(
-        modalManager: ModalManager,
-        prepopulatedInvites: Set<UUID>,
-        openWorldSettings: Boolean = true,
-        source: SPSSessionSource,
-        callbackAfterOpen: () -> Unit
-    ): Modal {
-        val connectionManager = Essential.getInstance().connectionManager
-        val spsManager = connectionManager.spsManager
-
-        //#if MC>=11602
-        //$$ val world = getMinecraft().integratedServer!!.getWorld(World.OVERWORLD)!!
-        //#else
-        val world = getMinecraft().integratedServer!!.getWorld(0)
-        //#endif
-
-        //#if MC>=11602
-        //$$ val worldInfo = world.worldInfo as IServerWorldInfo
-        //#else
-        val worldInfo = world.worldInfo
-        //#endif
-
-        val openFuture = spsManager.startLocalSession(
-            GameType.ADVENTURE,
-            world.difficulty,
-            worldInfo.areCommandsAllowed(),
-            source,
-        )
-
-        var cancelled = false
-
-        val modal = EssentialModal(modalManager, true).configure {
-            titleText = "Starting integrated server..."
-            titleTextColor = EssentialPalette.TEXT_HIGHLIGHT
-            primaryButtonText = "Cancel"
-            primaryActionButton.rebindStyle(BasicState(MenuButton.GRAY), BasicState(MenuButton.DARK_GRAY))
-        }.onPrimaryOrDismissAction {
-            if (it) {
-                cancelled = true
-                openFuture.thenAcceptOnMainThread { spsManager.closeLocalSession() }
-            }
-        }
-
-        openFuture.thenAcceptOnMainThread { success ->
-            if (cancelled) {
-                return@thenAcceptOnMainThread
-            }
-            if (success) {
-                val newModal = if (openWorldSettings) {
-                    createWorldSettingsModal(
-                        modal.modalManager,
-                        prepopulatedInvites,
-                        justStarted = true,
-                        source = source,
-                        callbackAfterOpen = callbackAfterOpen
-                    )
-                } else {
-                    callbackAfterOpen()
-                    null
-                }
-
-                modal.replaceWith(newModal)
-            } else {
-                modal.titleText = spsManager.error
-            }
-        }.logExceptions()
-
-        return modal
-    }
-
     fun createWorldSettingsModal(
         modalManager: ModalManager,
         invited: Set<UUID>,
@@ -581,12 +510,12 @@ object InviteFriendsModal {
         @Subscribe
         private fun onSingleplayerJoinEvent(event: SingleplayerJoinEvent) {
             Essential.EVENT_BUS.unregister(this)
-            GuiUtil.pushModal { manager ->
-                startSession(manager, emptySet(), false, SPSSessionSource.MAIN_MENU) {
-                    Essential.getInstance().connectionManager.spsManager.updateInvitedUsers(currentInvites)
-                    callback()
-                }
-            }
+
+            val spsManager = Essential.getInstance().connectionManager.spsManager
+            spsManager.startLocalSession(SPSSessionSource.MAIN_MENU)
+            spsManager.updateInvitedUsers(currentInvites)
+
+            callback()
         }
 
         @Subscribe

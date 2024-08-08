@@ -28,7 +28,7 @@ import gg.essential.network.connectionmanager.cosmetics.*
 import gg.essential.universal.USound
 import gg.essential.util.GuiUtil
 
-fun handleOutfitRightClick(item: Item.OutfitItem, wardrobeState: WardrobeState, event: UIClickEvent) {
+fun displayOutfitOptions(item: Item.OutfitItem, wardrobeState: WardrobeState, event: UIClickEvent, onClose: () -> Unit = {}) {
 
     val options = mutableListOf<ContextOptionMenu.Item>()
     options.add(
@@ -136,7 +136,8 @@ fun handleOutfitRightClick(item: Item.OutfitItem, wardrobeState: WardrobeState, 
     ContextOptionMenu.create(
         ContextOptionMenu.Position(event.absoluteX, event.absoluteY),
         Window.of(event.currentTarget),
-        *options.toTypedArray()
+        *options.toTypedArray(),
+        onClose = onClose
     )
 
 }

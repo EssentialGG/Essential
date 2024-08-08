@@ -1,3 +1,4 @@
-com.mojang.authlib.properties.Property name() getName()
-com.mojang.authlib.properties.Property value() getValue()
-com.mojang.authlib.properties.Property signature() getSignature()
+com.mojang.authlib.properties.Property com.mojang.authlib.properties.Property
+com.mojang.authlib.properties.Property name() getName()Ljava/lang/String;
+com.mojang.authlib.properties.Property value() getValue()Ljava/lang/String;
+com.mojang.authlib.properties.Property signature() getSignature()Ljava/lang/String;

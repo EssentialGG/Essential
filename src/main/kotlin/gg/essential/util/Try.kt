@@ -50,6 +50,7 @@ class Success<out A>(val value: A) : Try<A>()
 object Failure : Try<Nothing>()
 
 fun Try<*>.isSuccess() = this is Success
+fun Try<*>.isFailure() = this is Failure
 
 val Try<*>.asSuccess get() = this as Success
 

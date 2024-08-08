@@ -73,11 +73,11 @@ open class UITextInput @JvmOverloads constructor(
         if (column < 0 || column > lineText.length)
             return
 
-        val widthBeforePosition = lineText.substring(0, column).width(getTextScale())
+        val widthBeforePosition = lineText.substring(0, column).width(getTextScale(), getFontProvider())
         val widthTotal = widthBeforePosition + (if (active) cursorComponent.getWidth() else 0f)
 
         when {
-            getTextForRender().width(getTextScale()) < getWidth() -> {
+            getTextForRender().width(getTextScale(), getFontProvider()) < getWidth() -> {
                 horizontalScrollingOffset = 0f
             }
 
@@ -98,7 +98,7 @@ open class UITextInput @JvmOverloads constructor(
         val line = getTextForRender()
 
         for (i in line.indices) {
-            val charWidth = line[i].width(getTextScale())
+            val charWidth = line[i].toString().width(getTextScale(), getFontProvider())
             if (currentX + (charWidth / 2) >= targetXPos) return LinePosition(0, i, isVisual = true)
             currentX += charWidth
         }
@@ -114,7 +114,7 @@ open class UITextInput @JvmOverloads constructor(
             if (!hasText() && !this.active) {
                 placeholderWidth
             } else {
-                getTextForRender().width(getTextScale()) + 1 /* cursor */
+                getTextForRender().width(getTextScale(), getFontProvider()) + 1 /* cursor */
             }
         }
 
@@ -146,11 +146,11 @@ open class UITextInput @JvmOverloads constructor(
             if (!selectionStart().isAtLineStart) {
                 val preSelectionText = lineText.substring(0, selectionStart().column)
                 drawUnselectedText(matrixStack, preSelectionText, currentX, row = 0)
-                currentX += preSelectionText.width(getTextScale())
+                currentX += preSelectionText.width(getTextScale(), getFontProvider())
             }
 
             val selectedText = lineText.substring(selectionStart().column, selectionEnd().column)
-            val selectedTextWidth = selectedText.width(getTextScale())
+            val selectedTextWidth = selectedText.width(getTextScale(), getFontProvider())
             drawSelectedText(matrixStack, selectedText, currentX, currentX + selectedTextWidth, row = 0)
             currentX += selectedTextWidth
 

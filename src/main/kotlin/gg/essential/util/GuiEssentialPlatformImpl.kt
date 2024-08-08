@@ -18,6 +18,8 @@ import gg.essential.elementa.components.Window
 import gg.essential.event.client.ReAuthEvent
 import gg.essential.gui.common.modal.Modal
 import gg.essential.gui.elementa.state.v2.MutableState
+import gg.essential.gui.overlay.ModalManager
+import gg.essential.gui.overlay.ModalManagerImpl
 import gg.essential.gui.overlay.OverlayManagerImpl
 import gg.essential.gui.util.onAnimationFrame
 import gg.essential.handlers.PauseMenuDisplay
@@ -52,6 +54,10 @@ class GuiEssentialPlatformImpl : GuiEssentialPlatform {
 
     override val cmConnection: CMConnection
         get() = Essential.getInstance().connectionManager
+
+    override fun createModalManager(): ModalManager {
+        return ModalManagerImpl(OverlayManagerImpl)
+    }
 
     override fun onResourceManagerReload(runnable: Runnable) {
         ResourceManagerUtil.onResourceManagerReload { runnable.run() }

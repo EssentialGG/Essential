@@ -17,6 +17,7 @@ import gg.essential.universal.UGraphics
 import gg.essential.universal.UMatrixStack
 import gg.essential.universal.shader.BlendState
 import gg.essential.universal.shader.UShader
+import gg.essential.util.GuiElementaPlatform.Companion.platform
 import org.intellij.lang.annotations.Language
 import org.lwjgl.opengl.GL11
 import java.awt.Color
@@ -63,12 +64,24 @@ class GradientEffect(
         buffer.pos(matrixStack, x1, y2, 0.0).color(bottomLeft).endVertex()
         buffer.pos(matrixStack, x2, y2, 0.0).color(bottomRight).endVertex()
 
+        var prevAlphaTestFunc = 0
+        var prevAlphaTestRef = 0f
+        if (!platform.isCoreProfile) {
+            prevAlphaTestFunc = GL11.glGetInteger(GL11.GL_ALPHA_TEST_FUNC)
+            prevAlphaTestRef = GL11.glGetFloat(GL11.GL_ALPHA_TEST_REF)
+            platform.glAlphaFunc(GL11.GL_ALWAYS, 0f)
+        }
+
         // See UIBlock.drawBlock for why we use this depth function
         UGraphics.enableDepth()
         UGraphics.depthFunc(GL11.GL_ALWAYS)
         buffer.drawDirect()
         UGraphics.disableDepth()
         UGraphics.depthFunc(GL11.GL_LEQUAL)
+
+        if (!platform.isCoreProfile) {
+            platform.glAlphaFunc(prevAlphaTestFunc, prevAlphaTestRef)
+        }
 
         if (dither) {
             shader.unbind()

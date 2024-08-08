@@ -903,10 +903,10 @@ open class UI3DPlayer(
             val model = CapeModel.get(texture.height)
             val capeMetadata = renderMetadata.copy(skin = texture)
             model.rootBone.resetAnimationOffsets(true)
-            model.render(stack, vertexConsumerProvider, model.rootBone, capeMetadata, entity.lifeTime)
+            model.render(stack, vertexConsumerProvider, model.rootBone, entity, capeMetadata, entity.lifeTime)
             renderCapeForHoverOutline(vertexConsumerProvider, cape) {
                 model.rootBone.resetAnimationOffsets(true)
-                model.render(stack, vertexConsumerProvider, model.rootBone, capeMetadata, entity.lifeTime)
+                model.render(stack, vertexConsumerProvider, model.rootBone, entity, capeMetadata, entity.lifeTime)
             }
         }
 

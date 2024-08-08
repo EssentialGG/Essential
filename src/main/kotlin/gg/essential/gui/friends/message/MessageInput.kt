@@ -259,7 +259,7 @@ class MessageInput(
                         scrollGradient(scrollComponent, true, Modifier.height(30f), maxGradient = 153)
                         scrollGradient(scrollComponent, false, Modifier.height(30f), maxGradient = 153)
                         // Place the icon last, so it is above the gradients
-                        IconButton(EssentialPalette.PICTURES_SHORT_9X7, tooltipText = "Attach Screenshots")
+                        IconButton(EssentialPalette.PICTURES_SHORT_9X7, tooltipText = "Attach Pictures")
                             .setDimension(IconButton.Dimension.Fixed(17f, 17f))(
                             Modifier
                                 .width(17f).height(17f)

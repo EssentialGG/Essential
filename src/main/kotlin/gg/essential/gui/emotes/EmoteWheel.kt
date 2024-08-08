@@ -91,7 +91,7 @@ import java.util.concurrent.TimeUnit
 
 
 class EmoteWheel : WindowScreen(
-    version = ElementaVersion.V2,
+    version = ElementaVersion.V6,
     drawDefaultBackground = false,
     restoreCurrentGuiOnClose = false,
 ) {

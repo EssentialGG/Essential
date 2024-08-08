@@ -77,6 +77,8 @@
     "client.renderer.entity.Mixin_CosmeticHoverOutline_Cape",
     "client.renderer.entity.Mixin_DontRenderHitboxOnEmulatedPlayer",
     "client.renderer.entity.Mixin_ElytraPoseSupplier",
+    "client.renderer.entity.Mixin_Emissive_Cape",
+    "client.renderer.entity.Mixin_Emissive_Elytra",
     "client.renderer.entity.Mixin_WorkaroundIncorrectFrustumCheckAtHighSpeed",
     "client.renderer.entity.Mixin_StoreArmorRenderedState",
     "client.renderer.entity.Mixin_DisableArmorRendering",

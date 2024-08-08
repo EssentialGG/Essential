@@ -15,42 +15,77 @@ import gg.essential.Essential
 import gg.essential.api.gui.NotificationType
 import gg.essential.api.gui.Slot
 import gg.essential.config.EssentialConfig
-import gg.essential.elementa.constraints.*
-import gg.essential.elementa.dsl.*
-import gg.essential.elementa.state.BasicState
 import gg.essential.gui.EssentialPalette
-import gg.essential.gui.common.shadow.EssentialUIText
+import gg.essential.gui.common.StyledButton
+import gg.essential.gui.common.styledButton
+import gg.essential.gui.common.textStyle
+import gg.essential.gui.layoutdsl.Arrangement
+import gg.essential.gui.layoutdsl.LayoutScope
+import gg.essential.gui.layoutdsl.Modifier
+import gg.essential.gui.layoutdsl.color
+import gg.essential.gui.layoutdsl.column
+import gg.essential.gui.layoutdsl.fillWidth
+import gg.essential.gui.layoutdsl.hoverScope
+import gg.essential.gui.layoutdsl.hoverTooltip
+import gg.essential.gui.layoutdsl.image
+import gg.essential.gui.layoutdsl.onLeftClick
+import gg.essential.gui.layoutdsl.row
+import gg.essential.gui.layoutdsl.shadow
+import gg.essential.gui.layoutdsl.text
+import gg.essential.gui.layoutdsl.width
 import gg.essential.gui.notification.Notifications
 import gg.essential.gui.notification.toastButton
 import gg.essential.gui.overlay.ModalManager
 import gg.essential.universal.UDesktop
-import gg.essential.util.*
-import gg.essential.vigilance.utils.onLeftClick
+import gg.essential.universal.USound
+import gg.essential.util.GuiUtil
+import gg.essential.util.TrustedHostsUtil
+import java.awt.Color
 import java.net.URI
 
-class OpenLinkModal(modalManager: ModalManager, uri: URI) : ConfirmDenyModal(modalManager, false) {
-
-    init {
-        configure {
-            titleText = "You are about to visit: "
-            primaryButtonText = "Open Browser"
-        }
-        spacer.setHeight(17.pixels).setY(SiblingConstraint())
-        configureLayout {
-            val domain by EssentialUIText(
+class OpenLinkModal(
+    modalManager: ModalManager,
+    private val uri: URI,
+) : EssentialModal2(modalManager) {
+    override fun LayoutScope.layoutBody() {
+        // FIXME: We could use `wrappedText` (with the placeholder) here, but there's currently no way to
+        //        specify each `row` as `fillWidth`.
+        //        I haven't figured out a nice API for this, and would like to consider it a bit more
+        //        without rushing something together for this.
+        column(Modifier.fillWidth(), Arrangement.spacedBy(4f)) {
+            text("You are about to visit:", Modifier.color(EssentialPalette.TEXT).shadow(Color.BLACK))
+            text(
                 uri.host,
+                Modifier
+                    .color(EssentialPalette.TEXT_HIGHLIGHT)
+                    .shadow(Color.BLACK)
+                    .hoverScope()
+                    .hoverTooltip(uri.toString(), wrapAtWidth = 300f),
                 truncateIfTooSmall = true,
-                showTooltipForTruncatedText = false, // because we set the full url as tooltip below
-            ).constrain {
-                x = CenterConstraint()
-                width = min(width, 100.percent)
-                color = EssentialPalette.TEXT.toConstraint()
-            }.onLeftClick {
-                browse(uri)
-            }.bindHoverEssentialTooltip(BasicState(uri.toString()))
-            it.insertChildBefore(domain, spacer)
+                showTooltipForTruncatedText = false,
+            )
         }
-        onPrimaryAction { browse(uri) }
+    }
+
+    override fun LayoutScope.layoutButtons() {
+        row(Arrangement.spacedBy(8f)) {
+            cancelButton("Cancel")
+
+            styledButton(
+                Modifier.width(91f).onLeftClick {
+                    USound.playButtonPress()
+
+                    browse(uri, successfulToast = true)
+                    close()
+                },
+                style = StyledButton.Style.BLUE,
+            ) { style ->
+                row(Arrangement.spacedBy(5f)) {
+                    text("Open", Modifier.textStyle(style))
+                    image(EssentialPalette.ARROW_UP_RIGHT_5X5, Modifier.textStyle(style))
+                }
+            }
+        }
     }
 
     companion object {

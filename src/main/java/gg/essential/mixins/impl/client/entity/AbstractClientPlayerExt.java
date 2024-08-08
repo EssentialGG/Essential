@@ -16,6 +16,7 @@ import gg.essential.cosmetics.WearablesManager;
 import gg.essential.cosmetics.source.CosmeticsSource;
 import gg.essential.model.util.PlayerPoseManager;
 import gg.essential.util.UIdentifier;
+import kotlin.Pair;
 import net.minecraft.util.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -32,7 +33,9 @@ public interface AbstractClientPlayerExt {
     @NotNull
     CosmeticsState getCosmeticsState();
 
-    void setEssentialCosmeticsCape(@Nullable String cape, @Nullable List<UIdentifier> textures);
+    void setEssentialCosmeticsCape(@Nullable String cape, @Nullable Pair<List<UIdentifier>, @Nullable List<UIdentifier>> textures);
+
+    @Nullable UIdentifier getEmissiveCapeTexture();
 
     ResourceLocation applyEssentialCosmeticsMask(ResourceLocation skin);
 

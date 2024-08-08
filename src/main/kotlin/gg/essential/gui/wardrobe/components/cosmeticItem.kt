@@ -37,6 +37,7 @@ import gg.essential.gui.common.outfitRenderPreview
 import gg.essential.gui.common.skinRenderPreview
 import gg.essential.gui.common.state
 import gg.essential.gui.elementa.state.v2.State
+import gg.essential.gui.elementa.state.v2.animateTransitions
 import gg.essential.gui.elementa.state.v2.combinators.and
 import gg.essential.gui.elementa.state.v2.combinators.map
 import gg.essential.gui.elementa.state.v2.combinators.not
@@ -107,8 +108,8 @@ fun LayoutScope.cosmeticItem(item: Item, category: WardrobeCategory, state: Ward
                 val isEmote = slot == CosmeticSlot.EMOTE
                 when {
                     state.selectedBundle() != null -> false
-                    selectedEmote != null -> selectedEmote.itemId == item.itemId
                     isEmote && inEmoteWheel -> state.emoteWheel().contains(item.cosmetic.id)
+                    selectedEmote != null -> selectedEmote.itemId == item.itemId
                     !isEmote && !inEmoteWheel -> state.equippedCosmeticsState()[slot] == item.cosmetic.id
                     else -> false
                 }
@@ -192,20 +193,23 @@ fun LayoutScope.cosmeticItem(item: Item, category: WardrobeCategory, state: Ward
             || item.cosmetic.property<CosmeticProperty.PositionRange>() != null
         )) or hasSideOption
 
+    val background = Modifier.then {
+        val hovered = hoverScope().toV2()
+        val highlight = doHighlight
+            .map { if (it) 1f else 0f }
+            .animateTransitions(this, 0.5f)
+        val hoverOrHighlight = memo { if (hovered()) 1f else highlight() }
+        Modifier.gradient(
+            top = memo { item.tier.barColor.withAlpha(0.05f + 0.05f * hoverOrHighlight()) },
+            bottom = memo { item.tier.barColor.withAlpha(0.2f + 0.2f * hoverOrHighlight()) },
+        ).applyToComponent(this)
+    }
+
     box(sizeModifier.tag(CosmeticItemTag(item)).hoverScope().then(modifier)) {
         column(Modifier.fillParent()) {
             box(Modifier.fillRemainingHeight().fillWidth().color(outlineColor).then(highlightModifier)) {
                 box(Modifier.fillParent(padding = 1f).color(EssentialPalette.GUI_BACKGROUND)) {
-                    box(Modifier.fillRemainingHeight().fillWidth().alignVertical(Alignment.Start)) {
-                        GradientComponent(
-                            containerDontUseThisUnlessYouReallyHaveTo.hoverScope().map {
-                                item.tier.barColor.withAlpha(if (it) 0.1f else 0.05f)
-                            },
-                            containerDontUseThisUnlessYouReallyHaveTo.hoverScope().map {
-                                item.tier.barColor.withAlpha(if (it) 0.4f else 0.2f)
-                            },
-                            GradientComponent.GradientDirection.TOP_TO_BOTTOM.state()
-                        )(Modifier.fillParent())
+                    box(Modifier.fillRemainingHeight().fillWidth().alignVertical(Alignment.Start).then(background)) {
                         lazyBox {
                             when (item) {
                                 is Item.Bundle -> bundleRenderPreview(state, item)
@@ -265,7 +269,7 @@ fun LayoutScope.cosmeticItem(item: Item, category: WardrobeCategory, state: Ward
                 }
             }
 
-            box(sizeModifier.height(14f)) {
+            box(Modifier.fillWidth().height(14f)) {
                 box(Modifier.fillHeight().fillWidth(padding = 2f)) {
                     text(
                         item.name,
@@ -296,7 +300,7 @@ fun LayoutScope.cosmeticItem(item: Item, category: WardrobeCategory, state: Ward
                     .addLine(text)
 
             fun isDraggable(): Boolean {
-                return true
+                return item.id in state.unlockedCosmetics.getUntracked()
             }
 
             var maybeDragging = false

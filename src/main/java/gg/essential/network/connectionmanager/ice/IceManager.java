@@ -14,7 +14,7 @@ package gg.essential.network.connectionmanager.ice;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import gg.essential.connectionmanager.common.packet.ice.IceCandidatePacket;
 import gg.essential.connectionmanager.common.packet.ice.IceSessionPacket;
-import gg.essential.gui.modals.FirewallBlockingModal;
+import gg.essential.gui.modal.sps.FirewallBlockingModal;
 import gg.essential.mixins.impl.feature.ice.common.AgentExt;
 import gg.essential.mixins.impl.feature.ice.common.MergingDatagramSocketExt;
 import gg.essential.network.connectionmanager.ConnectionManager;
@@ -27,12 +27,11 @@ import gg.essential.network.connectionmanager.ice.netty.QuicStreamChannelInitial
 import gg.essential.network.connectionmanager.sps.SPSConnectionTelemetry;
 import gg.essential.network.connectionmanager.sps.SPSManager;
 import gg.essential.quic.LogOnce;
-import gg.essential.sps.FirewallUtil;
+import gg.essential.util.FirewallUtil;
 import gg.essential.sps.ResourcePackSharingHttpServer;
 import gg.essential.sps.quic.QuicStream;
 import gg.essential.sps.quic.jvm.ForkedJvmClientQuicStream;
 import gg.essential.sps.quic.jvm.ForkedJvmServerQuicStreamPool;
-import gg.essential.universal.UMinecraft;
 import gg.essential.util.GuiUtil;
 import gg.essential.util.Multithreading;
 import io.netty.bootstrap.Bootstrap;
@@ -111,53 +110,9 @@ import net.minecraftforge.fml.common.thread.SidedThreadGroups;
 //#endif
 //#endif
 
-public class IceManager implements NetworkedManager {
-
-    private static final long ICE_TIMEOUT = 30 /* sec */;
-    private static final int TCP_TIMEOUT = 10 /* sec */ * 1000;
-
-    /**
-     * Chosen such that it does not conflict with STUN nor TURN nor QUIC nor PseudoTCP.
-     *
-     * As per the NEW TEXT in RFC7983, STUN and TURN can be identified by the value of the first byte being 0..3 and
-     * 64..79 respectively.
-     * As per section 17.3.1 of RFC9000, a QUIC Version 1 packet that has the first bit set to 0 must have the second
-     * bit set to 1. As such, values in the range 0..63 can never be valid QUICv1 packets.
-     * As per implementation, the first four bytes of a PseudoTCP packet are the conversation id which is 0 by default.
-     *
-     * As such, we should be safe to choose any value from 4..64. We chose 16 because according to RFC7983 that's
-     * allocated to ZRTP, which we don't use, so it should most definitely be free.
-     */
-    private static final byte VOICE_HEADER_BYTE = 16;
+public class IceManager implements NetworkedManager, IIceManager {
 
     private static final Logger LOGGER = LogManager.getLogger(IceManager.class);
-
-    public static final String[] STUN_HOSTS = getCommaSeparatedStrings("essential.sps.stun_hosts", new String[]{
-        "us.stun.essential.gg",
-        "eu.stun.essential.gg"
-    });
-
-    public static final String[] TURN_HOSTS = getCommaSeparatedStrings("essential.sps.turn_hosts", new String[]{
-        "us.turn.essential.gg",
-        "eu.turn.essential.gg"
-    });
-
-    private static final boolean SUPPORTS_QUIC;
-    static {
-        String property = System.getProperty("essential.sps.quic");
-        if (property != null) {
-            SUPPORTS_QUIC = Boolean.parseBoolean(property);
-            LOGGER.info("Explicitly {} QUIC for SPS.", SUPPORTS_QUIC ? "enabled" : "disabled");
-        } else {
-            String arch = System.getProperty("os.arch");
-            SUPPORTS_QUIC = "amd64".equals(arch) || UMinecraft.isRunningOnMac && ("aarch64".equals(arch) || "x86_64".equals(arch));
-            if (!SUPPORTS_QUIC) {
-                LOGGER.warn("Disabling QUIC for SPS because OS architecure ({}) is unsupported. " +
-                    "This may result in slow connections under certain circumstances. " +
-                    "Try reducing the server render distance in these cases.", arch);
-            }
-        }
-    }
 
     private static EventLoopGroup makeIceEventLoopGroup(boolean server) {
         ThreadFactory threadFactory = new ThreadFactoryBuilder()
@@ -611,11 +566,6 @@ public class IceManager implements NetworkedManager {
             connection.component.addUpdateRemoteCandidates(candidate);
             connection.component.updateRemoteCandidates();
         });
-    }
-
-    private static String[] getCommaSeparatedStrings(String property, String[] defaults) {
-        String str = System.getProperty(property);
-        return str != null ? str.split(",") : defaults;
     }
 
     // agent.free has questionable thread safety, and we don't want an error in freeing it to be fatal

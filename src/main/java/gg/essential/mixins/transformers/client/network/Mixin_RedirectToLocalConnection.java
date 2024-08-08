@@ -12,7 +12,7 @@
 package gg.essential.mixins.transformers.client.network;
 
 import gg.essential.Essential;
-import gg.essential.network.connectionmanager.ice.IceManager;
+import gg.essential.network.connectionmanager.ice.IIceManager;
 import gg.essential.network.pingproxy.ProxyPingServer;
 import gg.essential.network.pingproxy.ProxyPingServerKt;
 import io.netty.bootstrap.Bootstrap;
@@ -83,7 +83,7 @@ public abstract class Mixin_RedirectToLocalConnection {
         UUID user = connectTarget.get();
         if (user != null) {
             // ICE connection
-            IceManager iceManager = Essential.getInstance().getConnectionManager().getIceManager();
+            IIceManager iceManager = Essential.getInstance().getConnectionManager().getIceManager();
             return bootstrap.connect(iceManager.createClientAgent(user));
         }
 

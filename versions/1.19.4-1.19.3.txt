@@ -1,0 +1,3 @@
+# These two were moved into an interface but the implementation method uses the intermediary name in the mappings
+net.minecraft.client.gui.widget.Widget setX() net.minecraft.client.gui.widget.ClickableWidget setX()
+net.minecraft.client.gui.widget.Widget setY() net.minecraft.client.gui.widget.ClickableWidget setY()

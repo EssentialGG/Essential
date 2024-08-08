@@ -5,7 +5,7 @@ Essential is a quality of life mod that boosts Minecraft Java Edition to the nex
 The source code of the Essential Mod is accessible to everyone, demonstrating our commitment to transparency with our
 users and the broader community.
 
-For assistance with this repository or the mod, please utilize the support channels available in our [Discord](https://essential.gg/discord).
+For assistance with this repository or the mod, please utilize the dedicated channels available in our [Discord](https://essential.gg/discord).
 
 Discover more about Essential on our [Website](https://essential.gg) or visit the [Essential Wiki](https://essential.gg/wiki).
 
@@ -186,7 +186,7 @@ Essential Mod's source code.
 - Utilize any code or assets, including for personal use
 - Incorporate the source code in any other projects or use our code as a reference in new projects
 - Modify or alter the source code provided here
-- Distributing compiled versions of the source code or modified source code
+- Distribute compiled versions of the source code or modified source code
 
 This summary is not an exhaustive interpretation of the license; for a comprehensive understanding, please refer to [the
 full license file](https://github.com/EssentialGG/Essential/blob/main/LICENSE).

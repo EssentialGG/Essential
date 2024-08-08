@@ -36,7 +36,7 @@ dependencies {
     implementation("org.ow2.asm:asm-commons:9.3")
     implementation ("com.google.guava:guava:30.1.1-jre")
 
-    implementation("gg.essential:essential-gradle-toolkit:0.5.0")
+    implementation("gg.essential:essential-gradle-toolkit:0.6.2")
 }
 
 gradlePlugin {

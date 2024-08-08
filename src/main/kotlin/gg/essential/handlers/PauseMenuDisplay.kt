@@ -42,6 +42,7 @@ import gg.essential.gui.menu.AccountManager
 import gg.essential.gui.menu.LeftSideBar
 import gg.essential.gui.menu.full.FullRightSideBar
 import gg.essential.gui.menu.compact.CompactRightSideBar
+import gg.essential.gui.modal.sps.FirewallBlockingModal
 import gg.essential.gui.modals.*
 import gg.essential.gui.notification.Notifications
 import gg.essential.gui.notification.error
@@ -49,9 +50,7 @@ import gg.essential.gui.notification.warning
 import gg.essential.gui.overlay.LayerPriority
 import gg.essential.gui.overlay.ModalManager
 import gg.essential.gui.sps.InviteFriendsModal
-import gg.essential.gui.sps.InviteFriendsModal.startSession
 import gg.essential.gui.sps.WorldSelectionModal
-import gg.essential.network.connectionmanager.sps.SPSState
 import gg.essential.universal.UMinecraft
 import gg.essential.util.AutoUpdate
 import gg.essential.util.GuiUtil
@@ -59,7 +58,7 @@ import gg.essential.util.findButtonByLabel
 import gg.essential.gui.util.onAnimationFrame
 import gg.essential.gui.util.pollingState
 import gg.essential.network.connectionmanager.sps.SPSSessionSource
-import gg.essential.sps.FirewallUtil
+import gg.essential.util.FirewallUtil
 import gg.essential.util.MinecraftUtils
 import gg.essential.util.findChildOfTypeOrNull
 import gg.essential.util.isMainMenu
@@ -375,11 +374,6 @@ class PauseMenuDisplay {
             }
 
             if (UMinecraft.getMinecraft().integratedServer != null) {
-                if (connectionManager.spsManager.localState == SPSState.OPENING) {
-                    Notifications.warning("Wait for hosting to start", "")
-                    return
-                }
-
                 if (MinecraftUtils.isHostingSPS()) {
                     pushModalAndWarnings(showNetworkRelatedWarnings = false) { manager ->
                         InviteFriendsModal.createSelectFriendsModal(
@@ -391,9 +385,12 @@ class PauseMenuDisplay {
                     }
                 } else {
                     pushModalAndWarnings(showNetworkRelatedWarnings = true) { manager ->
-                        startSession(
+                        spsManager.startLocalSession(source)
+
+                        InviteFriendsModal.createWorldSettingsModal(
                             manager,
                             prepopulatedInvites,
+                            justStarted = true,
                             source = source,
                             callbackAfterOpen = callback,
                         )

@@ -62,18 +62,25 @@ public class CertChain {
     public CertChain loadEmbedded() throws Exception {
         // Microsoft is transitioning their certificates to other root CAs because the current one expires in 2025.
         // https://docs.microsoft.com/en-us/azure/security/fundamentals/tls-certificate-changes
+        // Cloudflare issues certificates through either Let's Encrypt or Google Trust Services.
+        // We must trust the roots of these two CAs.
+        // The Amazon Trust Services root is included as Minecraft services used AWS in the past,
+        // and other services we use could use AWS now or in the future.
         // These are sorted alphabetically for easier comparison to assets folder
         return this
-                .load("amazon-root-ca-1") // api.minecraftservices.com; (Unaffected but just for good measure (and so I can test these by using an empty system keystore))
-                .load("baltimore-cybertrust-root") // Old root CA (in continued use)
-                .load("d-trust-root-class-3-ca-2-2009") // New root CA
-                .load("digicert-global-root-ca") // New root CA
-                .load("digicert-global-root-g2") // New root CA
-                .load("gts-root-r1") // modcore.me
-                .load("isrgrootx1") // Other
-                .load("lets-encrypt-r3") // Other
-                .load("microsoft-ecc-root-ca-2017") // New root CA
-                .load("microsoft-rsa-root-ca-2017") // New root CA
+                .load("amazon-root-ca-1") // Amazon Trust Services root CA
+                .load("baltimore-cybertrust-root") // Old Microsoft root CA (in continued use)
+                .load("d-trust-root-class-3-ca-2-2009") // New Microsoft root CA
+                .load("digicert-global-root-ca") // New Microsoft root CA
+                .load("digicert-global-root-g2") // New Microsoft root CA
+                .load("globalsign-r4") // GTS root CAs
+                .load("gts-root-r1")
+                .load("gts-root-r2")
+                .load("gts-root-r3")
+                .load("gts-root-r4")
+                .load("isrgrootx1") // Let's Encrypt root CA
+                .load("microsoft-ecc-root-ca-2017") // New Microsoft root CA
+                .load("microsoft-rsa-root-ca-2017") // New Microsoft root CA
                 ;
     }
 

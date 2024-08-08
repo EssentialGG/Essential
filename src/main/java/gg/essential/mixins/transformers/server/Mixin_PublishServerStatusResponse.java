@@ -13,7 +13,6 @@ package gg.essential.mixins.transformers.server;
 
 import gg.essential.Essential;
 import gg.essential.network.connectionmanager.sps.SPSManager;
-import gg.essential.network.connectionmanager.sps.SPSState;
 import io.netty.buffer.Unpooled;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.ServerStatusResponse;
@@ -52,7 +51,7 @@ public class Mixin_PublishServerStatusResponse {
     )
     private void publishUpdatedStatus(CallbackInfo ci) {
         SPSManager spsManager = Essential.getInstance().getConnectionManager().getSpsManager();
-        if (spsManager.getLocalState() == SPSState.ACTIVE) {
+        if (spsManager.getLocalSession() != null) {
             // Not using .getJson() directly cause that's Forge-only
             String response;
             try {

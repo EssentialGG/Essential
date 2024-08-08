@@ -58,6 +58,8 @@ import net.minecraft.server.management.UserListWhitelistEntry;
 import net.minecraft.world.EnumDifficulty;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.GameType;
+import net.minecraft.world.World;
+import net.minecraft.world.storage.WorldInfo;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
@@ -74,6 +76,7 @@ import java.util.stream.Collectors;
 //#if MC>11202
 //$$ import net.minecraft.world.World;
 //$$ import net.minecraft.world.storage.FolderName;
+//$$ import net.minecraft.world.storage.IServerWorldInfo;
 //#endif
 
 //#if MC<=11202
@@ -113,10 +116,6 @@ public class SPSManager extends StateCallbackManager<IStatusManager> implements 
     private final Map<UUID, UPnPSession> remoteSessions = Maps.newConcurrentMap();
 
     @Nullable
-    private CompletableFuture<Boolean> startFuture;
-    @NotNull
-    private SPSState localState = SPSState.INACTIVE;
-    @Nullable
     private UPnPSession localSession;
     @Nullable
     private SPSSessionSource localSessionSource;
@@ -128,7 +127,6 @@ public class SPSManager extends StateCallbackManager<IStatusManager> implements 
 
     private final Set<UUID> oppedPlayers = new HashSet<>();
     private final Map<UUID, State<Boolean>> onlinePlayerStates = new HashMap<>();
-    private String error;
 
     private boolean shareResourcePack = false;
 
@@ -300,11 +298,6 @@ public class SPSManager extends StateCallbackManager<IStatusManager> implements 
         updateInvitedUsers(SetsKt.plus(this.localSession.getInvites(), users));
     }
 
-    @NotNull
-    public SPSState getLocalState() {
-        return this.localState;
-    }
-
     @Nullable
     public UPnPSession getLocalSession() {
         return this.localSession;
@@ -318,101 +311,84 @@ public class SPSManager extends StateCallbackManager<IStatusManager> implements 
         return sessionStartTime;
     }
 
-    public synchronized CompletableFuture<Boolean> startLocalSession(
-        @NotNull GameType gameMode,
-        EnumDifficulty difficulty,
-        boolean allowCheats,
-        SPSSessionSource sessionSource
-    ) {
-
-        CompletableFuture<Boolean> inProgressFuture = this.startFuture;
-        if (inProgressFuture != null) {
-            return inProgressFuture;
-        }
+    public void startLocalSession(SPSSessionSource sessionSource) {
         sessionStartTime = Instant.now();
         sessionId = UUID.randomUUID();
-        currentGameMode = gameMode;
-        this.allowCheats = allowCheats;
-        this.difficulty = difficulty;
-        this.localState = SPSState.OPENING;
+        currentGameMode = GameType.ADVENTURE; // This is just a dummy value that will be updated later.
         this.localSessionSource = sessionSource;
         this.maxConcurrentGuests = 0;
 
         Multithreading.runAsync(ResourcePackSharingHttpServer.INSTANCE::startServer); // Load the class to start it
         updateResourcePack(packInfo); // Applies the current pack to the integrated server
 
-        return this.startFuture = CompletableFuture.supplyAsync(() -> {
-            IntegratedServer server = UMinecraft.getMinecraft().getIntegratedServer();
-            if (server == null) {
-                return false;
-            }
-            updateCheatSettings(server, this.allowCheats);
+        IntegratedServer server = UMinecraft.getMinecraft().getIntegratedServer();
+        if (server == null) {
+            return;
+        }
 
-            server.getPlayerList().setWhiteListEnabled(true);
-            //#if MC>=11602
-            //$$ server.setDifficultyForAllWorlds(difficulty, true);
-            //#else
-            server.setDifficultyForAllWorlds(difficulty);
-            //#endif
+        //#if MC>=11602
+        //$$ World world = server.getWorld(World.OVERWORLD);
+        //#else
+        World world = server.getWorld(0);
+        //#endif
 
-            // We pass `false` for `allowCheats` to ensure that not everybody can enable commands.
-            // This option by default will allow anyone to use operator commands, without being explicitly
-            // added as operator.
-            //#if MC>=11400
-            //$$ int port = net.minecraft.util.HTTPUtil.getSuitableLanPort();
-            //$$ if (!server.shareToLAN(gameMode, false, port)) {
-            //$$     error = "Unable to start LAN server.";
-            //$$     return false;
-            //$$ }
-            //#else
-            String portStr = server.shareToLAN(gameMode, false);
-            // Method inappropriately marked as non-null by Forge
-            //noinspection ConstantConditions
-            if (portStr == null) {
-                error = "Unable to start LAN server.";
-                return false;
-            }
-            int port = Integer.parseInt(portStr);
-            //#endif
+        //#if MC>=11602
+        //$$ IServerWorldInfo worldInfo = (IServerWorldInfo) world.getWorldInfo();
+        //#else
+        WorldInfo worldInfo = world.getWorldInfo();
+        //#endif
 
-            {
-                // Simple Voice Chat documentation claims that by default it uses port 24454, but it seems they actually
-                // use the integrated server port by default. That's probably a good default as well
-                int voicePort = port;
+        this.allowCheats = worldInfo.areCommandsAllowed();
+        this.difficulty = worldInfo.getDifficulty();
 
-                // Plasmo Voice has 2 major versions, 1.x (using the modid plasmo_voice) and 2.x (using the modid plasmovoice)
-                if (ModLoaderUtil.INSTANCE.isModLoaded("plasmo_voice")) {
-                    // Plasmo 1.x documentation claims that it uses the server port by default, but it seems
-                    // that they actually use 60606 for the integrated server.
-                    voicePort = 60606;
-                } else if (ModLoaderUtil.INSTANCE.isModLoaded("plasmovoice")) {
-                    // Plasmo 2.x uses a random port, so we use their API to get the port.
-                    Optional<Integer> plasmoPort = PlasmoVoiceCompat.getPort();
-                    if (plasmoPort.isPresent()) {
-                        voicePort = plasmoPort.get();
-                    }
+        server.getPlayerList().setWhiteListEnabled(true);
+
+        updateOppedPlayers(new HashSet<>(), false);
+
+        // We pass `false` for `allowCheats` to ensure that not everybody can enable commands.
+        // This option by default will allow anyone to use operator commands, without being explicitly
+        // added as operator.
+        //#if MC>=11400
+        //$$ int port = net.minecraft.util.HTTPUtil.getSuitableLanPort();
+        //$$ if (!server.shareToLAN(currentGameMode, false, port)) {
+        //$$     return;
+        //$$ }
+        //#else
+        String portStr = server.shareToLAN(currentGameMode, false);
+        // Method inappropriately marked as non-null by Forge
+        //noinspection ConstantConditions
+        if (portStr == null) {
+            return;
+        }
+        int port = Integer.parseInt(portStr);
+        //#endif
+
+        {
+            // Simple Voice Chat documentation claims that by default it uses port 24454, but it seems they actually
+            // use the integrated server port by default. That's probably a good default as well
+            int voicePort = port;
+
+            // Plasmo Voice has 2 major versions, 1.x (using the modid plasmo_voice) and 2.x (using the modid plasmovoice)
+            if (ModLoaderUtil.INSTANCE.isModLoaded("plasmo_voice")) {
+                // Plasmo 1.x documentation claims that it uses the server port by default, but it seems
+                // that they actually use 60606 for the integrated server.
+                voicePort = 60606;
+            } else if (ModLoaderUtil.INSTANCE.isModLoaded("plasmovoice")) {
+                // Plasmo 2.x uses a random port, so we use their API to get the port.
+                Optional<Integer> plasmoPort = PlasmoVoiceCompat.getPort();
+                if (plasmoPort.isPresent()) {
+                    voicePort = plasmoPort.get();
                 }
-                connectionManager.getIceManager().setVoicePort(voicePort);
             }
+            connectionManager.getIceManager().setVoicePort(voicePort);
+        }
 
-            String address = getSpsAddress(UUIDUtil.getClientUUID());
+        String address = getSpsAddress(UUIDUtil.getClientUUID());
 
-            this.updateLocalSession(address, 0);
+        this.updateLocalSession(address, 0);
 
-            Essential.EVENT_BUS.post(new SPSStartEvent(address));
-
-            // Op the host
-            USession clientSession = USession.Companion.activeNow();
-            server.getPlayerList().addOp(new GameProfile(clientSession.getUuid(), clientSession.getUsername()));
-            oppedPlayers.add(clientSession.getUuid());
-
-            ExtensionsKt.getExecutor(Minecraft.getMinecraft()).execute(EssentialCommandRegistry.INSTANCE::registerSPSHostCommands);
-            return true;
-        }, Multithreading.POOL).thenApply(success -> {
-            this.localState = success ? SPSState.ACTIVE : SPSState.FAILED;
-            this.startFuture = null;
-            return success;
-        });
+        Essential.EVENT_BUS.post(new SPSStartEvent(address));
+        EssentialCommandRegistry.INSTANCE.registerSPSHostCommands();
     }
 
     public synchronized void updateLocalSession(@NotNull String ip, int port) {
@@ -460,7 +436,6 @@ public class SPSManager extends StateCallbackManager<IStatusManager> implements 
         oppedPlayers.clear();
         onlinePlayerStates.clear();
 
-        this.localState = SPSState.INACTIVE;
         this.localSession = null;
         this.localSessionSource = null;
 
@@ -618,10 +593,6 @@ public class SPSManager extends StateCallbackManager<IStatusManager> implements 
     @Override
     public void resetState() {
         this.remoteSessions.clear();
-    }
-
-    public String getError() {
-        return error;
     }
 
     public void updateWorldSettings(boolean cheats, @NotNull GameType gameType, @NotNull EnumDifficulty difficulty) {

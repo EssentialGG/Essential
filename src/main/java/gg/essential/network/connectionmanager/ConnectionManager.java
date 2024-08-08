@@ -11,6 +11,7 @@
  */
 package gg.essential.network.connectionmanager;
 
+import gg.essential.config.FeatureFlags;
 import gg.essential.connectionmanager.common.packet.Packet;
 import gg.essential.connectionmanager.common.packet.connection.*;
 import gg.essential.connectionmanager.common.packet.multiplayer.ServerMultiplayerJoinServerPacket;
@@ -27,7 +28,9 @@ import gg.essential.network.connectionmanager.handler.connection.ClientConnectio
 import gg.essential.network.connectionmanager.handler.connection.ServerConnectionReconnectPacketHandler;
 import gg.essential.network.connectionmanager.handler.mojang.ServerUuidNameMapPacketHandler;
 import gg.essential.network.connectionmanager.handler.multiplayer.ServerMultiplayerJoinServerPacketHandler;
+import gg.essential.network.connectionmanager.ice.IIceManager;
 import gg.essential.network.connectionmanager.ice.IceManager;
+import gg.essential.network.connectionmanager.ice.IceManagerMcImpl;
 import gg.essential.network.connectionmanager.media.ScreenshotManager;
 import gg.essential.network.connectionmanager.notices.NoticesManager;
 import gg.essential.network.connectionmanager.profile.ProfileManager;
@@ -84,7 +87,7 @@ public class ConnectionManager extends ConnectionManagerKt {
     @NotNull
     private final SocialManager socialManager;
     @NotNull
-    private final IceManager iceManager;
+    private final IIceManager iceManager;
     @NotNull
     private final ScreenshotManager screenshotManager;
     @NotNull
@@ -159,7 +162,13 @@ public class ConnectionManager extends ConnectionManagerKt {
         this.managers.add(this.socialManager = new SocialManager(this));
 
         // Ice
-        this.managers.add(this.iceManager = new IceManager(this, this.spsManager));
+        if (FeatureFlags.NEW_ICE_BACKEND_ENABLED) {
+            this.iceManager = new IceManagerMcImpl(this, baseDir.toPath(), uuid -> this.spsManager.getInvitedUsers().contains(uuid));
+        } else {
+            IceManager iceManagerImpl = new IceManager(this, this.spsManager);
+            this.managers.add(iceManagerImpl);
+            this.iceManager = iceManagerImpl;
+        }
 
         //Screenshots
         this.managers.add(this.screenshotManager = new ScreenshotManager(this, baseDir, lwjgl3));
@@ -230,7 +239,7 @@ public class ConnectionManager extends ConnectionManagerKt {
     }
 
     @NotNull
-    public IceManager getIceManager() {
+    public IIceManager getIceManager() {
         return this.iceManager;
     }
 

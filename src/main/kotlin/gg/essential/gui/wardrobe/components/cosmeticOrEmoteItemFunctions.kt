@@ -60,10 +60,21 @@ fun handleCosmeticOrEmoteLeftClick(item: Item.CosmeticOrEmote, category: Wardrob
     val claimFreeItem = isFree && !isOwned && !cosmetic.requiresUnlockAction()
 
     val bundleWasSelected = wardrobeState.selectedBundle.get() != null
-    val emoteWasSelected = false
+    val emoteWasSelected = wardrobeState.selectedEmote.getUntracked() != null
 
     val previouslySelectedItem = wardrobeState.selectedItem.getUntracked()
     wardrobeState.selectedItem.set(item)
+
+    if (slot == CosmeticSlot.EMOTE && !isOwned) {
+        if (previouslySelectedItem == item && !wardrobeState.inEmoteWheel.getUntracked()) {
+            wardrobeState.selectedItem.set(null)
+            wardrobeState.inEmoteWheel.set(category.superCategory == WardrobeCategory.Emotes)
+        } else {
+            wardrobeState.inEmoteWheel.set(false)
+            sendItemPreviewTelemetry(item, category, wardrobeState)
+        }
+        return
+    }
 
     val startedInEmoteWheel = wardrobeState.inEmoteWheel.getUntracked()
     wardrobeState.inEmoteWheel.set(slot == CosmeticSlot.EMOTE)
@@ -87,15 +98,10 @@ fun handleCosmeticOrEmoteLeftClick(item: Item.CosmeticOrEmote, category: Wardrob
         } else {
             val emptyIndex = emoteWheel.get().indexOfFirst { it == null }
             if (emptyIndex != -1) {
-                sendItemPreviewTelemetry(item, category, wardrobeState)
-
                 emoteWheel.set(emptyIndex, cosmetic.id)
             } else {
                 Notifications.warning("Emote wheel is full.", "")
             }
-        }
-        if (claimFreeItem) {
-            claimFreeItemNow(item, wardrobeState)
         }
         return
     }

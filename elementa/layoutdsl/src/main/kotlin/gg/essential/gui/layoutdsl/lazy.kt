@@ -13,8 +13,8 @@ package gg.essential.gui.layoutdsl
 
 import gg.essential.elementa.components.UIContainer
 import gg.essential.elementa.components.Window
-import gg.essential.elementa.state.BasicState
-import gg.essential.elementa.state.State
+import gg.essential.gui.elementa.state.v2.MutableState
+import gg.essential.gui.elementa.state.v2.mutableStateOf
 import gg.essential.universal.UMatrixStack
 
 /**
@@ -25,7 +25,7 @@ import gg.essential.universal.UMatrixStack
  * "make it not lag". Properly profiling and fixing initialization performance issues should always be preferred.
  */
 fun LayoutScope.lazyBox(modifier: Modifier = Modifier.fillParent(), block: LayoutScope.() -> Unit) {
-    val initialized = BasicState(false)
+    val initialized = mutableStateOf(false)
     box(modifier) {
         if_(initialized, cache = false /** don't need it; once initialized, we are never going back */) {
             block()
@@ -35,7 +35,7 @@ fun LayoutScope.lazyBox(modifier: Modifier = Modifier.fillParent(), block: Layou
     }
 }
 
-private class LazyComponent(private val initialized: State<Boolean>) : UIContainer() {
+private class LazyComponent(private val initialized: MutableState<Boolean>) : UIContainer() {
     override fun draw(matrixStack: UMatrixStack) {
         super.draw(matrixStack)
 

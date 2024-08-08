@@ -111,6 +111,9 @@ class GuiBuilder internal constructor(
         fun slider(state: MutableState<Int>, configure: SliderPropertyBuilder.() -> Unit) =
             property(state, PropertyType.SLIDER, configure)
 
+        fun number(state: MutableState<Int>, configure: NumberPropertyBuilder.() -> Unit) =
+            property(state, PropertyType.NUMBER, configure)
+
         fun color(state: MutableState<Color>, configure: ColorPropertyBuilder.() -> Unit) =
             property(state, PropertyType.COLOR, configure)
 

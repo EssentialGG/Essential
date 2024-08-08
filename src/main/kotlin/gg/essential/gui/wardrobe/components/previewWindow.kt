@@ -20,6 +20,7 @@ import gg.essential.cosmetics.source.ConfigurableCosmeticsSource
 import gg.essential.elementa.UIComponent
 import gg.essential.elementa.components.Window
 import gg.essential.elementa.constraints.CenterConstraint
+import gg.essential.elementa.constraints.PixelConstraint
 import gg.essential.elementa.constraints.SiblingConstraint
 import gg.essential.elementa.dsl.basicYConstraint
 import gg.essential.elementa.dsl.boundTo
@@ -28,6 +29,7 @@ import gg.essential.elementa.dsl.coerceIn
 import gg.essential.elementa.dsl.minus
 import gg.essential.elementa.dsl.percent
 import gg.essential.elementa.dsl.pixels
+import gg.essential.elementa.dsl.width
 import gg.essential.elementa.events.UIClickEvent
 import gg.essential.elementa.state.BasicState
 import gg.essential.gui.EssentialPalette
@@ -49,15 +51,18 @@ import gg.essential.gui.elementa.state.v2.effect
 import gg.essential.gui.elementa.state.v2.isNotEmpty
 import gg.essential.gui.elementa.state.v2.memo
 import gg.essential.gui.elementa.state.v2.mutableStateOf
+import gg.essential.gui.elementa.state.v2.onChange
 import gg.essential.gui.elementa.state.v2.stateBy
 import gg.essential.gui.elementa.state.v2.stateDelegatingTo
 import gg.essential.gui.elementa.state.v2.stateOf
 import gg.essential.gui.elementa.state.v2.toListState
 import gg.essential.gui.elementa.state.v2.toV1
+import gg.essential.gui.elementa.state.v2.toV2
 import gg.essential.gui.layoutdsl.*
 import gg.essential.gui.notification.Notifications
 import gg.essential.gui.util.hoverScope
 import gg.essential.gui.util.layoutSafePollingState
+import gg.essential.gui.util.makeHoverScope
 import gg.essential.gui.wardrobe.EmoteWheelPage
 import gg.essential.gui.wardrobe.Item
 import gg.essential.gui.wardrobe.WardrobeCategory
@@ -65,8 +70,8 @@ import gg.essential.gui.wardrobe.WardrobeState
 import gg.essential.gui.wardrobe.modals.CoinsPurchaseModal
 import gg.essential.gui.wardrobe.modals.PurchaseConfirmModal
 import gg.essential.gui.wardrobe.purchaseEquippedCosmetics
-import gg.essential.gui.wardrobe.purchaseEquippedEmotes
 import gg.essential.gui.wardrobe.purchaseSelectedBundle
+import gg.essential.gui.wardrobe.purchaseSelectedEmote
 import gg.essential.handlers.GameProfileManager
 import gg.essential.mod.cosmetics.CosmeticSlot
 import gg.essential.mod.cosmetics.CAPE_DISABLED_COSMETIC_ID
@@ -93,24 +98,26 @@ fun LayoutScope.previewWindowTitleBar(state: WardrobeState, modifier: Modifier) 
     val regularContent = State { !state.editingMenuOpen() && state.showingDiagnosticsFor() == null }
     val bundleSelected = state.selectedBundle.map { it != null }
     val emoteSelected = state.selectedEmote.map { it != null }
-    val characterSelected = emoteSelected or bundleSelected or !state.inEmoteWheel
+    val characterSelected = bundleSelected or !state.inEmoteWheel
     val characterColor = characterSelected.map { if (it) EssentialPalette.GRAY_BUTTON_HOVER else EssentialPalette.GRAY_BUTTON }
     val characterIconColor = characterSelected.map { if (it) EssentialPalette.TEXT_HIGHLIGHT else EssentialPalette.TEXT }
-    val emoteWheelSelected = state.inEmoteWheel and !emoteSelected
+    val emoteWheelSelected = !characterSelected
     val emoteColor = emoteWheelSelected.map { if (it) EssentialPalette.GRAY_BUTTON_HOVER else EssentialPalette.GRAY_BUTTON }
     val emoteIconColor = emoteWheelSelected.map { if (it) EssentialPalette.TEXT_HIGHLIGHT else EssentialPalette.TEXT }
-    val text = memo {
+    val textWithHoverability = memo {
         val selectedBundle = state.selectedBundle()
         val selectedEmote = state.selectedEmote()
         val equippedOutfitItem = state.equippedOutfitItem()
         when {
-            selectedBundle != null -> selectedBundle.name
-            selectedEmote != null -> selectedEmote.name
-            state.inEmoteWheel() -> "Wheel #${state.equippedEmoteSlot() + 1}"
-            equippedOutfitItem != null -> equippedOutfitItem.name
-            else -> "Unknown Outfit"
+            selectedBundle != null -> selectedBundle.name to false
+            state.inEmoteWheel() -> "Wheel #${state.equippedEmoteSlot() + 1}" to false
+            selectedEmote != null -> selectedEmote.name to false
+            equippedOutfitItem != null -> equippedOutfitItem.name to true
+            else -> "Unknown Outfit" to false
         }
     }
+    val text = textWithHoverability.map { it.first }
+    val isOutfitMenuOpen = mutableStateOf(false)
 
     fun LayoutScope.titleBarButton(modifier: Modifier, block: LayoutScope.() -> Unit = {}): UIComponent {
         return box(modifier.width(17f).heightAspect(1f).shadow(EssentialPalette.BLACK), block)
@@ -132,9 +139,6 @@ fun LayoutScope.previewWindowTitleBar(state: WardrobeState, modifier: Modifier) 
                     titleBarButton(Modifier.color(characterColor).hoverColor(EssentialPalette.GRAY_BUTTON_HOVER).hoverTooltip("Character").hoverScope()) {
                         icon(EssentialPalette.CHARACTER_4X6, Modifier.color(characterIconColor).hoverColor(EssentialPalette.TEXT_HIGHLIGHT))
                     }.onLeftClick { handleClick(it) {
-                        if (state.selectedEmote.getUntracked() != null) {
-                            state.selectedItem.set(null)
-                        }
                         state.inEmoteWheel.set(false)
                     } }
                 }
@@ -142,9 +146,6 @@ fun LayoutScope.previewWindowTitleBar(state: WardrobeState, modifier: Modifier) 
                     titleBarButton(Modifier.color(emoteColor).hoverColor(EssentialPalette.GRAY_BUTTON_HOVER).hoverTooltip("Emote Wheel").hoverScope()) {
                         icon(EssentialPalette.EMOTE_WHEEL_5X, Modifier.color(emoteIconColor).hoverColor(EssentialPalette.TEXT_HIGHLIGHT))
                     }.onLeftClick { handleClick(it) {
-                        if (state.selectedEmote.getUntracked() != null) {
-                            state.selectedItem.set(null)
-                        }
                         state.inEmoteWheel.set(true)
                     } }
                 }
@@ -152,15 +153,37 @@ fun LayoutScope.previewWindowTitleBar(state: WardrobeState, modifier: Modifier) 
             box(Modifier.fillRemainingWidth()) {
                 row(selectorModifier, Arrangement.spacedBy(3f, FloatPosition.CENTER)) {
                     if_(regularContent) {
-                        if_(!emoteSelected and !bundleSelected) {
+                        if_(state.inEmoteWheel or (!emoteSelected and !bundleSelected)) {
                             titleBarButton(Modifier.color(EssentialPalette.GRAY_BUTTON).hoverColor(EssentialPalette.GRAY_BUTTON_HOVER).hoverScope()) {
                                 icon(EssentialPalette.ARROW_LEFT_4X7, Modifier.color(EssentialPalette.TEXT).hoverColor(EssentialPalette.TEXT_HIGHLIGHT))
                             }.onLeftClick { handleClick(it) { changeEmoteWheelOrOutfit(state, -1) } }
                         }
-                        box(Modifier.fillRemainingWidth()) {
-                            text(text, Modifier.shadow(EssentialPalette.TEXT_SHADOW_LIGHT), centeringContainsShadow = false, truncateIfTooSmall = true, centerTruncatedText = true)
+                        box(Modifier.fillRemainingWidth().alignVertical(Alignment.Center(true))) {
+                            box(Modifier.height(14f).then(
+                                // Set width to the text length + padding or 100 percent of the parent which ever is smallest
+                                BasicWidthModifier { PixelConstraint(text.map { it.width() + 12f }.toV1(stateScope)).coerceAtMost(100.percent) }
+                            ).then {
+                                val hovered = hoveredState().toV2()
+                                val hoverable = textWithHoverability.map { it.second }
+                                makeHoverScope(memo { hoverable() && (hovered() || isOutfitMenuOpen()) })
+                                ; {}
+                            }) {
+                                text(
+                                    text,
+                                    Modifier.shadow(EssentialPalette.TEXT_SHADOW_LIGHT).color(EssentialPalette.TEXT_HIGHLIGHT)
+                                        .hoverColor(EssentialPalette.TEXT),
+                                    centeringContainsShadow = false, truncateIfTooSmall = true, centerTruncatedText = true
+                                )
+                            }.onMouseClick { event ->
+                                if (!textWithHoverability.getUntracked().second) {
+                                    return@onMouseClick
+                                }
+                                val item = state.equippedOutfitItem.getUntracked() ?: return@onMouseClick
+                                isOutfitMenuOpen.set(true)
+                                displayOutfitOptions(item, state, event) { isOutfitMenuOpen.set(false) }
+                            }
                         }
-                        if_(!emoteSelected and !bundleSelected) {
+                        if_(state.inEmoteWheel or (!emoteSelected and !bundleSelected)) {
                             titleBarButton(Modifier.color(EssentialPalette.GRAY_BUTTON).hoverColor(EssentialPalette.GRAY_BUTTON_HOVER).hoverScope()) {
                                 icon(EssentialPalette.ARROW_RIGHT_4X7, Modifier.color(EssentialPalette.TEXT).hoverColor(EssentialPalette.TEXT_HIGHLIGHT))
                             }.onLeftClick { handleClick(it) { changeEmoteWheelOrOutfit(state, 1) } }
@@ -202,7 +225,6 @@ fun LayoutScope.previewWindow(state: WardrobeState, modifier: Modifier, bottomDi
     val previewTooShort = mutableStateOf(false)
     val previewTooNarrow = mutableStateOf(false)
     val purchaseBannerLocked = previewTooShort or previewTooNarrow
-    val emoteWheelPreview = memo { (state.inEmoteWheel() || state.draggingEmoteSlot() == -1) && state.selectedEmote() == null }
 
     val colorOptions = state.editingCosmetic.map { it?.cosmetic?.property<CosmeticProperty.Variants>()?.data?.variants }
     val sides = state.editingCosmetic.map { editing ->
@@ -224,8 +246,8 @@ fun LayoutScope.previewWindow(state: WardrobeState, modifier: Modifier, bottomDi
         when {
             state.editingCosmetic() != null -> false
             state.selectedBundle() != null -> state.selectedBundle()?.id !in state.unlockedBundles()
+            state.inEmoteWheel() -> false
             state.selectedEmote() != null -> true
-            emoteWheelPreview() -> state.equippedEmotesPurchasable().isNotEmpty()
             else -> state.equippedCosmeticsPurchasable().isNotEmpty() || false
         }
     }
@@ -233,14 +255,14 @@ fun LayoutScope.previewWindow(state: WardrobeState, modifier: Modifier, bottomDi
     box(modifier) {
         val previewWindowContainer = containerDontUseThisUnlessYouReallyHaveTo
         val purchaseBannerPosition = box(Modifier.height(playerModelHeight).then(BasicYModifier { CenterConstraint() - 1.5.percent }))
-        val previewContainer = box(BasicYModifier { CenterConstraint() - 1.5.percent }.whenTrue(emoteWheelPreview, BasicYModifier { CenterConstraint() - 10.pixels })) {
-            if_(!emoteWheelPreview) {
+        val previewContainer = box(BasicYModifier { CenterConstraint() - 1.5.percent }.whenTrue(state.inEmoteWheel, BasicYModifier { CenterConstraint() - 10.pixels })) {
+            if_(!state.inEmoteWheel) {
                 playerPreview(state, Modifier.width(playerModelWidth).height(playerModelHeight), previewWindowContainer)
             } `else` {
                 EmoteWheelPage(state)(Modifier.childBasedSize())
             }
         }
-        if_(!emoteWheelPreview) {
+        if_(!state.inEmoteWheel) {
             ifNotNull(state.editingCosmetic) { editing ->
                 column(BasicYModifier { SiblingConstraint(10f) boundTo previewContainer }, Arrangement.spacedBy(10f)) {
                     ifNotNull(colorOptions) { colors ->
@@ -302,11 +324,11 @@ fun LayoutScope.previewWindow(state: WardrobeState, modifier: Modifier, bottomDi
             }
         }
     }.onLeftClick {
-        if (!emoteWheelPreview.get()) {
+        if (!state.inEmoteWheel.getUntracked()) {
             findChildOfTypeOrNull<EmulatedUI3DPlayer>(true)?.mouseClick(it.absoluteX.toDouble(), it.absoluteY.toDouble(), it.mouseButton)
         }
     }.apply {
-        emoteWheelPreview.onSetValue(this) {
+        state.inEmoteWheel.onChange(this) {
             state.editingCosmetic.set(null)
         }
         layoutSafePollingState(false) { getWidth() <= maxPreviewWidth }
@@ -335,7 +357,7 @@ private fun LayoutScope.playerPreviewInner(state: WardrobeState, modifier: Modif
         }
     }
 
-    val sounds = stateOf(true)
+    val sounds = stateOf(false)
 
     val player = EmulatedUI3DPlayer(
         profile = profile.toV1(stateScope),
@@ -449,7 +471,7 @@ private fun LayoutScope.purchaseBannerOld(state: WardrobeState, modifier: Modifi
 
     fun purchaseCallback(success: Boolean) {
         if (success) {
-            if (state.selectedBundle.getUntracked() != null) {
+            if (state.selectedBundle.getUntracked() != null || state.selectedEmote.getUntracked() != null) {
                 state.selectedItem.set(null)
             }
             state.triggerPurchaseAnimation()
@@ -462,32 +484,55 @@ private fun LayoutScope.purchaseBannerOld(state: WardrobeState, modifier: Modifi
     }
 
     val cost = state.currentCategoryTotalCost
-    val buttonModifier = Modifier.childBasedWidth(23f).childBasedHeight(8f).color(EssentialPalette.BLUE_BUTTON).shadow(EssentialPalette.BLACK)
+    val buttonModifier = Modifier.width(94f).height(23f).color(EssentialPalette.BLUE_BUTTON).shadow(EssentialPalette.BLACK)
 
-    return row(modifier.color(EssentialPalette.COMPONENT_BACKGROUND), Arrangement.spacedBy(22f, FloatPosition.CENTER)) {
-        row(Arrangement.spacedBy(5f)) {
-            text(cost.map { if (it == 0) "FREE" else CoinsManager.COIN_FORMAT.format(it) }, Modifier.color(EssentialPalette.TEXT).shadow(EssentialPalette.BLACK))
+    return row(modifier.color(EssentialPalette.COMPONENT_BACKGROUND)) {
+        spacer(width = 4f)
+        box(Modifier.fillRemainingWidth()) {
+            row(Arrangement.spacedBy(5f)) {
+                text(
+                    cost.map { if (it == 0) "FREE" else CoinsManager.COIN_FORMAT.format(it) },
+                    Modifier.color(EssentialPalette.TEXT).shadow(EssentialPalette.BLACK),
+                    centeringContainsShadow = false
+                )
 
-            if_({ cost() > 0 }) {
-                icon(EssentialPalette.COIN_7X)
+                if_({ cost() > 0 }) {
+                    icon(EssentialPalette.COIN_7X)
+                }
             }
         }
         box(buttonModifier.hoverColor(EssentialPalette.BLUE_BUTTON_HOVER).hoverScope()) {
-            text(cost.map { if (it == 0) "Claim" else "Purchase" }, Modifier.color(EssentialPalette.TEXT_HIGHLIGHT).shadow(EssentialPalette.TEXT_SHADOW))
+            text(
+                cost.map { if (it == 0) "Claim" else "Purchase" },
+                Modifier.color(EssentialPalette.TEXT_HIGHLIGHT).shadow(EssentialPalette.TEXT_SHADOW),
+                centeringContainsShadow = false
+            )
         }.onLeftClick { click ->
             handleClick(click) {
-                val isBundleSelected = state.selectedBundle.get() != null
-                if (cost.get() == 0 && isBundleSelected) {
-                    // If the user already owns all the items in a bundle, we can claim it without having to
-                    // ask first.
-                    state.purchaseSelectedBundle { purchaseCallback(it) }
-                    return@handleClick
+                val bundle = state.selectedBundle.getUntracked()
+                val emote = state.selectedEmote.getUntracked()
+                if (cost.getUntracked() == 0) {
+                    if (bundle != null) {
+                        // If the user already owns all the items in a bundle, we can claim it without having to
+                        // ask first.
+                        state.purchaseSelectedBundle { purchaseCallback(it) }
+                        return@handleClick
+                    }
+                    if (emote != null) {
+                        state.purchaseSelectedEmote { successful ->
+                            if (successful) {
+                                state.inEmoteWheel.set(true)
+                                state.highlightItem.set(emote.itemId)
+                            }
+                            purchaseCallback(successful)
+                        }
+                        return@handleClick
+                    }
                 }
 
-                val isInEmoteWheel = state.inEmoteWheel.get()
                 val modalText = when {
-                    isBundleSelected -> "Are you sure you want\nto purchase this bundle?"
-                    isInEmoteWheel -> if (state.equippedEmotesPurchasable.get().size > 1) "Are you sure you want\nto purchase these emotes?" else "Are you sure you want\nto purchase this emote?"
+                    bundle != null -> "Are you sure you want\nto purchase this bundle?"
+                    emote != null -> "Are you sure you want\nto purchase this emote?"
                     else -> if (state.equippedCosmeticsPurchasable.get().size > 1) "Are you sure you want\nto purchase these cosmetics?" else "Are you sure you want\nto purchase this cosmetic?"
                 }
                 if (state.coins.get() < cost.get()) {
@@ -496,8 +541,14 @@ private fun LayoutScope.purchaseBannerOld(state: WardrobeState, modifier: Modifi
                     GuiUtil.pushModal { manager ->
                         PurchaseConfirmModal(manager, modalText, cost.get()) {
                             when {
-                                isBundleSelected -> state.purchaseSelectedBundle { purchaseCallback(it) }
-                                isInEmoteWheel -> state.purchaseEquippedEmotes { purchaseCallback(it) }
+                                bundle != null -> state.purchaseSelectedBundle { purchaseCallback(it) }
+                                emote != null -> state.purchaseSelectedEmote { successful ->
+                                    if (successful) {
+                                        state.inEmoteWheel.set(true)
+                                        state.highlightItem.set(emote.itemId)
+                                    }
+                                    purchaseCallback(successful)
+                                }
                                 else -> state.purchaseEquippedCosmetics { purchaseCallback(it) }
                             }
                         }
@@ -505,6 +556,7 @@ private fun LayoutScope.purchaseBannerOld(state: WardrobeState, modifier: Modifi
                 }
             }
         }
+        spacer(width = 22f)
     }
 }
 

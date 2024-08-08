@@ -12,14 +12,14 @@
 package gg.essential.sps.quic.jvm
 
 import gg.essential.quic.LogOnce
+import gg.essential.quic.QuicUtil
 import java.io.IOException
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
 import java.net.PortUnreachableException
 
-// EM-1571: We hardcode this instead of using getLoopbackAddress due to issues with IPv6 loopback on some Windows systems
-val LOCALHOST: InetAddress = InetAddress.getByName("127.0.0.1")
+val LOCALHOST: InetAddress = QuicUtil.LOCALHOST
 
 /**
  * Forwards any datagrams received from the [source] socket to the [target] socket.

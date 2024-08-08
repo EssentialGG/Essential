@@ -20,7 +20,6 @@ import gg.essential.elementa.utils.ObservableAddEvent
 import gg.essential.elementa.utils.ObservableClearEvent
 import gg.essential.elementa.utils.ObservableList
 import gg.essential.elementa.utils.ObservableRemoveEvent
-import gg.essential.gui.common.onSetValueAndNow
 import gg.essential.gui.elementa.state.v2.*
 import gg.essential.gui.elementa.state.v2.collections.MutableTrackedList
 import gg.essential.universal.UMouse
@@ -142,12 +141,12 @@ fun UIComponent.onAnimationFrame(block: () -> Unit) =
  * This option will induce an additional delay of one frame because the state is updated during the next
  * [Window.enqueueRenderOperation] after the hoverState changes.
  */
-fun UIComponent.hoveredState(hitTest: Boolean = true, layoutSafe: Boolean = true): State<Boolean> {
+fun UIComponent.hoveredStateV2(hitTest: Boolean = true, layoutSafe: Boolean = true): StateV2<Boolean> {
     // "Unsafe" means that it is not safe to depend on this for layout changes
-    val unsafeHovered = BasicState(false)
+    val unsafeHovered = mutableStateOf(false)
 
     // "Safe" because layout changes can directly happen when this changes (ie in onSetValue)
-    val safeHovered = BasicState(false)
+    val safeHovered = mutableStateOf(false)
 
     // Performs a hit test based on the current mouse x / y
     fun hitTestHovered(): Boolean {
@@ -212,9 +211,9 @@ fun UIComponent.hoveredState(hitTest: Boolean = true, layoutSafe: Boolean = true
     }
 
     return if (layoutSafe) {
-        unsafeHovered.onSetValue {
+        unsafeHovered.onChange(this) { hovered ->
             Window.enqueueRenderOperation {
-                safeHovered.set(it)
+                safeHovered.set(hovered)
             }
         }
         safeHovered
@@ -223,8 +222,11 @@ fun UIComponent.hoveredState(hitTest: Boolean = true, layoutSafe: Boolean = true
     }
 }
 
+fun UIComponent.hoveredState(hitTest: Boolean = true, layoutSafe: Boolean = true): State<Boolean> =
+    hoveredStateV2(hitTest, layoutSafe).toV1(this)
+
 /** Marker effect for [makeHoverScope]/[hoverScope]. */
-private class HoverScope(val state: State<Boolean>) : Effect()
+private class HoverScope(val state: StateV2<Boolean>) : Effect()
 
 /**
  * This method declares this component and its children to be part of one hover scope.
@@ -248,12 +250,13 @@ private class HoverScope(val state: State<Boolean>) : Effect()
  * wasn't declared in the first place).
  * Note that the same rules about first-time resolving still apply.
  */
-fun UIComponent.makeHoverScope(state: State<Boolean>? = null) = apply {
-    removeEffect<HoverScope>()
-    enableEffect(HoverScope(state ?: hoveredState()))
-}
+fun UIComponent.makeHoverScope(state: State<Boolean>? = null) =
+    makeHoverScope(state?.toV2() ?: hoveredStateV2())
 
-fun UIComponent.makeHoverScope(state: StateV2<Boolean>) = makeHoverScope(state.toV1(this))
+fun UIComponent.makeHoverScope(state: StateV2<Boolean>) = apply {
+    removeEffect<HoverScope>()
+    enableEffect(HoverScope(state))
+}
 
 /**
  * Receives the hover scope which this component is subject to.
@@ -262,18 +265,19 @@ fun UIComponent.makeHoverScope(state: StateV2<Boolean>) = makeHoverScope(state.t
  *
  * @see [makeHoverScope]
  */
-fun UIComponent.hoverScope(parentOnly: Boolean = false): State<Boolean> {
+fun UIComponent.hoverScopeV2(parentOnly: Boolean = false): StateV2<Boolean> {
     class HoverScopeConsumer : Effect() {
-        val state = BasicState(false)
+        private val boundTo = mutableStateOf<StateV2<Boolean>?>(null)
+        val state = StateV2 { (boundTo.getUntracked() ?: boundTo())?.invoke() ?: false }
 
         override fun setup() {
             val sequence = if (parentOnly) parent.selfAndParents() else selfAndParents()
             val scope =
                 sequence.firstNotNullOfOrNull { component ->
                     component.effects.firstNotNullOfOrNull { it as? HoverScope }
-                } ?: throw IllegalStateException("No hover scope found for ${this@hoverScope}.")
+                } ?: throw IllegalStateException("No hover scope found for ${this@hoverScopeV2}.")
             Window.enqueueRenderOperation {
-                scope.state.onSetValueAndNow { state.set(it) }
+                boundTo.set(scope.state)
             }
         }
     }
@@ -281,6 +285,9 @@ fun UIComponent.hoverScope(parentOnly: Boolean = false): State<Boolean> {
     enableEffect(consumer)
     return consumer.state
 }
+
+fun UIComponent.hoverScope(parentOnly: Boolean = false): State<Boolean> =
+    hoverScopeV2(parentOnly).toV1(this)
 
 /** Once inherited, you can apply this to a component via [addTag] to be able to [findChildrenByTag]. */
 interface Tag

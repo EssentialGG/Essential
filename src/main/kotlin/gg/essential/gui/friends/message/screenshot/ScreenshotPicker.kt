@@ -179,7 +179,7 @@ class ScreenshotPicker(
         }
 
         val titleState = screenshotAttachmentManager.selectedImages
-            .map { "Select Screenshots - [${it.size}/10]" }
+            .map { "Select Pictures - [${it.size}/10]" }
         val navigation: UIComponent
         val contentBox: UIComponent
 

@@ -26,6 +26,7 @@ import gg.essential.universal.UMinecraft.getMinecraft
 import gg.essential.universal.shader.BlendState
 import gg.essential.universal.utils.ReleasedDynamicTexture
 import gg.essential.universal.vertex.UVertexConsumer
+import gg.essential.util.OptiFineAccessor
 import gg.essential.util.identifier
 import net.minecraft.client.renderer.GlStateManager
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats
@@ -59,6 +60,7 @@ import net.minecraft.client.renderer.OpenGlHelper.glGenFramebuffers
 //#else
 import net.minecraft.client.renderer.OpenGlHelper
 import net.minecraft.client.renderer.vertex.VertexFormat
+import org.lwjgl.BufferUtils
 //#endif
 
 object MinecraftRenderBackend : RenderBackend {
@@ -118,6 +120,130 @@ object MinecraftRenderBackend : RenderBackend {
         if (prevScissor) GL11.glEnable(GL11.GL_SCISSOR_TEST)
     }
 
+    //#if MC>=11400
+    //$$ // Neither of the render layers which vanilla provides across the versions quite does what we need, so we'll need
+    //$$ // to construct one of our own (based on one of the existing ones, so it works with shaders).
+    //$$ // Specifically we want:
+    //$$ // 1. Culling enabled: it is enabled during our regular pass, and during MC's cape rendering, and if we do not
+    //$$ //    keep it enabled during the emissive pass, we'll get z-fighting issues because the backward-facing triangles
+    //$$ //    which can then be visible will have subtly (floats are not associative!) different depth values than the
+    //$$ //    forward-facing ones rendered during the regular pass.
+    //$$ //    The `entity_translucent_emissive` layer does not have culling enabled.
+    //$$ // 2. Regular blending: allows us to do different intensity of emissiveness via the alpha channel of the emissive
+    //$$ //    texture.
+    //$$ //    The `eyes` layer uses additive blending which gives overly bright results (RGB values get saturated) when in
+    //$$ //    already well lit spaces.
+    //$$ // 3. Alpha values: so we can do the aforementioned blending.
+    //$$ //    Both layers support these, however the `entity_translucent_emissive` layer discards any pixel with
+    //$$ //    `alpha < 0.1`, luckily the `eyes` one doesn't, so that's what we'll use.
+    //$$ private val emissiveLayers = mutableMapOf<ResourceLocation, RenderType>()
+    //$$ fun getEmissiveLayer(texture: ResourceLocation) = emissiveLayers.getOrPut(texture) {
+    //$$     val inner = RenderType.getEyes(texture)
+    //$$     val of = OptiFineAccessor.INSTANCE
+    //$$     // Note: If this is turned into an anonymous class, Kotlin will generate the bridge for the protected
+    //$$     // field in the wrong class (MinecraftRenderBackend), which will then throw an IllegalAccessError.
+    //$$     class EmissiveLayer : RenderType(
+    //$$         "entity_translucent_emissive_cull",
+    //$$         inner.vertexFormat,
+    //$$         inner.drawMode,
+    //$$         inner.bufferSize,
+    //$$         inner.isUseDelegate,
+    //$$         true,
+    //$$         {
+    //$$             inner.setupRenderState()
+    //$$             TRANSLUCENT_TRANSPARENCY.setupRenderState()
+    //$$             // OptiFine on these versions does these calls in `RenderLayer.draw` only for the specific layer,
+    //$$             // so we need to manually do them in our layer
+    //$$             if (of != null && of.Config_isShaders()) {
+    //$$                 of.Shaders_pushProgram()
+    //$$                 of.Shaders_beginSpiderEyes()
+    //$$             }
+    //$$         },
+    //$$         {
+    //$$             if (of != null && of.Config_isShaders()) {
+    //$$                 of.Shaders_endSpiderEyes()
+    //$$                 of.Shaders_popProgram()
+    //$$             }
+    //$$             TRANSLUCENT_TRANSPARENCY.clearRenderState()
+    //$$             inner.clearRenderState()
+    //$$         },
+    //$$     )
+    //$$     EmissiveLayer()
+    //$$ }
+    //$$ // For the elytra we need need a special layer because the armor layer used to render it adds a tiny extra scale
+    //$$ // offset (VIEW_OFFSET_Z_LAYERING) to the model-view matrix, meaning it'll be slightly closer to the camera than
+    //$$ // our emissive layer if we don't do the same.
+    //$$ private val armorLayers = mutableMapOf<ResourceLocation, RenderType>()
+    //$$ fun getEmissiveArmorLayer(texture: ResourceLocation) = armorLayers.getOrPut(texture) {
+    //$$     val inner = getEmissiveLayer(texture)
+    //$$     // Note: If this is turned into an anonymous class, Kotlin will generate the bridge for the protected
+    //$$     // field in the wrong class (MinecraftRenderBackend), which will then throw an IllegalAccessError.
+    //$$     class EmissiveArmorLayer : RenderType(
+    //$$         "armor_translucent_emissive",
+    //$$         inner.vertexFormat,
+    //$$         inner.drawMode,
+    //$$         inner.bufferSize,
+    //$$         inner.isUseDelegate,
+    //$$         true,
+    //$$         { inner.setupRenderState(); field_239235_M_.setupRenderState() },
+    //$$         { field_239235_M_.clearRenderState(); inner.clearRenderState() },
+    //$$     )
+    //$$     EmissiveArmorLayer()
+    //$$ }
+    //#else
+    private val MC_AMBIENT_LIGHT = BufferUtils.createFloatBuffer(4).apply {
+        put(0.4f).put(0.4f).put(0.4f).put(1f) // see RenderHelper class
+        flip()
+    }
+    private val EMISSIVE_AMBIENT_LIGHT = BufferUtils.createFloatBuffer(4).apply {
+        put(1f).put(1f).put(1f).put(1f)
+        flip()
+    }
+
+    fun setupEmissiveRendering(): () -> Unit {
+        // Replace lightmap texture with all-white texture
+        var prevLightmapTexture = 0
+        UGraphics.configureTextureUnit(1) {
+            prevLightmapTexture = GL11.glGetInteger(GL11.GL_TEXTURE_BINDING_2D)
+        }
+        UGraphics.bindTexture(1, identifier("essential", "textures/white.png"))
+        // Disable directional lighting
+        // However we cannot simply disable GL_LIGHTING because that results in substantial changes to the
+        // fixed-function pipeline, and apparent those are substantial enough to somehow end up with minimally
+        // different z-buffer values, resulting in z-fighting between the base layer and the emissive layer.
+        // So instead we disable the individual directional lights and turn up the ambient light to 100.
+        GlStateManager.disableLight(0)
+        GlStateManager.disableLight(1)
+        GL11.glLightModel(GL11.GL_LIGHT_MODEL_AMBIENT, EMISSIVE_AMBIENT_LIGHT)
+        // Change alphaFunc to allow us to use the full range of alpha values (by default vanilla cuts off at 0.1)
+        val prevAlphaTestFunc = GL11.glGetInteger(GL11.GL_ALPHA_TEST_FUNC)
+        val prevAlphaTestRef = GL11.glGetFloat(GL11.GL_ALPHA_TEST_REF)
+        GlStateManager.alphaFunc(GL11.GL_GREATER, 0f)
+        // OptiFine on these versions manually wraps all the emissive eye render calls, so we need to manually
+        // invoke its wrapper methods too
+        val of = OptiFineAccessor.INSTANCE
+        if (of != null && of.Config_isShaders()) {
+            of.Shaders_pushProgram()
+            of.Shaders_beginSpiderEyes()
+        }
+
+        return {
+            if (of != null && of.Config_isShaders()) {
+                of.Shaders_endSpiderEyes()
+                of.Shaders_popProgram()
+            }
+
+            GlStateManager.alphaFunc(prevAlphaTestFunc, prevAlphaTestRef)
+
+            GL11.glLightModel(GL11.GL_LIGHT_MODEL_AMBIENT, MC_AMBIENT_LIGHT)
+            GlStateManager.enableLight(1)
+            GlStateManager.enableLight(0)
+
+            UGraphics.bindTexture(1, prevLightmapTexture)
+        }
+    }
+    //#endif
+
     override suspend fun readTexture(name: String, bytes: ByteArray): RenderBackend.Texture {
         return CosmeticTexture(name, UGraphics.getTexture(ByteArrayInputStream(bytes)))
     }
@@ -167,7 +293,7 @@ object MinecraftRenderBackend : RenderBackend {
     class VertexConsumerProvider : RenderBackend.VertexConsumerProvider {
     //#endif
 
-        override fun provide(texture: RenderBackend.Texture, block: (CVertexConsumer) -> Unit) {
+        override fun provide(texture: RenderBackend.Texture, emissive: Boolean, block: (CVertexConsumer) -> Unit) {
             require(texture is MinecraftTexture)
 
             class VertexConsumerAdapter(private val inner: UVertexConsumer) : CVertexConsumer {
@@ -199,7 +325,10 @@ object MinecraftRenderBackend : RenderBackend {
                 override fun endVertex() = apply { inner.endVertex() }
             }
             //#if MC>=11600
-            //$$ val buffer = provider.getBuffer(RenderType.getEntityTranslucentCull(texture.identifier))
+            //$$ val buffer = provider.getBuffer(
+            //$$     if (emissive) getEmissiveLayer(texture.identifier)
+            //$$     else RenderType.getEntityTranslucentCull(texture.identifier)
+            //$$ )
             //$$ block(VertexConsumerAdapter(UVertexConsumer.of(buffer)))
             //#else
             val renderer = UGraphics.getFromTessellator()
@@ -210,12 +339,15 @@ object MinecraftRenderBackend : RenderBackend {
             UGraphics.color4f(1f, 1f, 1f, 1f)
             val prevTextureId = GL11.glGetInteger(GL11.GL_TEXTURE_BINDING_2D)
             UGraphics.bindTexture(0, texture.identifier)
+            val cleanupEmissive = if (emissive) setupEmissiveRendering() else ({})
+
             renderer.beginWithDefaultShader(UGraphics.DrawMode.QUADS, VERTEX_FORMAT)
 
             block(VertexConsumerAdapter(renderer.asUVertexConsumer()))
 
             renderer.drawSorted(0, 0, 0)
 
+            cleanupEmissive()
             GlStateManager.disableCull()
             UGraphics.bindTexture(0, prevTextureId)
             //#endif

@@ -1,5 +1,11 @@
 [versions]
 universalcraft = "342"
-elementa = "649"
+elementa = "657"
 vigilance = "297"
 mixinextras = "0.3.5"
+
+[libraries]
+# This is the version shipped by MC 1.19.3, the oldest version on which we used the builtin slf4j.
+# Do not change this unless you also change on which MC versions we use our relocated slf4j.
+# Also note that `SELF4JServiceProviderImpl.getRequestedApiVersion` may need to be updated when this is changed.
+slf4j-api = { module = "org.slf4j:slf4j-api", version = "2.0.1" }

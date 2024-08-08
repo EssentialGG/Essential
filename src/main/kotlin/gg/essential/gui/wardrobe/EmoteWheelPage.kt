@@ -111,14 +111,6 @@ class EmoteWheelPage(private val state: WardrobeState) : UIContainer() {
                     thumbnail(cosmetic, Modifier.fillParent())
                 }
             }
-            if_(filledButNotOwned) {
-                val hoverText = "Not Purchased"
-                box(Modifier.childBasedHeight(2f).childBasedWidth(2f).alignBoth(Alignment.End)) {
-                    icon(EssentialPalette.SHOPPING_CART_8X7, Modifier.color(EssentialPalette.CART_ACTIVE))
-                }.bindHoverEssentialTooltip(BasicState(hoverText)).also {
-                    cartHovered.rebind(it.hoveredState())
-                }
-            }
         }
 
         container.hoveredState().onSetValueAndNow { hovered.set(it) }

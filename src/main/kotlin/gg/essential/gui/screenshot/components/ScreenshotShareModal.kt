@@ -30,7 +30,7 @@ fun createShareScreenshotModal(
     onModalCancelled: (Boolean) -> Unit = {},
     onComplete: (CompletableFuture<*>) -> Unit = {}
 ): SelectModal<Channel> {
-    return selectModal<Channel>(modalManager, "Share Screenshot") {
+    return selectModal<Channel>(modalManager, "Share Picture") {
         friendsAndGroups()
 
         modalSettings {

@@ -31,6 +31,7 @@ import gg.essential.model.util.PlayerPoseManager;
 import gg.essential.network.connectionmanager.cosmetics.CosmeticsManager;
 import gg.essential.util.UIdentifier;
 import gg.essential.util.UUIDUtil;
+import kotlin.Pair;
 import kotlin.Unit;
 import net.minecraft.client.entity.AbstractClientPlayer;
 import gg.essential.mixins.impl.client.entity.AbstractClientPlayerExt;
@@ -70,7 +71,7 @@ public abstract class MixinAbstractClientPlayer implements AbstractClientPlayerE
     @Unique
     private String essentialCosmeticsCape;
     @Unique
-    private List<UIdentifier> essentialCosmeticsCapeResources;
+    private Pair<List<UIdentifier>, @Nullable List<UIdentifier>> essentialCosmeticsCapeResources;
     @Unique
     private Boolean serverSkinOverrideStatus = null;
 
@@ -162,7 +163,7 @@ public abstract class MixinAbstractClientPlayer implements AbstractClientPlayerE
     }
 
     @Override
-    public void setEssentialCosmeticsCape(@Nullable String cape, @Nullable List<UIdentifier> textures) {
+    public void setEssentialCosmeticsCape(@Nullable String cape, @Nullable Pair<List<UIdentifier>, @Nullable List<UIdentifier>> textures) {
         this.essentialCosmeticsCape = cape;
         this.essentialCosmeticsCapeResources = textures;
     }
@@ -214,7 +215,7 @@ public abstract class MixinAbstractClientPlayer implements AbstractClientPlayerE
         }
 
         if (essentialCosmeticsCape != null) {
-            List<UIdentifier> frames = this.essentialCosmeticsCapeResources;
+            Pair<List<UIdentifier>, @Nullable List<UIdentifier>> frames = this.essentialCosmeticsCapeResources;
 
             // Frames will be null if "Cape Disabled" is equipped
             if (frames == null) {
@@ -222,18 +223,46 @@ public abstract class MixinAbstractClientPlayer implements AbstractClientPlayerE
                 return;
             }
 
-            int index;
-            int frameCount = frames.size();
-            if (frameCount == 1) {
-                // fast path, no animation
-                index = 0;
-            } else {
-                // slow path, need to compute the current frame index
-                float lifetime = new PlayerMolangQuery((AbstractClientPlayer) (Object) this).getLifeTime();
-                int frame = (int) (lifetime * BedrockModel.TEXTURE_ANIMATION_FPS);
-                index = frame % frameCount;
-            }
-            ci.setReturnValue(toMC(frames.get(index)));
+            ci.setReturnValue(toMC(frames.getFirst().get(getCapeAnimationFrame(frames.getFirst().size()))));
+        }
+    }
+
+    @Override
+    public @Nullable UIdentifier getEmissiveCapeTexture() {
+        if (!EssentialConfig.INSTANCE.getEssentialEnabled()) {
+            return null;
+        }
+
+        if (!EssentialModelRenderer.cosmeticsShouldRender((AbstractClientPlayer) (Object) this)) {
+            return null;
+        }
+
+        if (essentialCosmeticsCape == null) {
+            return null;
+        }
+
+        Pair<List<UIdentifier>, @Nullable List<UIdentifier>> frames = this.essentialCosmeticsCapeResources;
+        if (frames == null) {
+            return null;
+        }
+        List<UIdentifier> emissiveFrames = frames.getSecond();
+        if (emissiveFrames == null) {
+            return null;
+        }
+
+        return emissiveFrames.get(getCapeAnimationFrame(emissiveFrames.size()));
+    }
+
+    @Unique
+    private int getCapeAnimationFrame(int frameCount) {
+        if (frameCount == 1) {
+            // fast path, no animation
+            return 0;
+        } else {
+            // slow path, need to compute the current frame index
+            float lifetime = new PlayerMolangQuery((AbstractClientPlayer) (Object) this).getLifeTime();
+            int frame = (int) (lifetime * BedrockModel.TEXTURE_ANIMATION_FPS);
+            return frame % frameCount;
         }
     }
 

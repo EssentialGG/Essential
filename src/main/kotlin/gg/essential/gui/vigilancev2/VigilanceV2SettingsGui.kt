@@ -27,7 +27,7 @@ const val bottomBarHeight = 30f
 class VigilanceV2SettingsGui @JvmOverloads constructor(
     properties: ListState<PropertyData>,
     initialCategory: String? = null,
-): InternalEssentialGUI(ElementaVersion.V5, "Essential Settings") {
+): InternalEssentialGUI(ElementaVersion.V6, "Essential Settings") {
     constructor(properties: List<PropertyData>, initialCategory: String? = null) : this(
         stateOf(properties).toListState(),
         initialCategory

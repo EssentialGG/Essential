@@ -106,6 +106,7 @@ private fun Project.createRelocateTask(): TaskProvider<RelocateTask> {
         val jarTask = tasks.getByName<Jar>("bundleJar")
         from(jarTask.archiveFile)
         manifest.inheritFrom(jarTask.manifest)
+        mergeServiceFiles()
     }
     project.tasks.named("assemble") { dependsOn(relocatedJar) }
     return relocatedJar
@@ -130,6 +131,7 @@ private fun Project.createAbiValidationTasks(relocateTask: TaskProvider<Relocate
             "gg.essential.event",
             "gg.essential.gui",
             "gg.essential.handlers",
+            "gg.essential.ice",
             "gg.essential.image",
             "gg.essential.key",
             "gg.essential.main",
@@ -137,8 +139,10 @@ private fun Project.createAbiValidationTasks(relocateTask: TaskProvider<Relocate
             "gg.essential.mod",
             "gg.essential.model",
             "gg.essential.network",
+            "gg.essential.quic",
             "gg.essential.render",
             "gg.essential.serialization",
+            "gg.essential.slf4j",
             "gg.essential.sps",
             "gg.essential.util",
             // Internally pre-relocated dependencies

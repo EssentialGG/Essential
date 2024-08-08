@@ -140,9 +140,8 @@ fun WardrobeState.purchaseEquippedCosmetics(callback: (success: Boolean) -> Unit
     purchaseCosmeticOrEmote(equippedCosmeticsPurchasable.get().toSet(), null, callback)
 }
 
-@Deprecated("No longer purchasing emotes using the emote wheel.")
-fun WardrobeState.purchaseEquippedEmotes(callback: (success: Boolean) -> Unit) {
-    purchaseCosmeticOrEmote(equippedEmotesPurchasable.get().toSet(), null, callback)
+fun WardrobeState.purchaseSelectedEmote(callback: (success: Boolean) -> Unit) {
+    selectedEmote.getUntracked()?.let { purchaseCosmeticOrEmote(it, callback) }
 }
 
 fun WardrobeState.giftCosmeticOrEmote(item: Item.CosmeticOrEmote, giftTo: UUID, callback: (success: Boolean, errorCode: String?) -> Unit) {

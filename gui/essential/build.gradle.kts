@@ -27,6 +27,12 @@ dependencies {
     implementation(project(":infra"))
     implementation(project(":cosmetics", configuration = "minecraftRuntimeElements"))
     implementation(project(":gui:elementa"))
+    implementation(project(":ice"))
+    implementation(project(":quic-connector"))
+
+    implementation("org.jitsi:ice4j:3.0-52-ga9ba80e") {
+        isTransitive = false // for PseudoTCPBase only
+    }
 }
 
 kotlin.jvmToolchain(8)

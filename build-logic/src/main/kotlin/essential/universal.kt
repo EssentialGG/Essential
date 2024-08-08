@@ -51,8 +51,8 @@ fun Project.universalLibs() {
         compileOnly("org.jetbrains.kotlinx:kotlinx-serialization-json:${kotlin.serialization}")
         compileOnly("org.jetbrains:annotations:23.0.0")
 
-        // Provided by MC on 1.17+, and by `:slf4j-to-log4j` on older versions
-        compileOnly("org.slf4j:slf4j-api:1.7.36")
+        // Provided by MC on modern versions, and by `:slf4j-to-log4j` on older versions
+        compileOnly(catalog.findLibrary("slf4j-api").orElseThrow())
         // Provided by MC (should ideally migrate away from this as MC itself is migrating to slf4j)
         compileOnly("org.apache.logging.log4j:log4j-api:2.0-beta9")
         // Depending on LWJGL3 instead of 2 so we can choose opengl bindings only

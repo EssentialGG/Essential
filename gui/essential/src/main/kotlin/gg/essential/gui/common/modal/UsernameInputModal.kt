@@ -50,7 +50,7 @@ class UsernameInputModal(
     private val disabledAddButton = rateLimited or unknownUser or errorOverride.map { it != null }
     private val defaultErrors = stateBy {
         when {
-            rateLimited() -> "Too many requests, please wait"
+            rateLimited() -> "Too many requests,\nplease wait"
             unknownUser() -> "Username doesn't exist"
             else -> ""
         }

@@ -25,9 +25,8 @@ import gg.essential.event.client.ClientTickEvent
 import gg.essential.gui.EssentialPalette
 import gg.essential.gui.common.modal.ConfirmDenyModal
 import gg.essential.gui.common.modal.configure
-import gg.essential.gui.modals.FirewallBlockingModal
+import gg.essential.gui.modal.sps.FirewallBlockingModal
 import gg.essential.gui.util.stateBy
-import gg.essential.sps.FirewallUtil
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiMainMenu
 import net.minecraft.client.gui.GuiMultiplayer

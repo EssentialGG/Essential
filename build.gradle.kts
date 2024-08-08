@@ -79,7 +79,8 @@ dependencies {
 
     // Some of our dependencies rely on slf4j but that's not included in MC prior to 1.17, so we'll manually bundle a
     // log4j adapter for those versions
-    if (platform.mcVersion < 11700) {
+    // We also bundle it for version 1.17-1.19.2 because those ship slf4j 1.x and only 1.19.3+ starts shipping 2.x
+    if (platform.mcVersion < 11903) {
         implementation(bundle(project(":slf4j-to-log4j"))!!)
     }
     implementation(bundle(project(":quic-connector"))!!)
@@ -213,7 +214,7 @@ tasks.relocatedJar {
     // cosmetics
     relocate("dev.folomeev.kotgl", "gg.essential.lib.kotgl")
 
-    if (mcVersion < 11700) {
+    if (mcVersion < 11903) {
         // Slf4j
         relocate("org.slf4j", "gg.essential.lib.slf4j")
     }

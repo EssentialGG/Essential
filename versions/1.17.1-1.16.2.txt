@@ -1,13 +1,4 @@
 com.mojang.blaze3d.platform.GlStateManager _pixelStore() com.mojang.blaze3d.platform.GlStateManager pixelStore()
-net.minecraft.client.gui.screen.option.ControlsScreen net.minecraft.client.gui.screen.ControlsScreen
-# The class mapping can already be inferred but adding the method mapping currently requires it to be declared explicitly
 net.minecraft.client.option.GameOptions net.minecraft.client.options.GameOptions
 net.minecraft.client.option.GameOptions togglePlayerModelPart() setPlayerModelPart()
-# The class mapping can already be inferred but adding the field mapping currently requires it to be declared explicitly
-# The fields should probably be able to be detected automatically, just looks like they received yarn names in 1.17
-net.minecraft.client.render.entity.model.ElytraEntityModel leftWing field_3365
 net.minecraft.client.render.entity.model.ElytraEntityModel rightWing field_3364
-net.minecraft.client.render.entity.feature.HeadFeatureRenderer net.minecraft.client.renderer.entity.layers.HeadLayer
-com.mojang.blaze3d.platform.TextureUtil net.minecraft.client.texture.TextureUtil
-com.mojang.blaze3d.platform.TextureUtil prepareImage() net.minecraft.client.texture.TextureUtil allocate()
-net.minecraft.client.gui.screen.world.CreateWorldScreen create() method_31130()

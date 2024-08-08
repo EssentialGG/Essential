@@ -30,6 +30,7 @@ import gg.essential.network.connectionmanager.cosmetics.ModelLoader;
 import gg.essential.network.connectionmanager.telemetry.ImpressionTelemetryManager;
 import gg.essential.network.cosmetics.Cosmetic;
 import gg.essential.util.UIdentifier;
+import kotlin.Pair;
 import me.kbrewster.eventbus.Subscribe;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.AbstractClientPlayer;
@@ -37,6 +38,7 @@ import net.minecraft.client.resources.SkinManager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.item.ItemStack;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -102,7 +104,7 @@ public class PlayerWearableManager {
 
         Map<Cosmetic, BedrockModel> models = new HashMap<>();
         String cape = null;
-        List<UIdentifier> capeTextures = null;
+        Pair<List<UIdentifier>, @Nullable List<UIdentifier>> capeTextures = null;
 
         boolean allUpdated = true;
         for (EquippedCosmetic equippedCosmetic : newCosmetics.values()) {
@@ -119,7 +121,7 @@ public class PlayerWearableManager {
 
                 // If the cosmetic id is not the hash of an official cape (or the special Disabled one)
                 // then it's one of our custom capes and we need to use its texture data
-                CompletableFuture<List<UIdentifier>> capeFuture;
+                CompletableFuture<Pair<List<UIdentifier>, @Nullable List<UIdentifier>>> capeFuture;
                 if (cape.length() == 64) {
                     // If it is an official cape, we'll load it via MC for best compatibility
                     MinecraftProfileTexture texture = new MinecraftProfileTexture(String.format(Locale.ROOT, SKIN_URL, cape), emptyMap());
@@ -130,7 +132,7 @@ public class PlayerWearableManager {
                         //#else
                         CompletableFuture.completedFuture(skinProvider.loadSkin(texture, MinecraftProfileTexture.Type.CAPE))
                         //#endif
-                            .thenApply(it -> singletonList(toU(it)));
+                            .thenApply(it -> new Pair<>(singletonList(toU(it)), null));
                 } else {
                     // otherwise we need to use the texture data from the cosmetic
                     capeFuture = modelLoader.getCape(cosmetic, variant, priority);
@@ -193,7 +195,7 @@ public class PlayerWearableManager {
             return equippedSlots;
         }
 
-        if (!canRenderCosmetic(player, 0) && !canRenderCosmetic(player, 1)) {
+        if (!canRenderCosmetic(player, 0) || !canRenderCosmetic(player, 1)) {
             equippedSlots.add(EnumPart.LEFT_LEG);
             equippedSlots.add(EnumPart.RIGHT_LEG);
         }

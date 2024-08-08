@@ -42,7 +42,7 @@ class StateTextInput<T>(
         }
         constrain {
             width = basicWidthConstraint {
-                getText().width() + textPadding + if (active) 1f else 0f
+                getText().width(getTextScale(), getFontProvider()) + textPadding + if (active) 1f else 0f
             }
             color = EssentialPalette.TEXT.toConstraint()
         }

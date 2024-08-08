@@ -57,7 +57,7 @@ class Wardrobe(
     initialCategory: WardrobeCategory? = null,
     initialEmoteWheel: Boolean = false,
 ) : InternalEssentialGUI(
-    ElementaVersion.V2,
+    ElementaVersion.V6,
     "Wardrobe",
     discordActivityDescription = "Customizing their character",
 ), GuiRequiresTOS {
@@ -384,11 +384,7 @@ class Wardrobe(
     }
 
     private fun hasUnownedItems(): Boolean {
-        return if (state.inEmoteWheel.get()) {
-                state.emoteWheel.get().any { it != null && it !in state.unlockedCosmetics.get() }
-            } else {
-                state.equippedCosmeticsState.get().any { it.value !in state.unlockedCosmetics.get() }
-            }
+        return state.equippedCosmeticsState.getUntracked().any { it.value !in state.unlockedCosmetics.getUntracked() }
     }
 
     override fun backButtonPressed() {

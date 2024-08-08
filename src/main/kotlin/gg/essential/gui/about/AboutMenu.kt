@@ -25,7 +25,7 @@ import gg.essential.universal.GuiScale
 
 class AboutMenu(category: Category = Category.CHANGELOG) :
     InternalEssentialGUI(
-        ElementaVersion.V2,
+        ElementaVersion.V6,
         "Essential",
         GuiScale.scaleForScreenSize().ordinal,
         discordActivityDescription = "Learning about Essential",

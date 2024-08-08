@@ -16,8 +16,8 @@ import gg.essential.elementa.constraints.*
 import gg.essential.elementa.constraints.animation.*
 import gg.essential.elementa.dsl.*
 import gg.essential.gui.common.constraints.FillConstraintIncludingPadding
-import gg.essential.gui.common.onSetValueAndNow
 import gg.essential.gui.elementa.state.v2.State
+import gg.essential.gui.elementa.state.v2.effect
 import gg.essential.gui.elementa.state.v2.stateOf
 import gg.essential.gui.util.hasWindow
 
@@ -106,7 +106,9 @@ private class AnimateWidthModifier(private val newWidth: State<() -> WidthConstr
             }
         }
 
-        val removeListenerCallback = newWidth.onSetValueAndNow(component) { animate(it()) }
+        val removeListenerCallback = effect(component) {
+            animate(newWidth()())
+        }
 
         return {
             removeListenerCallback()
@@ -129,7 +131,9 @@ private class AnimateHeightModifier(private val newHeight: State<() -> HeightCon
             }
         }
 
-        val removeListenerCallback = newHeight.onSetValueAndNow(component) { animate(it()) }
+        val removeListenerCallback = effect(component) {
+            animate(newHeight()())
+        }
 
         return {
             removeListenerCallback()

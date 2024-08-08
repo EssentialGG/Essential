@@ -14,6 +14,8 @@ package gg.essential.gui.layoutdsl
 import gg.essential.elementa.state.State
 import gg.essential.gui.common.onSetValueAndNow
 import gg.essential.gui.elementa.state.v2.combinators.map
+import gg.essential.gui.elementa.state.v2.effect
+import gg.essential.gui.elementa.state.v2.toV2
 import gg.essential.gui.elementa.state.v2.State as StateV2
 
 @Deprecated("Using StateV1 is discouraged, use StateV2 instead")
@@ -35,12 +37,12 @@ fun Modifier.then(state: State<Modifier>): Modifier {
 }
 
 fun Modifier.then(state: StateV2<Modifier>): Modifier {
-    return this then {
-        var reverse: (() -> Unit)? = state.get().applyToComponent(this)
+    return this then component@{
+        var reverse: (() -> Unit)? = null
 
-        val cleanupState = state.onSetValue(this) {
+        val cleanupState = effect(this) {
             reverse?.invoke()
-            reverse = it.applyToComponent(this)
+            reverse = state().applyToComponent(this@component)
         };
 
         {
@@ -54,7 +56,7 @@ fun Modifier.then(state: StateV2<Modifier>): Modifier {
 @Suppress("DeprecatedCallableAddReplaceWith")
 @Deprecated("Using StateV1 is discouraged, use StateV2 instead")
 fun Modifier.whenTrue(state: State<Boolean>, activeModifier: Modifier, inactiveModifier: Modifier = Modifier): Modifier =
-    then(state.map { if (it) activeModifier else inactiveModifier })
+    then(state.toV2().map { if (it) activeModifier else inactiveModifier })
 
 fun Modifier.whenTrue(state: StateV2<Boolean>, activeModifier: Modifier, inactiveModifier: Modifier = Modifier): Modifier =
     then(state.map { if (it) activeModifier else inactiveModifier })
