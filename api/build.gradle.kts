@@ -57,19 +57,13 @@ dependencies {
 
     // Core Gui Libraries
     val ucMcVersion = when (platform.mcVersion) {
-        11900, 11902, 11903, 11904, 12000, 12001, 12002, 12004, 12006, 12100 -> mcVersionStr.also {
-            // Elementa and Vigilance 1.18.1 are good enough for MC 1.19 so we only update UC.
-            // We do need to exclude the tranitive 1.18 UC though.
-            configurations.modApi.configure { exclude("gg.essential", "universalcraft-1.18.1-${platform.loaderStr}") }
-        }
         11802 -> "1.18.1"
         else -> mcVersionStr
     }
-    val libMcVersion = if (platform.mcVersion >= 11802) "1.18.1" else mcVersionStr
     // These versions are configured in gradle/libs.versions.toml
-    modApi("gg.essential:vigilance-${libMcVersion}-${mcPlatform}:${libs.versions.vigilance.get()}") { exclude(group = "org.jetbrains.kotlin") }
     modApi("gg.essential:universalcraft-${ucMcVersion}-${mcPlatform}:${libs.versions.universalcraft.get()}") { exclude(group = "org.jetbrains.kotlin") }
-    modApi("gg.essential:elementa-${libMcVersion}-${mcPlatform}:${libs.versions.elementa.get()}") { exclude(group = "org.jetbrains.kotlin") }
+    modApi(libs.elementa)
+    modApi(libs.vigilance)
 
     // Miscellaneous Utility Libraries
     api("com.github.videogame-hacker:Koffee:88ba1b0") {

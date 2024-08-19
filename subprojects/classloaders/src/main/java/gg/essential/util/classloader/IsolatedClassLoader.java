@@ -24,6 +24,7 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 
 /**
  * A class loader which strongly prefers loading its own instance of a class rather than using the one from its parent.
@@ -50,6 +51,8 @@ public class IsolatedClassLoader extends URLClassLoader {
 
     private final Map<String, Class<?>> classes = new ConcurrentHashMap<>();
 
+    private Predicate<String> resourceFilter;
+
     /**
      * The conceptual (but not actual) parent of this class loader.
      * <p>
@@ -71,6 +74,14 @@ public class IsolatedClassLoader extends URLClassLoader {
 
     public void addClassExclusion(String className) {
         this.classExclusions.add(className);
+    }
+
+    /**
+     * Sets a resource filter. Resources that match this filter will exclusively be loaded
+     * from this classloader, and will not be delegated to the parent.
+     */
+    public void setResourceFilter(Predicate<String> resourceFilter) {
+        this.resourceFilter = resourceFilter;
     }
 
     @Override
@@ -146,11 +157,19 @@ public class IsolatedClassLoader extends URLClassLoader {
             return url;
         }
 
+        if (resourceFilter != null && resourceFilter.test(name)) {
+            return null;
+        }
+
         return delegateParent.getResource(name);
     }
 
     @Override
     public Enumeration<URL> getResources(String name) throws IOException {
+        if (resourceFilter != null && resourceFilter.test(name)) {
+            return super.getResources(name);
+        }
+
         return Iterators.asEnumeration(Iterators.concat(
             Iterators.forEnumeration(super.getResources(name)),
             Iterators.forEnumeration(delegateParent.getResources(name))

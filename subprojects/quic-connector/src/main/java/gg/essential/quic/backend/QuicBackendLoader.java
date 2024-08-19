@@ -65,6 +65,12 @@ public class QuicBackendLoader {
 
         loader.addClassExclusion(QuicBackend.class.getName());
         loader.addClassExclusion(QuicListener.class.getName());
+
+        // Netty's NativeLibraryLoader will throw an error if multiple resources for the same native are found on the
+        // classpath. This is the case with mods such as e4mc and Luna, which include netty-incubator-codec-quic
+        // without relocating it or loading it in an isolated classloader. We can fix this by only loading natives
+        // from our classloader, and not allowing delegation to the parent.
+        loader.setResourceFilter(name -> name.startsWith("META-INF/native/"));
     }
 
     public QuicBackend createImpl(Logger logger, QuicListener listener) {

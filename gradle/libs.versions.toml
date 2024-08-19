@@ -1,10 +1,13 @@
 [versions]
-universalcraft = "342"
-elementa = "657"
-vigilance = "297"
+universalcraft = "362"
+elementa = "665"
+vigilance = "306"
 mixinextras = "0.3.5"
 
 [libraries]
+universalcraft-standalone = { module = "gg.essential:universalcraft-standalone", version.ref = "universalcraft" }
+elementa = { module = "gg.essential:elementa", version.ref = "elementa" }
+vigilance = { module = "gg.essential:vigilance", version.ref = "vigilance" }
 # This is the version shipped by MC 1.19.3, the oldest version on which we used the builtin slf4j.
 # Do not change this unless you also change on which MC versions we use our relocated slf4j.
 # Also note that `SELF4JServiceProviderImpl.getRequestedApiVersion` may need to be updated when this is changed.

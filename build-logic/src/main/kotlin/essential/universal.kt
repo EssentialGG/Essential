@@ -66,17 +66,11 @@ fun Project.universalLibs() {
         compileOnly("commons-codec:commons-codec:1.9")
         compileOnly("org.apache.httpcomponents:httpclient:4.3.3") // TODO ideally switch to one of the libs we bundle
         // These versions are configured in gradle/libs.versions.toml
-        compileOnly("gg.essential:vigilance-1.8.9-forge:${getVersion("vigilance")}") {
-            attributes { attribute(universalAttr, true) }
-            isTransitive = false
-        }
         compileOnly("gg.essential:universalcraft-1.8.9-forge:${getVersion("universalcraft")}") {
             attributes { attribute(universalAttr, true) }
             isTransitive = false
         }
-        compileOnly("gg.essential:elementa-1.8.9-forge:${getVersion("elementa")}") {
-            attributes { attribute(universalAttr, true) }
-            isTransitive = false
-        }
+        compileOnly(catalog.findLibrary("elementa").orElseThrow())
+        compileOnly(catalog.findLibrary("vigilance").orElseThrow())
     }
 }

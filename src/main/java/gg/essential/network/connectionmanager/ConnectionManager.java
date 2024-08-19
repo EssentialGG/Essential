@@ -11,7 +11,6 @@
  */
 package gg.essential.network.connectionmanager;
 
-import gg.essential.config.FeatureFlags;
 import gg.essential.connectionmanager.common.packet.Packet;
 import gg.essential.connectionmanager.common.packet.connection.*;
 import gg.essential.connectionmanager.common.packet.multiplayer.ServerMultiplayerJoinServerPacket;
@@ -29,7 +28,6 @@ import gg.essential.network.connectionmanager.handler.connection.ServerConnectio
 import gg.essential.network.connectionmanager.handler.mojang.ServerUuidNameMapPacketHandler;
 import gg.essential.network.connectionmanager.handler.multiplayer.ServerMultiplayerJoinServerPacketHandler;
 import gg.essential.network.connectionmanager.ice.IIceManager;
-import gg.essential.network.connectionmanager.ice.IceManager;
 import gg.essential.network.connectionmanager.ice.IceManagerMcImpl;
 import gg.essential.network.connectionmanager.media.ScreenshotManager;
 import gg.essential.network.connectionmanager.notices.NoticesManager;
@@ -162,13 +160,7 @@ public class ConnectionManager extends ConnectionManagerKt {
         this.managers.add(this.socialManager = new SocialManager(this));
 
         // Ice
-        if (FeatureFlags.NEW_ICE_BACKEND_ENABLED) {
-            this.iceManager = new IceManagerMcImpl(this, baseDir.toPath(), uuid -> this.spsManager.getInvitedUsers().contains(uuid));
-        } else {
-            IceManager iceManagerImpl = new IceManager(this, this.spsManager);
-            this.managers.add(iceManagerImpl);
-            this.iceManager = iceManagerImpl;
-        }
+        this.iceManager = new IceManagerMcImpl(this, baseDir.toPath(), uuid -> this.spsManager.getInvitedUsers().contains(uuid));
 
         //Screenshots
         this.managers.add(this.screenshotManager = new ScreenshotManager(this, baseDir, lwjgl3));

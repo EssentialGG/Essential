@@ -169,7 +169,7 @@ private fun Project.configureForFabricLoader(configurations: Configurations, pla
             .map { it.moduleVersion.id }
             .forEach {
                 // exclude them from the bundled configuration
-                bundle.exclude(module = it.name) // name-only so we get the remapped one as well
+                bundle.exclude(group = it.group, module = it.name)
                 // and instead add them to loom's include configuration
                 dependencies {
                     include(group = it.group, name = it.name, version = it.version)
