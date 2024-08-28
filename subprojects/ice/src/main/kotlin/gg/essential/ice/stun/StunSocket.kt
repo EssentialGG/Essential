@@ -30,10 +30,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
 import kotlinx.coroutines.yield
 import org.slf4j.Logger
+import java.net.BindException
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
 import java.net.InetSocketAddress
+import java.net.NoRouteToHostException
 import java.net.SocketException
 import kotlin.time.ComparableTimeMark
 import kotlin.time.Duration
@@ -75,8 +77,11 @@ class StunSocket(
     }
 
     private val hostSendChannel: Channel<Pair<DatagramPacket, CompletableDeferred<Boolean>?>> =
-        // On  overflow, we resolve the deferred as successful because overflow is not unrecoverable (just re-try)
-        Channel(100, BufferOverflow.DROP_OLDEST) { it.second?.complete(true) }
+        Channel(1000, BufferOverflow.DROP_OLDEST) { (packet, deferred) ->
+            logger.warn("Failed to send packet of {} bytes to {}: hostSendChannel overflow", packet.length, packet.address)
+            // On  overflow, we resolve the deferred as successful because overflow is not unrecoverable (just re-try)
+            deferred?.complete(true)
+        }
 
     private val endpoints = mutableMapOf<InetSocketAddress, Endpoint>()
     private val stunBindings = mutableMapOf<InetSocketAddress, StunBinding>()
@@ -97,7 +102,9 @@ class StunSocket(
                     try {
                         socket.send(packet)
                     } catch (e: Exception) {
-                        if (e is SocketException && e.message?.startsWith("Network is unreachable:") == true) {
+                        if (e is SocketException && e.message?.startsWith("Network is unreachable:") == true
+                            || e is BindException && e.message == "Cannot assign requested address: no further information"
+                            || e is NoRouteToHostException) {
                             logger.trace("Failed to send to {}: {}", packet.socketAddress, e.message)
                             knownUnreachable.add(packet.address)
                             deferred?.complete(false)

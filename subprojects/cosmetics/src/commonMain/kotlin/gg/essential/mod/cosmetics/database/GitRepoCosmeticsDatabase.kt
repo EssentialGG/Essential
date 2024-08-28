@@ -579,7 +579,7 @@ class GitRepoCosmeticsDatabase(
             cosmetic != null -> {
                 val root = if (cosmetic.type.slot == CosmeticSlot.EMOTE) "emotes" else "cosmetics"
                 val type = cosmetic.type.id.lowercase().removeSuffix("_emote")
-                    .let { if (it == "emote") "basic" else "" }
+                    .let { if (it == "emote") "basic" else it }
                 Path.of("$root/$type/${id.lowercase()}/${id.lowercase()}.cosmetic-metadata.json")
             }
             else -> return emptyMap()

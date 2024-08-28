@@ -270,7 +270,7 @@ abstract class EssentialModal2(
     /** See [styledButton], just an overload without any state to make it easier to call. */
     fun LayoutScope.styledButton(
         modifier: Modifier = Modifier,
-        style: StyledButton.Style = StyledButton.Style.GRAY,
+        style: StyledButton.Style,
         enableRetexturing: Boolean = false,
         action: suspend () -> Unit,
         content: LayoutScope.(style: State<MenuButton.Style>) -> Unit,

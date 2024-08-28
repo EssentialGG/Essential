@@ -39,6 +39,7 @@ import org.slf4j.Logger
 import org.slf4j.spi.LoggingEventBuilder
 import java.io.IOException
 import java.net.InetSocketAddress
+import java.security.MessageDigest
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.time.Duration
@@ -85,8 +86,12 @@ class IceAgent(
     val remoteCandidateChannel = Channel<RemoteCandidate>(Channel.UNLIMITED)
     /** Completes once we are ready to send data. Should be used `withTimeout` as it may never complete if ICE fails. */
     val readyForData = CompletableDeferred<Unit>(parent = job)
-    val inboundDataChannel = Channel<Pair<LocalCandidate, ByteArray>>(10, BufferOverflow.DROP_OLDEST)
-    val outboundDataChannel = Channel<ByteArray>(10, BufferOverflow.DROP_OLDEST)
+    val inboundDataChannel = Channel<Pair<LocalCandidate, ByteArray>>(1000, BufferOverflow.DROP_OLDEST) { pair ->
+        logger.warn("IceAgent.inboundDataChannel overflow, dropping packet of {} bytes", pair.second.size)
+    }
+    val outboundDataChannel = Channel<ByteArray>(1000, BufferOverflow.DROP_OLDEST) { packet ->
+        logger.warn("IceAgent.outboundDataChannel overflow, dropping packet of {} bytes", packet.size)
+    }
 
     // The old Ice4J ICE implementation will only try to establish a connection once a candidate has nominated, so when
     // talking to one, we need to hurry up with nomination, and we can't start sending data until we have one.
@@ -204,6 +209,9 @@ class IceAgent(
         for (other in remoteCandidates) {
             if (other.address == candidate.address) {
                 logger.debug("Ignoring new remote candidate {} because we already have {}", candidate, other)
+                if (other.type == CandidateType.PeerReflexive && candidate.isRelay) {
+                    other.type = CandidateType.Relayed
+                }
                 return
             }
         }
@@ -288,13 +296,51 @@ class IceAgent(
             // Prefer triggered checks because they have a huge chance of success
             val pair = pollTriggeredCheck()
                 ?: checklist.find { it.state == CandidatePair.State.Waiting }
-                ?: continue // maybe next round
+
+            if (pair == null) {
+                performRTTChecks()
+                continue
+            }
 
             pair.state = CandidatePair.State.InProgress
             pair.check?.cancel()
             pair.check = checksScope.launch {
                 checkPair(pair)
             }
+        }
+    }
+
+    private suspend fun performRTTChecks() {
+        val pair = validList.minByOrNull { it.extraRttChecks } ?: return
+
+        // If we have a valid pair, we must have already received a successful response and should therefore be aware
+        // of which software the remote uses.
+        if (remoteIsIce4J.await()) {
+            return // Ice4J might react badly to repeated Binding requests, let's just not risk it
+        }
+
+        pair.extraRttChecks++
+        checksScope.launch {
+            val tId = TransactionId.create()
+            val logger = logger.withKeyValue("tId", tId)
+            logger.trace("Starting rtt check: {}", pair)
+
+            val (request, response) = sendIceBindingRequest(tId, pair)
+            if (response == null) {
+                logger.warn("RTT check of previously valid pair failed, no response: {}", pair)
+                return@launch
+            }
+
+            if (response.message.cls == StunClass.ResponseError) {
+                // We never send error responses, so any we receive are unexpected
+                logger.warn("Failed, got unexpected error response: {}", response.message)
+                return@launch
+            }
+
+            // Success!
+            val rtt = request.getRoundTripTime(response)
+            logger.trace("Measured RTT of {} to be {}ms", pair, rtt.inWholeMilliseconds)
+            pair.rtt = min(pair.rtt ?: INFINITE, rtt)
         }
     }
 
@@ -333,7 +379,8 @@ class IceAgent(
         }
 
         // Success!
-        logger.debug("Connectivity check succeeded: {}", pair)
+        val rtt = request.getRoundTripTime(response)
+        logger.debug("Connectivity check succeeded: {} ({}ms)", pair, rtt.inWholeMilliseconds)
 
         remoteIsIce4J.complete(response.message.attribute<StunAttribute.Software>()?.value == "ice4j.org")
 
@@ -358,7 +405,6 @@ class IceAgent(
         }
         validList.add(validPair)
 
-        val rtt = request.getRoundTripTime(response)
         pair.rtt = min(pair.rtt ?: INFINITE, rtt)
         validPair.rtt = min(validPair.rtt ?: INFINITE, rtt)
 
@@ -510,23 +556,25 @@ class IceAgent(
         val pair = selectedPair ?: (if (controlling) null else lastReceivedDataPair) ?: getBestValidPair() ?: return
 
         if (highVolumeLogging) {
+            val checksum = sha256.digest(bytes).toBase64String()
             logger.atTrace()
                 .addKeyValues(pair.local)
                 .addKeyValue("remoteAddress", pair.remote.address)
-                .log("Sending {} bytes of data", bytes.size)
+                .log("Sending {} bytes of data with checksum {}", bytes.size, checksum)
         }
         pair.local.sendUnchecked(DatagramPacket(bytes, pair.remote.address))
     }
 
     private suspend fun processPacket(packet: ReceivedPacket) {
         if (highVolumeLogging) {
+            val checksum = sha256.digest(packet.data).toBase64String()
             logger.atTrace()
                 .addKeyValues(packet.candidate)
                 .addKeyValue("remoteAddress", packet.source)
-                .log("Received {} bytes of data", packet.data.size)
+                .log("Received {} bytes of data with checksum {}", packet.data.size, checksum)
         }
         if (!controlling && selectedPair == null) {
-            lastReceivedDataPair = validList.find { it.local == packet.candidate && it.remote.address == packet.source }
+            lastReceivedDataPair = validList.find { it.local.base == packet.candidate.base && it.remote.address == packet.source }
         }
         inboundDataChannel.send(Pair(packet.candidate, packet.data))
     }
@@ -565,10 +613,12 @@ class IceAgent(
                 }
 
                 // We received a request, this is very promising, schedule a triggered check for this pair asap
-                val pair = checklist.find { it.local == packet.candidate && it.remote == remoteCandidate }
+                val pair = validList.find { it.local.base == packet.candidate.base && it.remote.address == packet.source }
+                    ?: checklist.find { it.local == packet.candidate && it.remote == remoteCandidate }
                     ?: tryPair(packet.candidate, remoteCandidate)
                     ?: return
-                if (pair !in triggeredCheckQueue) {
+                if (!pair.hadTriggeredCheck && pair !in triggeredCheckQueue) {
+                    pair.hadTriggeredCheck = true
                     when (pair.state) {
                         CandidatePair.State.Succeeded -> {}
                         CandidatePair.State.Waiting, CandidatePair.State.InProgress -> triggeredCheckQueue.add(pair)
@@ -609,6 +659,8 @@ class IceAgent(
         var state: State = State.Waiting
         var check: Job? = null
         var rtt: Duration? = null
+        var extraRttChecks = 0
+        var hadTriggeredCheck = false
 
         /**
          * Set on the controlled side when this pair is nominated by the controlling agent but we don't yet know whether
@@ -641,6 +693,7 @@ class IceAgent(
     companion object {
         private const val MAX_CHECKLIST_SIZE = 100
         private val RELAY_PENALTY = Integer.getInteger("essential.sps.relay_latency_threshold", 100)
+        private val sha256 = MessageDigest.getInstance("SHA-256")
 
         private fun LoggingEventBuilder.addKeyValues(candidate: LocalCandidate): LoggingEventBuilder {
             if (candidate.type == CandidateType.Relayed) {

@@ -18,10 +18,15 @@ import gg.essential.event.client.InitializationEvent;
 import gg.essential.event.essential.TosAcceptedEvent;
 import gg.essential.event.network.server.ServerJoinEvent;
 import gg.essential.gui.elementa.state.v2.ReferenceHolderImpl;
+import gg.essential.lib.gson.Gson;
+import gg.essential.lib.gson.JsonElement;
+import gg.essential.lib.gson.JsonObject;
+import gg.essential.lib.gson.JsonPrimitive;
 import gg.essential.network.connectionmanager.ConnectionManager;
 import gg.essential.network.connectionmanager.NetworkedManager;
 import gg.essential.network.connectionmanager.queue.SequentialPacketQueue;
 import gg.essential.universal.UMinecraft;
+import gg.essential.util.Multithreading;
 import me.kbrewster.eventbus.Subscribe;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
@@ -34,11 +39,17 @@ import oshi.hardware.Processor;
 //$$ import oshi.hardware.CentralProcessor;
 //#endif
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import static gg.essential.network.connectionmanager.telemetry.TelemetryManagerKt.*;
 
@@ -103,6 +114,7 @@ public class TelemetryManager implements NetworkedManager {
         enqueue(new ClientTelemetryPacket("LANGUAGE", new HashMap<String, Object>(){{
             put("lang", UMinecraft.getMinecraft().gameSettings.language);
         }}));
+        queueInstallerTelemetryPacket();
     }
 
     /**
@@ -183,6 +195,52 @@ public class TelemetryManager implements NetworkedManager {
         }
 
         enqueue(new ClientTelemetryPacket("HARDWARE_V2", hardwareMap));
+    }
+
+    private void queueInstallerTelemetryPacket() {
+        // We go async, since we are reading a file
+        Multithreading.runAsync(() -> {
+            try {
+                Path installerMetadataPath = Essential.getInstance().getBaseDir().toPath().resolve("installer-metadata.json").toRealPath();
+
+                if (Files.notExists(installerMetadataPath))
+                    return;
+
+                // Calculate the sha-1 checksum of the current game directory in the same way the installer does.
+                byte[] pathBytes = installerMetadataPath.toString().getBytes(StandardCharsets.UTF_8);
+                byte[] pathChecksumBytes = MessageDigest.getInstance("SHA-1").digest(pathBytes);
+                StringBuilder pathChecksumBuilder = new StringBuilder();
+                for (byte checksumByte : pathChecksumBytes) {
+                    pathChecksumBuilder.append(String.format(Locale.ROOT, "%02x", checksumByte));
+                }
+                String pathChecksum = pathChecksumBuilder.toString();
+
+                // Grab the raw JSON object from the telemetry file
+                // This is to allow installer to add telemetry fields without having to update the mod
+                String rawFile = new String(Files.readAllBytes(installerMetadataPath), StandardCharsets.UTF_8);
+                JsonObject telemetryObject = new Gson().fromJson(rawFile, JsonObject.class);
+                // Convert to map
+                HashMap<String, Object> telemetryMap = new HashMap<>();
+                for (Map.Entry<String, JsonElement> entry : telemetryObject.entrySet()) {
+                    telemetryMap.put(entry.getKey(), entry.getValue());
+                }
+                // Check if the game folder has been moved
+                boolean hasBeenMoved = false;
+                Object installPathChecksum = telemetryMap.get("installPathChecksum");
+                if (installPathChecksum instanceof JsonPrimitive) {
+                    String installerPathChecksum = ((JsonPrimitive) installPathChecksum).getAsString();
+                    hasBeenMoved = !installerPathChecksum.equals(pathChecksum);
+                }
+
+                telemetryMap.put("installPathChecksum", pathChecksum);
+                telemetryMap.put("hasBeenMoved", hasBeenMoved);
+                // Then queue the packet on the main thread again
+                Multithreading.scheduleOnMainThread(() -> enqueue(new ClientTelemetryPacket("INSTALLER", telemetryMap)), 0, TimeUnit.SECONDS);
+
+            } catch (Exception e) {
+                Essential.logger.warn("Error when trying to parse installer telemetry!", e);
+            }
+        });
     }
 
 }

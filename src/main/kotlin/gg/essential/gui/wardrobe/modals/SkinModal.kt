@@ -152,7 +152,7 @@ class SkinModal private constructor(
 
     companion object {
 
-        fun add(modalManager: ModalManager, skin: Skin, selectSkin: Boolean = true, initialName: String) = SkinModal(modalManager, skin, "Add Skin", initialName) { name, model ->
+        fun add(modalManager: ModalManager, skin: Skin, selectSkin: Boolean = false, initialName: String) = SkinModal(modalManager, skin, "Add Skin", initialName) { name, model ->
             val updatedSkin = skin.copy(model = model)
             Essential.getInstance().connectionManager.skinsManager.addSkin(name, updatedSkin, selectSkin).whenComplete { skin, throwable ->
                 if (skin != null) {
@@ -193,6 +193,10 @@ class SkinModal private constructor(
             primaryButtonText = "Steal"
         }
 
+        /**
+         * Uploads skin file and adds new skin to the Wardrobe.
+         * Mojang skin uploads are reverted immediately to keep the skin unselected.
+         */
         fun addFile(modalManager: ModalManager, path: Path, skinOverride: ResourceLocation, initialName: String, defaultModel: Model) = SkinModal(modalManager, skinOverride, "Add Skin", initialName, defaultModel) { name, model ->
             val mojangSkinManager = Essential.getInstance().skinManager
             val oldSkin = mojangSkinManager.activeSkin
@@ -202,17 +206,17 @@ class SkinModal private constructor(
                 Notifications.push("Skin Upload", "Skin upload failed!")
                 return@SkinModal
             }
-            Essential.getInstance().connectionManager.skinsManager.addSkin(name, skin).whenComplete { skinItem, throwable ->
+
+            val oldActiveSkin = oldSkin.join()
+            mojangSkinManager.changeSkin(getMinecraft().session.token, oldActiveSkin.model, oldActiveSkin.url)
+            mojangSkinManager.flushChanges(false)
+
+            Essential.getInstance().connectionManager.skinsManager.addSkin(name, skin, false).whenComplete { skinItem, throwable ->
                 if (skinItem != null) {
                     sendCheckmarkNotification("Skin has been added.")
                 } else {
                     Essential.logger.warn("Error adding skin!", throwable)
                     Notifications.push("Error adding skin", "An unexpected error has occurred. Try again.")
-                    // Since we uploaded a skin, we have to revert that if we cannot add it
-                    oldSkin.whenComplete { oldActiveSkin, _ ->
-                        mojangSkinManager.changeSkin(getMinecraft().session.token, oldActiveSkin.model, oldActiveSkin.url)
-                        mojangSkinManager.flushChanges(true)
-                    }
                 }
             }
         }

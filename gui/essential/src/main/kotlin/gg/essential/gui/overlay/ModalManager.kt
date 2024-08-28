@@ -12,11 +12,26 @@
 package gg.essential.gui.overlay
 
 import gg.essential.gui.common.modal.Modal
+import kotlinx.coroutines.CoroutineScope
 
 /**
  * Queues [Modal]s to be displayed on a [Layer].
  */
 interface ModalManager {
+    /**
+     * Coroutine scope which is cancelled once the last modal in the queue is closed and no followup modals are queued.
+     *
+     * Beware that if no modal is ever opened, this scope will never be cancelled.
+     */
+    val coroutineScope: CoroutineScope
+
+    /**
+     * True for the short amount of time where the modal is already visible but still fading in.
+     * Modals should ideally ignore user input during this period, so they're not inadvertently dismissed before
+     * even being properly visible.
+     */
+    val isCurrentlyFadingIn: Boolean
+
     /**
      * Queues the given modal to be displayed after existing modals (or immediately if there are no active modals).
      */

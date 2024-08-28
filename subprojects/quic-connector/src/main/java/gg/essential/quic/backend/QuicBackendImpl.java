@@ -38,7 +38,6 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
-import io.netty.handler.ssl.util.SelfSignedCertificate;
 import io.netty.incubator.codec.quic.InsecureQuicTokenHandler;
 import io.netty.incubator.codec.quic.QuicChannel;
 import io.netty.incubator.codec.quic.QuicClientCodecBuilder;
@@ -56,7 +55,6 @@ import org.slf4j.Logger;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.security.cert.CertificateException;
 import java.util.concurrent.TimeUnit;
 
 import static gg.essential.quic.QuicUtil.LOCALHOST;
@@ -80,11 +78,11 @@ public class QuicBackendImpl implements QuicBackend {
         .initialMaxStreamDataBidirectionalLocal(10_000_000)
         ;
 
-    private static final SelfSignedCertificate certificate;
+    private static final SelfSignedCert certificate;
     static {
         try {
-            certificate = new SelfSignedCertificate();
-        } catch (CertificateException e) {
+            certificate = new SelfSignedCert();
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }

@@ -33,8 +33,6 @@ abstract class Modal(val modalManager: ModalManager) : UIContainer() {
      */
     protected lateinit var coroutineScope: CoroutineScope
 
-    var isAnimating = false
-
     private var windowListListener: (UIComponent.(Char, Int) -> Unit)? = null
     private val escapeListener: UIComponent.(Char, Int) -> Unit = { _, keyCode ->
         if (keyCode == UKeyboard.KEY_ESCAPE) {
@@ -55,7 +53,7 @@ abstract class Modal(val modalManager: ModalManager) : UIContainer() {
         }
 
         onLeftClick { event ->
-            if (!isAnimating && event.target == this) {
+            if (!modalManager.isCurrentlyFadingIn && event.target == this) {
                 handleEscapeKeyPress()
             }
         }

@@ -93,7 +93,7 @@ open class EssentialModal(
         }
 
     protected val keyListener: UIComponent.(Char, Int) -> Unit = keyListener@{_, keyCode ->
-        if (isAnimating) { return@keyListener }
+        if (modalManager.isCurrentlyFadingIn) { return@keyListener }
 
         when (keyCode) {
             // Activate selected button on enter or primary button if no button is selected

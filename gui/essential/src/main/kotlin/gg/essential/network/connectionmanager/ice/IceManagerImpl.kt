@@ -439,11 +439,19 @@ abstract class IceManagerImpl(
             }
         }
 
-        private val inboundDataChannel = Channel<ByteArray>(10, BufferOverflow.DROP_OLDEST)
-        private val outboundDataChannel = Channel<ByteArray>(10, BufferOverflow.DROP_OLDEST)
+        private val inboundDataChannel = Channel<ByteArray>(1000, BufferOverflow.DROP_OLDEST) { packet ->
+            logger.warn("IceConnection.inboundDataChannel overflow, dropping packet of {} bytes", packet.size)
+        }
+        private val outboundDataChannel = Channel<ByteArray>(1000, BufferOverflow.DROP_OLDEST) { packet ->
+            logger.warn("IceConnection.outboundDataChannel overflow, dropping packet of {} bytes", packet.size)
+        }
 
-        private val inboundVoiceChannel = Channel<ByteArray>(10, BufferOverflow.DROP_OLDEST)
-        private val outboundVoiceChannel = Channel<ByteArray>(10, BufferOverflow.DROP_OLDEST)
+        private val inboundVoiceChannel = Channel<ByteArray>(1000, BufferOverflow.DROP_OLDEST) { packet ->
+            logger.warn("IceConnection.inboundVoiceChannel overflow, dropping packet of {} bytes", packet.size)
+        }
+        private val outboundVoiceChannel = Channel<ByteArray>(1000, BufferOverflow.DROP_OLDEST) { packet ->
+            logger.warn("IceConnection.outboundVoiceChannel overflow, dropping packet of {} bytes", packet.size)
+        }
 
         val inboundPacketSortingJob = coroutineScope.launch(Dispatchers.Unconfined) {
             for ((candidate, data) in agent.inboundDataChannel) {

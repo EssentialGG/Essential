@@ -22,6 +22,11 @@ import gg.essential.elementa.utils.withAlpha
 import gg.essential.gui.common.modal.Modal
 import gg.essential.gui.common.modal.defaultEssentialModalFadeTime
 import gg.essential.gui.elementa.transitions.FadeInTransition
+import gg.essential.util.Client
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import java.awt.Color
 
 /**
@@ -30,7 +35,13 @@ import java.awt.Color
 class UIContainerModalManagerImpl(
     backgroundColor: Color = Color.BLACK.withAlpha(150)
 ) : UIContainer(), ModalManager {
+    override val coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Client)
+
     private val modalQueue = mutableListOf<Modal>()
+    override var isCurrentlyFadingIn: Boolean = false
+        private set
+
+    private var didFade: Boolean = false
 
     private val background by UIBlock(backgroundColor).constrain {
         x = 0.pixels
@@ -49,13 +60,12 @@ class UIContainerModalManagerImpl(
     }
 
     override fun queueModal(modal: Modal) {
-        // We can't immediately show a modal if this component doesn't have a parent.
+        modalQueue.add(modal)
+
         if (hasParent && background.children.isEmpty()) {
             pushModalFromQueue()
             return
         }
-
-        modalQueue.add(modal)
     }
 
     override fun modalClosed() {
@@ -63,6 +73,7 @@ class UIContainerModalManagerImpl(
         if (pushedModal == null) {
             // If there are no modals left, we can remove the manager from its parent.
             parent.removeChild(this)
+            coroutineScope.cancel()
         }
     }
 
@@ -72,12 +83,7 @@ class UIContainerModalManagerImpl(
         // If a modal was queued before we had a parent, we need to make it a child now for it to be
         // displayed as expected.
         if (background.children.isEmpty()) {
-            val modal = pushModalFromQueue() ?: return
-            modal.isAnimating = true
-
-            FadeInTransition(defaultEssentialModalFadeTime).transition(this) {
-                modal.isAnimating = false
-            }
+            pushModalFromQueue()
         }
     }
 
@@ -85,6 +91,15 @@ class UIContainerModalManagerImpl(
         val modal = modalQueue.removeFirstOrNull() ?: return null
         modal childOf background
         modal.onOpen()
+
+        if (!didFade) {
+            didFade = true
+
+            isCurrentlyFadingIn = true
+            FadeInTransition(defaultEssentialModalFadeTime).transition(this) {
+                isCurrentlyFadingIn = false
+            }
+        }
 
         return modal
     }

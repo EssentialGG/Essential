@@ -20,6 +20,11 @@ import gg.essential.elementa.utils.withAlpha
 import gg.essential.gui.common.modal.Modal
 import gg.essential.gui.common.modal.defaultEssentialModalFadeTime
 import gg.essential.gui.elementa.transitions.FadeInTransition
+import gg.essential.util.Client
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import java.awt.Color
 
 /**
@@ -29,12 +34,17 @@ class ModalManagerImpl(
     private val overlayManager: OverlayManager,
     private val backgroundColor: Color = Color.BLACK.withAlpha(150),
 ) : ModalManager {
+    override val coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Client)
+
     private val modalQueue = mutableListOf<Modal>()
 
     /**
      * The [Layer] which [Modal]s will be displayed on.
      */
     private var layer: Layer? = null
+
+    override var isCurrentlyFadingIn: Boolean = false
+        private set
 
     override fun modalClosed() {
         val nextModal = modalQueue.removeFirstOrNull()
@@ -44,6 +54,8 @@ class ModalManagerImpl(
             // If we have no modals left to push, we should remove the layer.
             layer?.let { overlayManager.removeLayer(it) }
             layer = null
+            isCurrentlyFadingIn = false
+            coroutineScope.cancel()
         }
     }
 
@@ -53,7 +65,8 @@ class ModalManagerImpl(
         // If the layer is null, this means that this is our first modal, or, that the previous layer
         // was cleaned up. We should create a new one for this modal to be pushed on to.
         if (currentLayer == null) {
-            createAndSetupLayer(modal)
+            val layer = createAndSetupLayer()
+            layer.pushModal(modal)
             return
         }
 
@@ -62,21 +75,18 @@ class ModalManagerImpl(
         modalQueue.add(modal)
     }
 
-    private fun createAndSetupLayer(modal: Modal): Layer {
+    private fun createAndSetupLayer(): Layer {
         return overlayManager.createPersistentLayer(LayerPriority.Modal).apply {
-            val background = UIBlock(backgroundColor).constrain {
+            UIBlock(backgroundColor).constrain {
                 x = 0.pixels
                 y = 0.pixels
                 width = 100.percentOfWindow()
                 height = 100.percentOfWindow()
             } childOf window
 
-            modal childOf background
-            modal.onOpen()
-
-            modal.isAnimating = true
+            isCurrentlyFadingIn = true
             FadeInTransition(defaultEssentialModalFadeTime).transition(window) {
-                modal.isAnimating = false
+                isCurrentlyFadingIn = false
             }
 
             this@ModalManagerImpl.layer = this
@@ -87,6 +97,9 @@ class ModalManagerImpl(
         val background = window.children.first()
 
         modal childOf background
+
+        // Beware: This call may recursively call [queueModal] and/or [modalClosed]. As such, it should ideally be the
+        // last thing which effectively happens in these methods.
         modal.onOpen()
     }
 }

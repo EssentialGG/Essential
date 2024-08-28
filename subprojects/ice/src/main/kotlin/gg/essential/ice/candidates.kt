@@ -64,7 +64,9 @@ sealed interface LocalCandidate : Candidate {
     }
 }
 
-interface RemoteCandidate : Candidate
+interface RemoteCandidate : Candidate {
+    override var type: CandidateType // mutable only for peer-reflexive candidates if we later learn they are relays
+}
 
 open class LocalCandidateImpl(
     final override val type: CandidateType,
@@ -116,7 +118,7 @@ class LocalPeerReflexiveCandidate(
 ) : LocalCandidateImpl(CandidateType.PeerReflexive, baseCandidate.socket, baseCandidate.relay, address, baseCandidate.preference, {})
 
 class RemoteCandidateImpl(
-    override val type: CandidateType,
+    override var type: CandidateType,
     override val address: InetSocketAddress,
     override val priority: Int,
 ) : RemoteCandidate {
