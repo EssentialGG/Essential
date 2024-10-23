@@ -12,6 +12,7 @@
 package gg.essential.main;
 
 import gg.essential.mixins.MixinErrorHandler;
+import gg.essential.mixins.IntegrationTestsPlugin;
 import gg.essential.util.MixinUtils;
 import org.apache.logging.log4j.LogManager;
 import org.spongepowered.asm.launch.MixinBootstrap;
@@ -89,6 +90,10 @@ public class Bootstrap {
             LogManager.getLogger().warn(Bootstrap.class.getProtectionDomain());
         }
         //#endif
+
+        if (IntegrationTestsPlugin.ENABLED) {
+            Mixins.addConfiguration("mixins.essential.tests.json");
+        }
     }
 
     //#if MC<11400

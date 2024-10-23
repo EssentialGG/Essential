@@ -15,6 +15,8 @@ import dev.folomeev.kotgl.matrix.matrices.Mat3
 import dev.folomeev.kotgl.matrix.matrices.Mat4
 import dev.folomeev.kotgl.matrix.matrices.mat3
 import dev.folomeev.kotgl.matrix.matrices.mat4
+import dev.folomeev.kotgl.matrix.matrices.mutables.MutableMat3
+import dev.folomeev.kotgl.matrix.matrices.mutables.mutableMat3
 import dev.folomeev.kotgl.matrix.vectors.Vec3
 import dev.folomeev.kotgl.matrix.vectors.Vec4
 import dev.folomeev.kotgl.matrix.vectors.mutables.MutableVec3
@@ -23,6 +25,9 @@ import dev.folomeev.kotgl.matrix.vectors.mutables.mutableVec3
 import dev.folomeev.kotgl.matrix.vectors.mutables.set
 import dev.folomeev.kotgl.matrix.vectors.vec3
 import dev.folomeev.kotgl.matrix.vectors.vec4
+import dev.folomeev.kotgl.matrix.vectors.vecUnitX
+import dev.folomeev.kotgl.matrix.vectors.vecUnitY
+import dev.folomeev.kotgl.matrix.vectors.vecUnitZ
 import kotlin.math.asin
 import kotlin.math.atan2
 
@@ -78,6 +83,13 @@ fun Vec3.rotateBy(q: Quaternion) = rotateBy(q, ::mutableVec3)
  * Applies the given rotation represented as a [Quaternion] to this vector, storing the result in `this`.
  */
 fun MutableVec3.rotateSelfBy(q: Quaternion) = rotateBy(q, ::set)
+
+fun Quaternion.toMat3(): MutableMat3 {
+    val x = vecUnitX().rotateBy(this)
+    val y = vecUnitY().rotateBy(this)
+    val z = vecUnitZ().rotateBy(this)
+    return mutableMat3(x.x, y.x, z.x, x.y, y.y, z.y, x.z, y.z, z.z)
+}
 
 fun Mat4.getRotationEulerZYX() =
     vec3(

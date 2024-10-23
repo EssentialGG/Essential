@@ -37,6 +37,10 @@ import java.io.ByteArrayInputStream
 import gg.essential.model.util.UMatrixStack as CMatrixStack
 import gg.essential.model.util.UVertexConsumer as CVertexConsumer
 
+//#if MC>=12102
+//$$ import net.minecraft.client.render.VertexConsumer
+//#endif
+
 //#if MC>=11700
 //$$ import org.lwjgl.opengl.GL30.glBindFramebuffer
 //$$ import org.lwjgl.opengl.GL30.glDeleteFramebuffers
@@ -120,6 +124,39 @@ object MinecraftRenderBackend : RenderBackend {
         if (prevScissor) GL11.glEnable(GL11.GL_SCISSOR_TEST)
     }
 
+    //#if MC>=12102
+    //$$ // MC no longer provides the CULL variant of ENTITY_TRANSLUCENT which we use to render our cosmetics, so we'll
+    //$$ // have to build it ourselves.
+    //$$ private val entityTranslucentCullLayers = mutableMapOf<Identifier, RenderLayer>()
+    //$$ fun getEntityTranslucentCullLayer(texture: Identifier) = entityTranslucentCullLayers.getOrPut(texture) {
+    //$$     val inner = RenderLayer.getEntityTranslucent(texture)
+    //$$     // Note: If this is turned into an anonymous class, Kotlin will generate the bridge for the protected
+    //$$     // field in the wrong class (MinecraftRenderBackend), which will then throw an IllegalAccessError.
+    //$$     class EntityTranslucentCullLayer : RenderLayer(
+    //$$         "entity_translucent_cull",
+    //$$         inner.vertexFormat,
+    //$$         inner.drawMode,
+    //$$         inner.expectedBufferSize,
+    //$$         inner.hasCrumbling(),
+    //$$         inner.isTranslucent,
+    //$$         {
+    //$$             inner.startDrawing()
+    //$$             DISABLE_CULLING.endDrawing()
+    //$$             ENABLE_CULLING.startDrawing()
+    //$$         },
+    //$$         {
+    //$$             ENABLE_CULLING.endDrawing()
+    //$$             DISABLE_CULLING.startDrawing()
+    //$$             inner.endDrawing()
+    //$$         },
+    //$$     )
+    //$$     EntityTranslucentCullLayer()
+    //$$ }
+    //#elseif MC>=11400
+    //$$ fun getEntityTranslucentCullLayer(texture: ResourceLocation) = RenderType.getEntityTranslucentCull(texture)
+    //#endif
+
+
     //#if MC>=11400
     //$$ // Neither of the render layers which vanilla provides across the versions quite does what we need, so we'll need
     //$$ // to construct one of our own (based on one of the existing ones, so it works with shaders).
@@ -190,6 +227,16 @@ object MinecraftRenderBackend : RenderBackend {
     //$$     )
     //$$     EmissiveArmorLayer()
     //$$ }
+    //#if MC>=12102
+    //$$ object NullMcVertexConsumer : VertexConsumer {
+    //$$     override fun vertex(x: Float, y: Float, z: Float): VertexConsumer = this
+    //$$     override fun color(red: Int, green: Int, blue: Int, alpha: Int): VertexConsumer = this
+    //$$     override fun texture(u: Float, v: Float): VertexConsumer = this
+    //$$     override fun overlay(u: Int, v: Int): VertexConsumer = this
+    //$$     override fun light(u: Int, v: Int): VertexConsumer = this
+    //$$     override fun normal(x: Float, y: Float, z: Float): VertexConsumer = this
+    //$$ }
+    //#endif
     //#else
     private val MC_AMBIENT_LIGHT = BufferUtils.createFloatBuffer(4).apply {
         put(0.4f).put(0.4f).put(0.4f).put(1f) // see RenderHelper class
@@ -327,7 +374,7 @@ object MinecraftRenderBackend : RenderBackend {
             //#if MC>=11600
             //$$ val buffer = provider.getBuffer(
             //$$     if (emissive) getEmissiveLayer(texture.identifier)
-            //$$     else RenderType.getEntityTranslucentCull(texture.identifier)
+            //$$     else getEntityTranslucentCullLayer(texture.identifier)
             //$$ )
             //$$ block(VertexConsumerAdapter(UVertexConsumer.of(buffer)))
             //#else

@@ -152,6 +152,23 @@ object ConfigurationUtils {
         return input
     }
 
+    fun LayoutScope.labeledBooleanInputRow(
+        label: String,
+        initialValue: Boolean,
+        inputModifier: Modifier = Modifier,
+        horizontalArrangement: Arrangement = Arrangement.SpaceBetween,
+        onSetValue: (Boolean) -> Unit
+    ) {
+        labeledListInputRow(
+            label,
+            initialValue,
+            listStateOf(EssentialDropDown.Option("True", true), EssentialDropDown.Option("False", false)),
+            inputModifier,
+            horizontalArrangement,
+            onSetValue
+        )
+    }
+
     fun LayoutScope.labeledIntInputRow(
         label: String,
         state: MutableState<Int>,

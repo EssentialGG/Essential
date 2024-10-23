@@ -11,6 +11,7 @@
  */
 package gg.essential.gui
 
+import gg.essential.config.LoadsResources
 import gg.essential.elementa.components.UIImage
 import gg.essential.elementa.state.BasicState
 import gg.essential.elementa.state.State
@@ -21,6 +22,7 @@ import gg.essential.gui.image.ResourceImageFactory
 import java.awt.Color
 import java.awt.image.BufferedImage
 import java.util.concurrent.CompletableFuture
+import kotlin.random.Random
 
 object EssentialPalette {
 
@@ -86,6 +88,9 @@ object EssentialPalette {
 
     @JvmField
     val LIGHT_DIVIDER: Color = Color(0x303030)
+
+    @JvmField
+    val DIVIDER: Color = Color(0x474747)
 
     @JvmField
     val LIGHT_SCROLLBAR: Color = Color(0x555555)
@@ -363,6 +368,61 @@ object EssentialPalette {
     val PURPLE_BUTTON: Color = Color(0x473999)
     @JvmField
     val PURPLE_BUTTON_HOVER: Color = Color(0x5947BF)
+
+    /** Outline Buttons **/
+    @JvmField
+    val GREEN_OUTLINE_BUTTON: Color = Color(0x1D4728)
+    @JvmField
+    val GREEN_OUTLINE_BUTTON_OUTLINE: Color = Color(0x327B44)
+    @JvmField
+    val GREEN_OUTLINE_BUTTON_HOVER: Color = Color(0x276136)
+    @JvmField
+    val GREEN_OUTLINE_BUTTON_OUTLINE_HOVER: Color = Color(0x3E9252)
+
+    @JvmField
+    val RED_OUTLINE_BUTTON: Color = Color(0x461F1F)
+    @JvmField
+    val RED_OUTLINE_BUTTON_OUTLINE: Color = Color(0x8B3636)
+    @JvmField
+    val RED_OUTLINE_BUTTON_HOVER: Color = Color(0x642626)
+    @JvmField
+    val RED_OUTLINE_BUTTON_OUTLINE_HOVER: Color = Color(0x9F4444)
+
+    @JvmField
+    val BLUE_OUTLINE_BUTTON: Color = Color(0x223F69)
+    @JvmField
+    val BLUE_OUTLINE_BUTTON_OUTLINE: Color = Color(0x3671C7)
+    @JvmField
+    val BLUE_OUTLINE_BUTTON_HOVER: Color = Color(0x2A5695)
+    @JvmField
+    val BLUE_OUTLINE_BUTTON_OUTLINE_HOVER: Color = Color(0x5490E8)
+
+    @JvmField
+    val GRAY_OUTLINE_BUTTON: Color = Color(0x323232)
+    @JvmField
+    val GRAY_OUTLINE_BUTTON_OUTLINE: Color = Color(0x5C5C5C)
+    @JvmField
+    val GRAY_OUTLINE_BUTTON_HOVER: Color = Color(0x474747)
+    @JvmField
+    val GRAY_OUTLINE_BUTTON_OUTLINE_HOVER: Color = Color(0x757575)
+
+    @JvmField
+    val YELLOW_OUTLINE_BUTTON: Color = Color(0x583E14)
+    @JvmField
+    val YELLOW_OUTLINE_BUTTON_OUTLINE: Color = Color(0x8F621F)
+    @JvmField
+    val YELLOW_OUTLINE_BUTTON_HOVER: Color = Color(0x74521D)
+    @JvmField
+    val YELLOW_OUTLINE_BUTTON_OUTLINE_HOVER: Color = Color(0xBA8537)
+
+    @JvmField
+    val PURPLE_OUTLINE_BUTTON: Color = Color(0x292063)
+    @JvmField
+    val PURPLE_OUTLINE_BUTTON_OUTLINE: Color = Color(0x5947BF)
+    @JvmField
+    val PURPLE_OUTLINE_BUTTON_HOVER: Color = Color(0x352A7A)
+    @JvmField
+    val PURPLE_OUTLINE_BUTTON_OUTLINE_HOVER: Color = Color(0x6F5CE5)
 
     /** Gray/900 */
     @JvmField
@@ -970,4 +1030,11 @@ object EssentialPalette {
     @JvmField
     val COIN_BUNDLE_0_999: ImageFactory = ResourceImageFactory("/assets/essential/textures/coin/coin_bundle_0_999.png")
 
+    @LoadsResources("/assets/essential/textures/friends/group_[a-z]+.png")
+    private fun createGroupIconFactory(name: String): ImageFactory =
+        ResourceImageFactory("/assets/essential/textures/friends/group_$name.png")
+
+    val GROUP_ICONS_8X: List<ImageFactory> = listOf("blue", "purple", "red", "yellow").map(::createGroupIconFactory)
+
+    fun groupIconForChannel(channelId: Long): ImageFactory = GROUP_ICONS_8X.random(Random(channelId))
 }

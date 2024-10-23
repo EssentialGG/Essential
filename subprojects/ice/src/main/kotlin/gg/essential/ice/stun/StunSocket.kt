@@ -30,6 +30,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
 import kotlinx.coroutines.yield
 import org.slf4j.Logger
+import java.io.IOException
 import java.net.BindException
 import java.net.DatagramPacket
 import java.net.DatagramSocket
@@ -104,6 +105,7 @@ class StunSocket(
                     } catch (e: Exception) {
                         if (e is SocketException && e.message?.startsWith("Network is unreachable:") == true
                             || e is BindException && e.message == "Cannot assign requested address: no further information"
+                            || e is IOException && e.message == "Network is unreachable (sendto failed)"
                             || e is NoRouteToHostException) {
                             logger.trace("Failed to send to {}: {}", packet.socketAddress, e.message)
                             knownUnreachable.add(packet.address)

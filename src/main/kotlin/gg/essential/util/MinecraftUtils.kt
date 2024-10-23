@@ -174,6 +174,7 @@ object MinecraftUtils : MinecraftUtils {
         hostAndPort: String,
         resourceMode: ServerData.ServerResourceMode = ServerData.ServerResourceMode.PROMPT,
         previousScreen: GuiScreen? = GuiMultiplayer(GuiMainMenu()),
+        showDisconnectWarning: Boolean = true,
     ) {
         val serverData = ServerData(
             serverName,
@@ -186,7 +187,7 @@ object MinecraftUtils : MinecraftUtils {
         )
         serverData.resourceMode = resourceMode
 
-        connectToServer(serverData, previousScreen)
+        connectToServer(serverData, previousScreen, showDisconnectWarning)
     }
 
     /**

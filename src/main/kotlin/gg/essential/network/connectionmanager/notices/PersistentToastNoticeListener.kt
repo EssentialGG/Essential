@@ -16,7 +16,6 @@ import gg.essential.event.gui.GuiOpenEvent
 import gg.essential.gui.notification.Notifications
 import gg.essential.gui.wardrobe.Wardrobe
 import gg.essential.gui.wardrobe.WardrobeCategory
-import gg.essential.network.connectionmanager.notices.NoticesManager.NoticeListener
 import gg.essential.network.connectionmanager.telemetry.TelemetryManager
 import gg.essential.notices.NoticeType
 import gg.essential.notices.model.Notice

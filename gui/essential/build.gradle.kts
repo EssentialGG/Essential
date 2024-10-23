@@ -14,6 +14,7 @@ import gg.essential.gradle.util.KotlinVersion
 
 plugins {
     kotlin("jvm")
+    id("org.jetbrains.kotlin.plugin.serialization")
     id("gg.essential.defaults")
 }
 
@@ -26,9 +27,13 @@ dependencies {
     implementation(project(":libs"))
     implementation(project(":infra"))
     implementation(project(":cosmetics", configuration = "minecraftRuntimeElements"))
+    implementation(project(":vigilance2"))
     implementation(project(":gui:elementa"))
     implementation(project(":ice"))
     implementation(project(":quic-connector"))
+
+    // For NotificationBuilder
+    compileOnly(project(":api:1.12.2-forge")) { isTransitive = false}
 
     implementation("org.jitsi:ice4j:3.0-52-ga9ba80e") {
         isTransitive = false // for PseudoTCPBase only

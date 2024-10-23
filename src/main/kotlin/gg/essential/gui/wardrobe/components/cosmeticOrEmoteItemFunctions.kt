@@ -85,20 +85,20 @@ fun handleCosmeticOrEmoteLeftClick(item: Item.CosmeticOrEmote, category: Wardrob
 
     if (wardrobeState.inEmoteWheel.get()) {
         val emoteWheel = wardrobeState.emoteWheel
-        val existingIndex = emoteWheel.get().indexOf(cosmetic.id)
+        val existingIndex = emoteWheel.getUntracked().indexOf(cosmetic.id)
         if (existingIndex != -1) {
             if (startedInEmoteWheel && !bundleWasSelected && !emoteWasSelected) {
                 // Only remove the emote if the emote wheel preview was open when the emote was clicked and a bundle was not selected
-                emoteWheel.set(existingIndex, null)
+                wardrobeState.emoteWheelManager.setEmote(existingIndex, null)
                 // Remove duplicates as well
-                while (emoteWheel.get().indexOf(cosmetic.id) != -1) {
-                    emoteWheel.set(emoteWheel.get().indexOf(cosmetic.id), null)
+                while (emoteWheel.getUntracked().indexOf(cosmetic.id) != -1) {
+                    wardrobeState.emoteWheelManager.setEmote(emoteWheel.getUntracked().indexOf(cosmetic.id), null)
                 }
             }
         } else {
-            val emptyIndex = emoteWheel.get().indexOfFirst { it == null }
+            val emptyIndex = emoteWheel.getUntracked().indexOfFirst { it == null }
             if (emptyIndex != -1) {
-                emoteWheel.set(emptyIndex, cosmetic.id)
+                wardrobeState.emoteWheelManager.setEmote(emptyIndex, cosmetic.id)
             } else {
                 Notifications.warning("Emote wheel is full.", "")
             }
@@ -378,10 +378,6 @@ fun claimFreeItemNow(item: Item.CosmeticOrEmote, wardrobeState: WardrobeState) {
             wardrobeState.unlockedCosmetics.set { it - cosmetic.id }
             Notifications.error("Error", "Failed to claim item.")
         } else {
-            val slot = cosmetic.type.slot
-            if (slot == CosmeticSlot.EMOTE) {
-                cosmeticsManager.savedEmotes = wardrobeState.emoteWheel.get()
-            }
             sendUnlockedToast(cosmetic.id, wardrobeState.selectedPreviewingEquippedSettings.map { it[item.id] ?: listOf() })
             EssentialSoundManager.playPurchaseConfirmationSound()
         }

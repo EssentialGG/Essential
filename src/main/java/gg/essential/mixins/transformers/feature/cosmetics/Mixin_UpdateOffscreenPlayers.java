@@ -38,7 +38,10 @@ public abstract class Mixin_UpdateOffscreenPlayers {
     @Shadow
     private WorldClient world;
 
-    //#if MC>=11400
+    // TODO 1.21.2 is this place still good? maybe separate update from render entirely
+    //#if MC>=12102
+    //$$ @Inject(method = "method_62214", at = @At(value = "CONSTANT", args = "stringValue=blockentities"))
+    //#elseif MC>=11400
     //$$ @Inject(method = "updateCameraAndRender", at = @At(value = "CONSTANT", args = "stringValue=blockentities"))
     //#else
     @Inject(method = "renderEntities", at = @At("RETURN"))

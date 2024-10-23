@@ -110,7 +110,7 @@ fun LayoutScope.previewWindowTitleBar(state: WardrobeState, modifier: Modifier) 
         val equippedOutfitItem = state.equippedOutfitItem()
         when {
             selectedBundle != null -> selectedBundle.name to false
-            state.inEmoteWheel() -> "Wheel #${state.equippedEmoteSlot() + 1}" to false
+            state.inEmoteWheel() -> "Wheel #${state.emoteWheelManager.selectedEmoteWheelIndex() + 1}" to false
             selectedEmote != null -> selectedEmote.name to false
             equippedOutfitItem != null -> equippedOutfitItem.name to true
             else -> "Unknown Outfit" to false

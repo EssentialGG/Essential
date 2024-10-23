@@ -498,6 +498,7 @@ class GitRepoCosmeticsDatabase(
                 bundle.name,
                 bundle.tier,
                 bundle.discountPercent,
+                bundle.rotateOnPreview,
                 bundle.skin,
                 bundle.cosmetics,
                 bundle.settings,
@@ -840,6 +841,8 @@ class GitRepoCosmeticsDatabase(
         val name: String,
         val tier: CosmeticTier,
         val discount: Float,
+        @SerialName("rotate_on_preview")
+        val rotateOnPreview: Boolean = false,
         var skin: CosmeticBundle.Skin,
         val cosmetics: Map<CosmeticSlot, CosmeticId>,
         val settings: Map<CosmeticId, List<CosmeticSetting>>,
@@ -1053,6 +1056,7 @@ private suspend fun FileAccess.loadBundle(metadataFile: Path): CosmeticBundle {
         metadata.name,
         metadata.tier,
         metadata.discount,
+        metadata.rotateOnPreview,
         metadata.skin,
         metadata.cosmetics,
         metadata.settings

@@ -400,8 +400,8 @@ class MessageWrapperImpl(
 
                 if (channelType != ChannelType.ANNOUNCEMENT) {
                     options.add(replyOption)
+                    options.add(ContextOptionMenu.Divider)
                 }
-                options.add(ContextOptionMenu.Divider)
                 options.add(copyImageOption)
                 options.add(copyLinkOption)
                 options.add(saveImageOption)

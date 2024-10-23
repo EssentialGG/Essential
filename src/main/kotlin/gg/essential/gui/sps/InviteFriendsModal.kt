@@ -30,7 +30,6 @@ import gg.essential.gui.common.shadow.EssentialUIText
 import gg.essential.gui.common.shadow.EssentialUIWrappedText
 import gg.essential.gui.common.shadow.ShadowEffect
 import gg.essential.gui.elementa.state.v2.*
-import gg.essential.gui.elementa.state.v2.combinators.map
 import gg.essential.gui.layoutdsl.*
 import gg.essential.gui.modals.select.SelectModal
 import gg.essential.gui.modals.select.offlinePlayers
@@ -348,8 +347,11 @@ object InviteFriendsModal {
 
         return selectModal(modalManager, "Invite Friends") {
             fun LayoutScope.customPlayerEntry(selected: MutableState<Boolean>, uuid: UUID) {
+                val onlineState = connectionManager.spsManager.getOnlineState(uuid)
                 val reInviteEnabled = getReInviteEnabledState(uuid)
-                val reInviteVisible = selected.map { it && worldSummary == null }
+                val reInviteVisible = memo {
+                    selected() && worldSummary == null && !onlineState()
+                }
 
                 fun LayoutScope.reinviteButton(modifier: Modifier = Modifier) {
                     iconButton(

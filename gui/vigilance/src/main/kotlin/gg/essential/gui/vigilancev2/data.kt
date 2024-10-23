@@ -14,8 +14,8 @@ package gg.essential.gui.vigilancev2
 import gg.essential.gui.elementa.state.v2.State
 import gg.essential.gui.elementa.state.v2.stateBy
 import gg.essential.gui.elementa.state.v2.toListState
-import gg.essential.gui.vigilancev2.builder.VisibleDependencyPredicate
 import gg.essential.gui.vigilancev2.utils.containsSearchTerm
+import gg.essential.mod.vigilance2.builder.VisibleDependencyPredicate
 import gg.essential.vigilance.data.PropertyData
 
 class Category(val name: String, val subcategories: List<SubCategory>)

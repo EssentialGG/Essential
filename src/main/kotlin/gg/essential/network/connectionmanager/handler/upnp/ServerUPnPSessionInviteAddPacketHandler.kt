@@ -66,6 +66,7 @@ class ServerUPnPSessionInviteAddPacketHandler : PacketHandler<ServerUPnPSessionI
                         backgroundModifier = Modifier.color(EssentialPalette.BLUE_BUTTON).hoverColor(EssentialPalette.BLUE_BUTTON_HOVER).shadow(Color.BLACK),
                         textModifier = Modifier.color(EssentialPalette.TEXT_HIGHLIGHT).shadow(EssentialPalette.TEXT_SHADOW)
                     ) {
+                        dismissNotification()
                         MinecraftUtils.connectToServer(username, spsManager.getSpsAddress(hostUUID))
                     }
                     withCustomComponent(Slot.ACTION, button)

@@ -99,8 +99,8 @@ import java.util.function.Function;
 import static gg.essential.mixins.ext.network.NetworkSystemExtKt.getIceEndpoint;
 import static gg.essential.network.connectionmanager.ice.util.CandidateUtil.candidateFromString;
 import static gg.essential.network.connectionmanager.ice.util.CandidateUtil.candidateToString;
+import static gg.essential.util.EssentialGuiExtensionsKt.logExceptions;
 import static gg.essential.util.ExtensionsKt.getExecutor;
-import static gg.essential.util.ExtensionsKt.logExceptions;
 
 //#if FORGE && MC>=11200
 //#if MC>=11700

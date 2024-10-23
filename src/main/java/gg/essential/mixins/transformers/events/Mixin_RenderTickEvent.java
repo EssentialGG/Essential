@@ -65,7 +65,7 @@ public class Mixin_RenderTickEvent {
         //$$ float partialTicksMenu = this.timer.renderPartialTicks;
         //$$ float partialTicksInGame = partialTicksMenu;
         //#endif
-        Essential.EVENT_BUS.post(new RenderTickEvent(pre, matrixStack, partialTicksMenu, partialTicksInGame));
+        Essential.EVENT_BUS.post(new RenderTickEvent(pre, false, matrixStack, partialTicksMenu, partialTicksInGame));
     }
 
 }

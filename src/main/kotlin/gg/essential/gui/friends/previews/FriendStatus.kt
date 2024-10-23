@@ -41,7 +41,7 @@ class FriendStatus(
             height = ChildBasedMaxSizeConstraint()
         } effect ScissorEffect()
 
-        statusStates.getActivityState(uuid).onSetValueAndNow {
+        statusStates.getActivityState(uuid).onSetValueAndNow(this) {
             clearChildren()
             when (it) {
                 is PlayerActivity.Offline -> {

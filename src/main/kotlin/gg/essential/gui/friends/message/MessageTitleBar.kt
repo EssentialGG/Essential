@@ -22,6 +22,7 @@ import gg.essential.gui.common.*
 import gg.essential.gui.common.constraints.CenterPixelConstraint
 import gg.essential.gui.common.shadow.EssentialUIText
 import gg.essential.gui.common.shadow.ShadowEffect
+import gg.essential.gui.elementa.state.v2.combinators.map
 import gg.essential.gui.elementa.state.v2.toV1
 import gg.essential.gui.friends.SocialMenu
 import gg.essential.gui.util.hoveredState

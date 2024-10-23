@@ -19,7 +19,7 @@ import gg.essential.elementa.dsl.pixels
 import gg.essential.elementa.utils.withAlpha
 import gg.essential.gui.common.modal.Modal
 import gg.essential.gui.common.modal.defaultEssentialModalFadeTime
-import gg.essential.gui.elementa.transitions.FadeInTransition
+import gg.essential.gui.transitions.FadeInTransition
 import gg.essential.util.Client
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

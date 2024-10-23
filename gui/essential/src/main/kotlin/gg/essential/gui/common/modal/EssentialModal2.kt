@@ -242,10 +242,12 @@ abstract class EssentialModal2(
         modifier: Modifier = Modifier,
         style: State<StyledButton.Style> = stateOf(StyledButton.Style.GRAY),
         enableRetexturing: State<Boolean> = stateOf(false),
+        disabled: State<Boolean> = stateOf(false),
         action: suspend () -> Unit,
         content: LayoutScope.(style: State<MenuButton.Style>) -> Unit,
     ) {
-        val disabled = mutableStateOf(false)
+        val actionRunning = mutableStateOf(false)
+        val effectiveDisabled = State { disabled() || actionRunning() }
 
         styledButton(
             Modifier
@@ -253,16 +255,16 @@ abstract class EssentialModal2(
                     USound.playButtonPress()
 
                     coroutineScope.launch {
-                        disabled.set(true)
+                        actionRunning.set(true)
                         action()
-                        disabled.set(false)
+                        actionRunning.set(false)
                     }
                 }
-                .focusable(disabled)
+                .focusable(effectiveDisabled)
                 .then(modifier),
             style,
             enableRetexturing,
-            disabled,
+            effectiveDisabled,
             content
         )
     }
@@ -272,6 +274,7 @@ abstract class EssentialModal2(
         modifier: Modifier = Modifier,
         style: StyledButton.Style,
         enableRetexturing: Boolean = false,
+        disabled: Boolean = false,
         action: suspend () -> Unit,
         content: LayoutScope.(style: State<MenuButton.Style>) -> Unit,
     ) {
@@ -279,6 +282,7 @@ abstract class EssentialModal2(
             modifier,
             stateOf(style),
             stateOf(enableRetexturing),
+            stateOf(disabled),
             action,
             content,
         )

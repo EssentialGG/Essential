@@ -25,7 +25,13 @@ import org.spongepowered.asm.mixin.injection.At;
  */
 @Mixin(CapeLayer.class)
 public abstract class Mixin_CutoutCapeTextures {
-    @WrapOperation(method = "render(Lcom/mojang/blaze3d/matrix/MatrixStack;Lnet/minecraft/client/renderer/IRenderTypeBuffer;ILnet/minecraft/client/entity/player/AbstractClientPlayerEntity;FFFFFF)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/RenderType;getEntitySolid(Lnet/minecraft/util/ResourceLocation;)Lnet/minecraft/client/renderer/RenderType;"))
+    //#if MC>=12102
+    //$$ private static final String RENDER = "render(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;ILnet/minecraft/client/render/entity/state/PlayerEntityRenderState;FF)V";
+    //#else
+    private static final String RENDER = "render(Lcom/mojang/blaze3d/matrix/MatrixStack;Lnet/minecraft/client/renderer/IRenderTypeBuffer;ILnet/minecraft/client/entity/player/AbstractClientPlayerEntity;FFFFFF)V";
+    //#endif
+
+    @WrapOperation(method = RENDER, at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/RenderType;getEntitySolid(Lnet/minecraft/util/ResourceLocation;)Lnet/minecraft/client/renderer/RenderType;"))
     private RenderType essential$useCutoutRenderType(ResourceLocation resourceLocation, Operation<RenderType> operation) {
         RenderType vanillaRenderType = RenderType.getEntitySolid(resourceLocation);
         RenderType actualRenderType = operation.call(resourceLocation);

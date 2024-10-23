@@ -18,9 +18,13 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 
 @Mixin(ModelPlayer.class)
 public interface ModelPlayerAccessor {
+    //#if MC>=12102
+    //$$ // These live in their respective feature renderer now, completely separate from the main player model
+    //#else
     @Accessor("bipedCape")
     ModelRenderer getCape();
 
     @Accessor("bipedDeadmau5Head")
     ModelRenderer getEars();
+    //#endif
 }

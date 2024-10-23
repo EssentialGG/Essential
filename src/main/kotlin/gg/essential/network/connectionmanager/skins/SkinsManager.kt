@@ -26,7 +26,6 @@ import gg.essential.gui.elementa.state.v2.*
 import gg.essential.gui.elementa.state.v2.combinators.*
 import gg.essential.gui.notification.Notifications
 import gg.essential.gui.notification.error
-import gg.essential.gui.wardrobe.Item
 import gg.essential.mod.Model
 import gg.essential.mod.Skin
 import gg.essential.network.connectionmanager.ConnectionManager
@@ -43,13 +42,13 @@ class SkinsManager(val connectionManager: ConnectionManager) : NetworkedManager 
     private val packetQueue = SequentialPacketQueue.Builder(connectionManager).onTimeoutSkip().create()
 
     // Actual data
-    private val mutableSkins = mutableStateOf<Map<SkinId, Item.SkinItem>>(mapOf())
+    private val mutableSkins = mutableStateOf<Map<SkinId, SkinItem>>(mapOf())
 
     // Derived data
-    val skins: State<Map<SkinId, Item.SkinItem>> = mutableSkins
+    val skins: State<Map<SkinId, SkinItem>> = mutableSkins
     val skinsOrdered = mutableSkins.map { skins ->
         skins.values.sortedWith(
-            compareBy<Item.SkinItem> { it.favoritedSince?.toEpochMilli() }
+            compareBy<SkinItem> { it.favoritedSince?.toEpochMilli() }
                 .thenByDescending { (it.lastUsedAt ?: it.createdAt).toEpochMilli() }
         )
     }.toListState()
@@ -77,8 +76,8 @@ class SkinsManager(val connectionManager: ConnectionManager) : NetworkedManager 
         }
     }
 
-    fun addSkin(name: String, skin: Skin, selectSkin: Boolean = true, favorite: Boolean = false): CompletableFuture<Item.SkinItem> {
-        val future = CompletableFuture<Item.SkinItem>()
+    fun addSkin(name: String, skin: Skin, selectSkin: Boolean = true, favorite: Boolean = false): CompletableFuture<SkinItem> {
+        val future = CompletableFuture<SkinItem>()
         connectionManager.send(ClientSkinCreatePacket(name, skin.model.toInfra(), skin.hash, favorite)) { maybeResponse ->
             val response = maybeResponse.orElse(null)
             if (response is ServerSkinPopulatePacket) {
@@ -90,7 +89,7 @@ class SkinsManager(val connectionManager: ConnectionManager) : NetworkedManager 
                 // We don't add the skin here, since the packet handler adds it already
                 val skinItem = skinResponse.first().toMod()
                 if (selectSkin) {
-                    selectSkin(skinItem)
+                    selectSkin(skinItem.id)
                 }
                 future.complete(skinItem)
             } else {
@@ -100,31 +99,32 @@ class SkinsManager(val connectionManager: ConnectionManager) : NetworkedManager 
         return future
     }
 
-    fun openDeleteSkinModal(skin: Item.SkinItem) {
-        if (connectionManager.outfitManager.outfits.get().any { it.skinId == skin.id }) {
+    fun openDeleteSkinModal(skinId: SkinId) {
+        val skin = skins.getUntracked()[skinId] ?: return
+        if (connectionManager.outfitManager.outfits.get().any { it.skinId == skinId }) {
             Notifications.error("Can’t delete skin", "Skin is currently used on one or more outfits.")
             return
         }
         GuiUtil.pushModal { manager -> 
             DangerConfirmationEssentialModal(manager, "Delete", false)
                 .configure { contentText = "Are you sure you want to delete\n${skin.name}?" }
-                .onPrimaryAction { deleteSkin(skin) }
+                .onPrimaryAction { deleteSkin(skinId) }
         }
     }
 
-    private fun deleteSkin(skin: Item.SkinItem) {
-        connectionManager.send(ClientSkinDeletePacket(skin.id)) { maybeResponse ->
+    private fun deleteSkin(skinId: SkinId) {
+        connectionManager.send(ClientSkinDeletePacket(skinId)) { maybeResponse ->
             val response = maybeResponse.orElse(null)
             if (response is ResponseActionPacket && response.isSuccessful) {
-                mutableSkins.set { it - skin.id }
+                mutableSkins.set { it - skinId }
             } else {
                 Notifications.push("Error deleting skin", "An unexpected error has occurred. Try again.")
             }
         }
     }
 
-    fun setFavoriteState(skin: Item.SkinItem, favorite: Boolean) {
-        packetQueue.enqueue(ClientSkinUpdateFavoriteStatePacket(skin.id, favorite)) { maybeResponse ->
+    fun setFavoriteState(skinId: SkinId, favorite: Boolean) {
+        packetQueue.enqueue(ClientSkinUpdateFavoriteStatePacket(skinId, favorite)) { maybeResponse ->
             val response = maybeResponse.orElse(null)
             // We don't replace the skin here, since the packet handler already replaces it
             if (response !is ServerSkinPopulatePacket) {
@@ -133,8 +133,8 @@ class SkinsManager(val connectionManager: ConnectionManager) : NetworkedManager 
         }
     }
 
-    fun renameSkin(skin: Item.SkinItem, name: String) {
-        packetQueue.enqueue(ClientSkinUpdateNamePacket(skin.id, name)) { maybeResponse ->
+    fun renameSkin(skinId: SkinId, name: String) {
+        packetQueue.enqueue(ClientSkinUpdateNamePacket(skinId, name)) { maybeResponse ->
             val response = maybeResponse.orElse(null)
             // We don't replace the skin here, since the packet handler already replaces it
             if (response !is ServerSkinPopulatePacket) {
@@ -143,8 +143,8 @@ class SkinsManager(val connectionManager: ConnectionManager) : NetworkedManager 
         }
     }
 
-    fun updateLastUsedAtState(skin: Item.SkinItem) {
-        packetQueue.enqueue(ClientSkinUpdateLastUsedStatePacket(skin.id)) { maybeResponse ->
+    fun updateLastUsedAtState(skinId: SkinId) {
+        packetQueue.enqueue(ClientSkinUpdateLastUsedStatePacket(skinId)) { maybeResponse ->
             val response = maybeResponse.orElse(null)
             // We don't replace the skin here, since the packet handler already replaces it
             if (response !is ServerSkinPopulatePacket) {
@@ -153,8 +153,9 @@ class SkinsManager(val connectionManager: ConnectionManager) : NetworkedManager 
         }
     }
 
-    fun setSkinModel(skin: Item.SkinItem, model: Model) {
-        packetQueue.enqueue(ClientSkinUpdateDataPacket(skin.id, model.toInfra(), skin.skin.hash)) { maybeResponse ->
+    fun setSkinModel(skinId: SkinId, model: Model) {
+        val skin = skins.getUntracked()[skinId] ?: return
+        packetQueue.enqueue(ClientSkinUpdateDataPacket(skinId, model.toInfra(), skin.skin.hash)) { maybeResponse ->
             val response = maybeResponse.orElse(null)
             // We don't replace the skin here, since the packet handler already replaces it
             if (response !is ServerSkinPopulatePacket) {
@@ -163,11 +164,11 @@ class SkinsManager(val connectionManager: ConnectionManager) : NetworkedManager 
         }
     }
 
-    fun selectSkin(skin: Item.SkinItem) {
-        connectionManager.outfitManager.updateOutfitSkin(skin.id, false)
+    fun selectSkin(skinId: SkinId) {
+        connectionManager.outfitManager.updateOutfitSkin(skinId, false)
     }
 
-    fun onSkinPopulate(skins: Map<SkinId, Item.SkinItem>) {
+    fun onSkinPopulate(skins: Map<SkinId, SkinItem>) {
         mutableSkins.set { map -> map + skins }
     }
 

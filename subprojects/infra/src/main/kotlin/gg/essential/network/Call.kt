@@ -12,6 +12,8 @@
 package gg.essential.network
 
 import gg.essential.connectionmanager.common.packet.Packet
+import gg.essential.util.ExponentialBackoff
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
@@ -33,6 +35,10 @@ class Call(
 
     fun timeout(duration: Duration = timeout) = apply {
         this.timeout = duration
+    }
+
+    fun exponentialBackoff(start: Duration = 2.seconds, max: Duration = 60.seconds, factor: Double = 2.0): CallWithRetry {
+        return CallWithRetry(this, ExponentialBackoff(start, max, factor))
     }
 
     fun fireAndForget() {
@@ -67,6 +73,25 @@ class Call(
 
     companion object {
         private val LOGGER = LoggerFactory.getLogger(Call::class.java)
+    }
+}
+
+class CallWithRetry(
+    private val base: Call,
+    private val backoff: ExponentialBackoff,
+) {
+    suspend inline fun <reified T : Packet> await(): T {
+        return awaitOneOf(T::class.java) as T
+    }
+
+    suspend fun awaitOneOf(vararg classes: Class<out Packet>): Packet {
+        while (true) {
+            val response = base.awaitOneOf(*classes)
+            if (response != null) {
+                return response
+            }
+            delay(backoff.increment())
+        }
     }
 }
 

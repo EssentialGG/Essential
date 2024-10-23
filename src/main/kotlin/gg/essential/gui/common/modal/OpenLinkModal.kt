@@ -11,9 +11,6 @@
  */
 package gg.essential.gui.common.modal
 
-import gg.essential.Essential
-import gg.essential.api.gui.NotificationType
-import gg.essential.api.gui.Slot
 import gg.essential.config.EssentialConfig
 import gg.essential.gui.EssentialPalette
 import gg.essential.gui.common.StyledButton
@@ -33,13 +30,11 @@ import gg.essential.gui.layoutdsl.row
 import gg.essential.gui.layoutdsl.shadow
 import gg.essential.gui.layoutdsl.text
 import gg.essential.gui.layoutdsl.width
-import gg.essential.gui.notification.Notifications
-import gg.essential.gui.notification.toastButton
 import gg.essential.gui.overlay.ModalManager
-import gg.essential.universal.UDesktop
 import gg.essential.universal.USound
 import gg.essential.util.GuiUtil
 import gg.essential.util.TrustedHostsUtil
+import gg.essential.util.openInBrowser
 import java.awt.Color
 import java.net.URI
 
@@ -75,7 +70,7 @@ class OpenLinkModal(
                 Modifier.width(91f).onLeftClick {
                     USound.playButtonPress()
 
-                    browse(uri, successfulToast = true)
+                    openInBrowser(uri)
                     close()
                 },
                 style = StyledButton.Style.BLUE,
@@ -95,25 +90,9 @@ class OpenLinkModal(
                 TrustedHostsUtil.getTrustedHosts().any { trustedHost -> trustedHost.domains.any { it == uri.host } }
 
             if (isTrusted) {
-                browse(uri, true)
+                openInBrowser(uri)
             } else if (EssentialConfig.linkWarning) {
                 GuiUtil.pushModal { OpenLinkModal(it, uri) }
-            }
-        }
-
-        fun browse(uri: URI, successfulToast: Boolean = false) {
-            if (!UDesktop.browse(uri)) {
-                Essential.logger.error("Failed to open $uri")
-                Notifications.pushPersistentToast("Can't open browser", "Unable to open link in browser.", {}, {}) {
-                    type = NotificationType.WARNING
-                    withCustomComponent(Slot.ACTION, toastButton("Copy Link") {
-                        UDesktop.setClipboardString(uri.toString())
-                    })
-                }
-            } else if (successfulToast) {
-                Notifications.push("", "Link opened in browser") {
-                    withCustomComponent(Slot.ICON, EssentialPalette.JOIN_ARROW_5X.create())
-                }
             }
         }
     }

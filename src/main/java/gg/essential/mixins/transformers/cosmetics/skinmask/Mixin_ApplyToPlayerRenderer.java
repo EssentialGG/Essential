@@ -20,10 +20,21 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+//#if MC>=12102
+//$$ import gg.essential.mixins.impl.client.model.PlayerEntityRenderStateExt;
+//$$ import net.minecraft.client.render.entity.state.PlayerEntityRenderState;
+//#endif
+
 @Mixin(RenderPlayer.class)
 public abstract class Mixin_ApplyToPlayerRenderer {
+    //#if MC>=12102
+    //$$ @Inject(method = "getTexture(Lnet/minecraft/client/render/entity/state/PlayerEntityRenderState;)Lnet/minecraft/util/Identifier;", at = @At("RETURN"), cancellable = true)
+    //$$ private void applyCosmeticsSkinMask(PlayerEntityRenderState state, CallbackInfoReturnable<Identifier> ci) {
+    //$$     AbstractClientPlayerEntity player = ((PlayerEntityRenderStateExt) state).essential$getEntity();
+    //#else
     @Inject(method = "getEntityTexture(Lnet/minecraft/client/entity/AbstractClientPlayer;)Lnet/minecraft/util/ResourceLocation;", at = @At("RETURN"), cancellable = true)
     private void applyCosmeticsSkinMask(AbstractClientPlayer player, CallbackInfoReturnable<ResourceLocation> ci) {
+    //#endif
         ci.setReturnValue(((AbstractClientPlayerExt) player).applyEssentialCosmeticsMask(ci.getReturnValue()));
     }
 }

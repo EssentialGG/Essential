@@ -26,12 +26,14 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Group;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import java.util.UUID;
 
 import static dev.folomeev.kotgl.matrix.matrices.Matrices.identityMat3;
 import static dev.folomeev.kotgl.matrix.matrices.Matrices.identityMat4;
 import static dev.folomeev.kotgl.matrix.vectors.Vectors.vec3;
 import static dev.folomeev.kotgl.matrix.vectors.Vectors.vecUnitY;
 import static dev.folomeev.kotgl.matrix.vectors.mutables.MutableVectors.times;
+import static gg.essential.util.HelpersKt.getPerspective;
 
 //#if MC>=11600
 //$$ import com.mojang.blaze3d.matrix.MatrixStack;
@@ -114,7 +116,9 @@ public abstract class Mixin_RenderParticleSystemOfClientWorld {
             return;
         }
 
-        //#if MC>=11600
+        //#if MC>=12102
+        //$$ net.minecraft.util.profiler.Profiler profiler = net.minecraft.util.profiler.Profilers.get();
+        //#elseif MC>=11600
         //$$ net.minecraft.profiler.IProfiler profiler = this.world.getProfiler();
         //#else
         net.minecraft.profiler.Profiler profiler = this.world.profiler;
@@ -170,7 +174,14 @@ public abstract class Mixin_RenderParticleSystemOfClientWorld {
         stack.translate((float) -Particle.interpPosX, (float) -Particle.interpPosY, (float) -Particle.interpPosZ);
         //#endif
 
-        particleSystem.render(stack, cameraPos, cameraRot, new MinecraftRenderBackend.ParticleVertexConsumerProvider());
+        //#if MC>=11600
+        //$$ UUID cameraUuid = activeRenderInfoIn.getRenderViewEntity().getUniqueID();
+        //#else
+        UUID cameraUuid = cameraEntity.getUniqueID();
+        //#endif
+
+        boolean isFirstPerson = getPerspective() == 0;
+        particleSystem.render(stack, cameraPos, cameraRot, new MinecraftRenderBackend.ParticleVertexConsumerProvider(), cameraUuid, isFirstPerson);
 
         profiler.endSection();
     }

@@ -21,10 +21,14 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
 public class LoginUtil {
+    private static final String JOIN_URL = System.getProperty(
+        "essential.mojang_join_url",
+        "https://sessionserver.mojang.com/session/minecraft/join"
+    );
 
     public static int joinServer(String token, String uuid, String serverHash) {
         try {
-            URL url = new URL("https://sessionserver.mojang.com/session/minecraft/join");
+            URL url = new URL(JOIN_URL);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
             conn.setRequestMethod("POST");

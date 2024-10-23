@@ -47,6 +47,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
+import static gg.essential.network.connectionmanager.relationship.RelationshipResponseKt.displayToast;
+
 // TODO: Should we have individual maps for the RelationshipType.FRIENDS and BLOCKED ?
 //       _or_ perhaps we just have 1 map for all relationships and then sort through them
 //      when / if necessary?
@@ -410,7 +412,7 @@ public class RelationshipManager extends StateCallbackManager<IRelationshipManag
                         Essential.logger.error("Unknown relationshipErrorResponse reason: " + reason);
                     }
                     RelationshipResponse relationshipResponse = new RelationshipResponse(FriendRequestState.ERROR_HANDLED, relationshipErrorResponse);
-                    relationshipResponse.displayToast(targetUUID);
+                    displayToast(relationshipResponse, targetUUID);
                     future.complete(relationshipResponse);
                 } else {
                     future.complete(new RelationshipResponse(FriendRequestState.ERROR_UNHANDLED, "An unknown error occurred. Please contact support if issues persist."));

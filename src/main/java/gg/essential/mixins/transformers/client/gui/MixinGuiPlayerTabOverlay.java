@@ -57,8 +57,13 @@ public class MixinGuiPlayerTabOverlay {
     //#if MC>=12000
     //$$ @ModifyArg(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/DrawContext;drawTextWithShadow(Lnet/minecraft/client/font/TextRenderer;Lnet/minecraft/text/Text;III)I"), index = 2)
     //$$ private int essential$shiftNameTextAndRenderIcon(TextRenderer textRenderer, Text text, int x, int y, int color, @Local(argsOnly = true) DrawContext context, @Local PlayerListEntry networkPlayerInfo) {
-    //$$     VertexConsumerProvider.Immediate provider = context.getVertexConsumers();
     //$$     UMatrixStack matrixStack = new UMatrixStack(context.getMatrices());
+        //#if MC>=12102
+        //$$ // FIXME 1.21.2 should not just blindly cast to Immediate, MC now does the draw call for us, needs refactoring
+        //$$ context.draw(provider -> OnlineIndicator.drawTabIndicatorOuter(matrixStack, (VertexConsumerProvider.Immediate) provider, networkPlayerInfo, x, y));
+        //#else
+        //$$ VertexConsumerProvider.Immediate provider = context.getVertexConsumers();
+        //#endif
     //#else
     @ModifyArg(
         method = "renderPlayerlist",
@@ -84,6 +89,7 @@ public class MixinGuiPlayerTabOverlay {
     //#endif
     //#endif
 
+        //#if MC<12102
         OnlineIndicator.drawTabIndicatorOuter(
             matrixStack,
             //#if MC>=11600
@@ -92,6 +98,7 @@ public class MixinGuiPlayerTabOverlay {
             networkPlayerInfo,
             (int) x, (int) y
         );
+        //#endif
 
         return x;
     }

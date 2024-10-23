@@ -22,7 +22,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -36,18 +35,6 @@ public class Cosmetic implements DisplayNameHolder, PriceHolder, SkinLayersHolde
 
     @SerializedName("c")
     private final @NotNull Map<@NotNull String, @NotNull String> displayNames;
-
-    @SerializedName("d")
-    private final @Nullable CosmeticAssets assets;
-
-    /**
-     * @deprecated Use {@link CosmeticAssets#getSettings()} instead.
-     *             This field will be removed after users have migrated to `release/1.2` otherwise users on an old
-     *             client version won't get any `settings` sent to them until they restart their game.
-     */
-    @Deprecated
-    @SerializedName("e")
-    private @Nullable List<@NotNull CosmeticSetting> settings;
 
     @SerializedName("f")
     private final int storePackageId;
@@ -83,14 +70,12 @@ public class Cosmetic implements DisplayNameHolder, PriceHolder, SkinLayersHolde
     private @Nullable CosmeticTier tier;
 
     @SerializedName("q")
-    private @Nullable Map<@NotNull String, @NotNull EssentialAsset> assetsMap;
+    private @NotNull Map<@NotNull String, @NotNull EssentialAsset> assetsMap;
 
     public Cosmetic(
             final @NotNull String id,
             final @NotNull String type,
             final @NotNull Map<@NotNull String, @NotNull String> displayNames,
-            final @Nullable CosmeticAssets assets,
-            final @Nullable @Deprecated List<@NotNull CosmeticSetting> settings,
             final int storePackageId,
             final @Nullable Map<@NotNull String, @NotNull Double> prices,
             final @Nullable Set<@NotNull String> tags,
@@ -102,13 +87,11 @@ public class Cosmetic implements DisplayNameHolder, PriceHolder, SkinLayersHolde
             final @Nullable Integer defaultSortWeight,
             final @Nullable Integer priceCoins,
             final @Nullable CosmeticTier tier,
-            final @Nullable Map<@NotNull String, @NotNull EssentialAsset> assetsMap
+            final @NotNull Map<@NotNull String, @NotNull EssentialAsset> assetsMap
     ) {
         this.id = id;
         this.type = type;
         this.displayNames = displayNames;
-        this.assets = assets;
-        this.settings = settings;
         this.storePackageId = storePackageId;
         this.prices = prices;
         this.tags = tags;
@@ -134,24 +117,6 @@ public class Cosmetic implements DisplayNameHolder, PriceHolder, SkinLayersHolde
     @Override
     public @NotNull Map<@NotNull String, @NotNull String> getDisplayNames() {
         return this.displayNames;
-    }
-
-    public @Nullable CosmeticAssets getAssets() {
-        return this.assets;
-    }
-
-    /**
-     * @deprecated Use {@link Cosmetic#getAssets()} and {@link CosmeticAssets#getSettings()} instead.
-     *             This field will be removed after users have migrated to `release/1.2` otherwise users on an old
-     *             client version won't get any `settings` sent to them until they restart their game.
-     */
-    @Deprecated
-    public @NotNull List<@NotNull CosmeticSetting> getSettings() {
-        if (this.settings == null) {
-            this.settings = Collections.emptyList();
-        }
-
-        return this.settings;
     }
 
     public int getStorePackageId() {
@@ -223,7 +188,7 @@ public class Cosmetic implements DisplayNameHolder, PriceHolder, SkinLayersHolde
         return tier;
     }
 
-    public @Nullable Map<@NotNull String, @NotNull EssentialAsset> getAssetsMap() {
+    public @NotNull Map<@NotNull String, @NotNull EssentialAsset> getAssetsMap() {
         return assetsMap;
     }
 }

@@ -29,6 +29,15 @@ import net.minecraft.client.model.ModelBiped
 import net.minecraft.client.model.ModelRenderer
 import net.minecraft.client.renderer.entity.RenderPlayer
 
+//#if MC>=12102
+//$$ import dev.folomeev.kotgl.matrix.vectors.mutables.minus
+//$$ import dev.folomeev.kotgl.matrix.vectors.mutables.plus
+//$$ import dev.folomeev.kotgl.matrix.vectors.mutables.plusSelf
+//$$ import gg.essential.model.util.rotateBy
+//$$ import gg.essential.model.util.toMat3
+//$$ import gg.essential.model.util.toMat4
+//#endif
+
 fun RenderPlayer.toPose(): PlayerPose {
     val basePose = mainModel.toPose()
     val features = (this as PlayerEntityRendererExt).`essential$getFeatures`()
@@ -71,7 +80,9 @@ fun ModelBiped.toPose(): PlayerPose = PlayerPose(
     rightWing = PlayerPose.Part(),
     leftWing = PlayerPose.Part(),
     cape = PlayerPose.Part(),
-    //#if MC>=11600 && FABRIC
+    //#if MC>=12102
+    //$$ false,
+    //#elseif MC>=11600 && FABRIC
     //$$ child,
     //#elseif MC>=11700
     //$$ young,
@@ -100,7 +111,9 @@ fun PlayerPose.applyTo(model: ModelBiped) {
     // FIXME preprocessor bug: for some reason it doesn't remap these
     //#if MC>=11600 && FABRIC || MC>=11700
     //$$ head.applyTo(model.head)
-    //#if MC>=11700
+    //#if MC>=12000
+    //$$ // Hat is now a proper child of head
+    //#elseif MC>=11700
     //$$ head.applyTo(model.hat)
     //#else
     //$$ head.applyTo(model.helmet)
@@ -123,6 +136,7 @@ fun PlayerPose.applyTo(model: ModelBiped) {
     rightLeg.applyTo(model.bipedRightLeg)
     leftLeg.applyTo(model.bipedLeftLeg)
     //#endif
+    //#if MC<12102
     if (model is ModelPlayerAccessor) {
         head.applyTo(model.ears)
     }
@@ -132,6 +146,7 @@ fun PlayerPose.applyTo(model: ModelBiped) {
     //$$ model.young = child
     //#else
     model.isChild = child
+    //#endif
     //#endif
 }
 
@@ -145,6 +160,43 @@ fun PlayerPose.Part.applyTo(model: ModelRenderer) {
     (model as ExtraTransformHolder).extra = extra
 }
 
+//#if MC>=12102
+//$$ fun PlayerPose.withCapePose(
+//$$     extraOffset: Vec3,
+//$$     bodyModel: ModelPart,
+//$$     capeModel: ModelPart,
+//$$ ): PlayerPose {
+//$$     // Chain body pose and cape pose (which is a child of body) into a single absolute pose
+//$$     val bodyPose = bodyModel.toPose()
+//$$     val bodyPos = bodyPose.pivot.plus(extraOffset)
+//$$     val bodyRot = bodyPose.rotation
+//$$     val capePose = capeModel.toPose()
+//$$     val pos = capePose.pivot.rotateBy(bodyRot).plusSelf(bodyPos)
+//$$     val rotation = bodyRot.times(capePose.rotation)
+//$$     val rot = rotation.toMat3().toMat4().getRotationEulerZYX()
+//$$     val absPose = PlayerPose.Part(pos.x, pos.y, pos.z, rot.x, rot.y, rot.z)
+//$$     return copy(cape = absPose)
+//$$ }
+//$$
+//$$ fun PlayerPose.applyCapePose(
+//$$     extraOffset: Vec3,
+//$$     bodyModel: ModelPart,
+//$$     capeModel: ModelPart,
+//$$ ) {
+//$$     // Convert the absolute cape pose into one relative to the body pose (because capeModel is a child of bodyModel)
+//$$     // i.e. inverse of withCapePose
+//$$     val bodyPose = bodyModel.toPose()
+//$$     val bodyPos = bodyPose.pivot.plus(extraOffset)
+//$$     val bodyRot = bodyPose.rotation
+//$$     val absPose = this.cape
+//$$     val pos = absPose.pivot.minus(bodyPos).rotateBy(bodyRot.conjugate())
+//$$     val rotation = bodyRot.invert().times(absPose.rotation)
+//$$     val rot = rotation.toMat3().toMat4().getRotationEulerZYX()
+//$$     val relPose = PlayerPose.Part(pos.x, pos.y, pos.z, rot.x, rot.y, rot.z)
+//$$     // and finally apply it to the ModelPart
+//$$     relPose.applyTo(capeModel)
+//$$ }
+//#else
 fun PlayerPose.withCapePose(
     capeModel: ModelRenderer,
     vanillaMatrix: Mat4,
@@ -171,6 +223,7 @@ fun PlayerPose.withCapePose(
     )
     return copy(cape = combinedPose)
 }
+//#endif
 
 fun getElytraPoseOffset(player: AbstractClientPlayer): Vec3 {
     val offset = mutableVec3()

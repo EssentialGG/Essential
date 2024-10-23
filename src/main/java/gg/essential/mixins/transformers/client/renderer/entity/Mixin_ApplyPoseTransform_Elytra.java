@@ -16,6 +16,7 @@ import gg.essential.config.EssentialConfig;
 import gg.essential.gui.common.EmulatedUI3DPlayer;
 import gg.essential.mixins.impl.client.entity.AbstractClientPlayerExt;
 import gg.essential.mixins.impl.client.model.ElytraPoseSupplier;
+import gg.essential.mixins.impl.client.model.PlayerEntityRenderStateExt;
 import gg.essential.model.backend.PlayerPose;
 import gg.essential.model.backend.minecraft.PlayerPoseKt;
 import net.minecraft.client.entity.AbstractClientPlayer;
@@ -32,6 +33,11 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import static gg.essential.model.backend.minecraft.PlayerPoseKt.toPose;
+
+//#if MC>=12102
+//$$ import gg.essential.mixins.impl.client.model.PlayerEntityRenderStateExt;
+//$$ import net.minecraft.client.render.entity.state.BipedEntityRenderState;
+//#endif
 
 @Mixin(ModelElytra.class)
 public abstract class Mixin_ApplyPoseTransform_Elytra implements ElytraPoseSupplier {
@@ -54,47 +60,51 @@ public abstract class Mixin_ApplyPoseTransform_Elytra implements ElytraPoseSuppl
     @Inject(method = "setRotationAngles", at = @At("HEAD"))
     private void resetPose(
         CallbackInfo ci,
-        //#if MC>=11400
+        //#if MC>=12102
+        //$$ @Local(argsOnly = true) BipedEntityRenderState state
+        //#elseif MC>=11400
         //$$ @Local(argsOnly = true) net.minecraft.entity.LivingEntity entity
         //#else
         @Local(argsOnly = true) Entity entity
         //#endif
     ) {
+        //#if MC>=12102
+        //$$ if (!(state instanceof PlayerEntityRenderStateExt)) return;
+        //$$ AbstractClientPlayerEntity player = ((PlayerEntityRenderStateExt) state).essential$getEntity();
+        //#else
         if (!(entity instanceof AbstractClientPlayer)) return;
         AbstractClientPlayer player = (AbstractClientPlayer) entity;
-        ModelElytra model = (ModelElytra) (Object) this;
+        //#endif
 
         if (resetPose == null) {
             resetPose = PlayerPoseKt.withElytraPose(PlayerPose.Companion.neutral(), this.leftWing, this.rightWing, player);
         } else {
-            boolean isChild = model.isChild; // child isn't set by the method we inject into, so we need to preserve it
             PlayerPoseKt.applyElytraPose(resetPose, this.leftWing, this.rightWing, player);
-            model.isChild = isChild;
         }
     }
 
     @Inject(method = "setRotationAngles", at = @At("TAIL"))
     private void applyPoseTransform(
-        //#if MC>=11400
-        //$$ net.minecraft.entity.LivingEntity entity,
+        CallbackInfo ci,
+        //#if MC>=12102
+        //$$ @Local(argsOnly = true) BipedEntityRenderState state
+        //#elseif MC>=11400
+        //$$ @Local(argsOnly = true) net.minecraft.entity.LivingEntity entity
+        //#else
+        @Local(argsOnly = true) Entity entity
         //#endif
-        float limbSwing,
-        float limbSwingAmount,
-        float ageInTicks,
-        float netHeadYaw,
-        float headPitch,
-        //#if MC<11400
-        float scaleFactor,
-        Entity entity,
-        //#endif
-        CallbackInfo ci
     ) {
+        //#if MC>=12102
+        //$$ if (!(state instanceof PlayerEntityRenderStateExt)) return;
+        //$$ AbstractClientPlayerEntity player = ((PlayerEntityRenderStateExt) state).essential$getEntity();
+        //#else
         if (!(entity instanceof AbstractClientPlayerExt)) return;
-        if (EssentialConfig.INSTANCE.getDisableEmotes() && !(entity instanceof EmulatedUI3DPlayer.EmulatedPlayer)) {
+        AbstractClientPlayer player = (AbstractClientPlayer) entity;
+        //#endif
+        if (EssentialConfig.INSTANCE.getDisableEmotes() && !(player instanceof EmulatedUI3DPlayer.EmulatedPlayer)) {
             return;
         }
-        AbstractClientPlayer player = (AbstractClientPlayer) entity;
-        AbstractClientPlayerExt playerExt = (AbstractClientPlayerExt) entity;
+        AbstractClientPlayerExt playerExt = (AbstractClientPlayerExt) player;
 
         PlayerPose basePose = PlayerPoseKt.withElytraPose(PlayerPose.Companion.neutral(), this.leftWing, this.rightWing, player);
         PlayerPose transformedPose = playerExt.getPoseManager().computePose(playerExt.getWearablesManager(), basePose);

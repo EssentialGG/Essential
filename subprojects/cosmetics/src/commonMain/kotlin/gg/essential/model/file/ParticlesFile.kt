@@ -224,6 +224,8 @@ data class ParticleEffectComponents(
     val particleMotionParametric: ParticleMotionParametric? = null,
     @SerialName("minecraft:particle_lifetime_expression")
     val particleLifetimeExpression: ParticleLifetimeExpression? = null,
+    @SerialName("essential:particle_visibility")
+    val particleVisibility: ParticleVisibility = ParticleVisibility(),
 ) {
     /**
      * This component specifies the frame of reference of the emitter.
@@ -656,6 +658,17 @@ data class ParticleEffectComponents(
         /** particle will expire after this much time; evaluated once */
         @SerialName("max_lifetime")
         val maxLifetime: MolangExpression,
+    )
+
+    /** Custom component that controls particle visibility for particles emitted by the player. Does not affect visibility for particles emitted by other players */
+    @Serializable
+    data class ParticleVisibility(
+        /** controls whether player's own particles are seen in first-person */
+        @SerialName("first_person")
+        val firstPerson: Boolean = true,
+        /** controls whether player's own particles are seen in third-person */
+        @SerialName("third_person")
+        val thirdPerson: Boolean = true,
     )
 }
 

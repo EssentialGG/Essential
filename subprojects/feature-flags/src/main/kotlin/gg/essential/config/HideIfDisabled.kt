@@ -22,6 +22,7 @@ package gg.essential.config
  * The only purpose of this annotation is to hide code which should not yet be visible to the general public.
  */
 @Target(
+    AnnotationTarget.FILE,
     AnnotationTarget.CLASS,
     AnnotationTarget.CONSTRUCTOR,
     AnnotationTarget.FUNCTION,

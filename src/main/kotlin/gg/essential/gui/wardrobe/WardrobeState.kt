@@ -36,7 +36,6 @@ import gg.essential.gui.elementa.state.v2.filterNotNull
 import gg.essential.gui.elementa.state.v2.mapEach
 import gg.essential.gui.elementa.state.v2.mapEachNotNull
 import gg.essential.gui.elementa.state.v2.memo
-import gg.essential.gui.elementa.state.v2.mutableListStateOf
 import gg.essential.gui.elementa.state.v2.mutableStateOf
 import gg.essential.gui.elementa.state.v2.onChange
 import gg.essential.gui.elementa.state.v2.set
@@ -45,7 +44,6 @@ import gg.essential.gui.elementa.state.v2.stateBy
 import gg.essential.gui.elementa.state.v2.stateOf
 import gg.essential.gui.elementa.state.v2.toListState
 import gg.essential.gui.elementa.state.v2.zipWithEachElement
-import gg.essential.gui.emotes.EmoteWheel
 import gg.essential.gui.util.layoutSafePollingState
 import gg.essential.gui.wardrobe.Item.Companion.toItem
 import gg.essential.gui.wardrobe.components.handleBundleLeftClick
@@ -74,6 +72,7 @@ import gg.essential.gui.util.pollingStateV2
 import gg.essential.mod.cosmetics.featured.FeaturedItem
 import gg.essential.mod.cosmetics.settings.CosmeticSettings
 import gg.essential.mod.cosmetics.settings.setting
+import gg.essential.network.connectionmanager.cosmetics.EmoteWheelManager
 import gg.essential.universal.UResolution
 import java.util.concurrent.TimeUnit
 
@@ -83,6 +82,7 @@ class WardrobeState(
     component: UIComponent,
     val cosmeticsManager: CosmeticsManager,
     val skinsManager: SkinsManager,
+    val emoteWheelManager: EmoteWheelManager,
     val coinsManager: CoinsManager,
     private val guiScale: State<Int>,
 ) {
@@ -205,7 +205,9 @@ class WardrobeState(
             Item.OutfitItem(outfit.id, outfit.name, skinId, skin, outfit.equippedCosmetics, outfit.cosmeticSettings, outfit.createdAt, outfit.favoritedSince)
         }
     }
-    val skinItems = skinsManager.skinsOrdered
+    val skinItems = skinsManager.skinsOrdered.mapEach { skin ->
+        Item.SkinItem(skin.id, skin.name, skin.skin, skin.createdAt, skin.lastUsedAt, skin.favoritedSince)
+    }
 
     private fun <T : Item> ListState<T>.filteredBySearch() =
         zipWithEachElement(search) { item, search ->
@@ -327,12 +329,7 @@ class WardrobeState(
     /** Slot that a drag&drop is currently hovering on top of. `-1` for "Remove". */
     val draggingOntoEmoteSlot = mutableStateOf<Int?>(null)
 
-    val emoteWheel = mutableListStateOf<CosmeticId?>(*arrayOfNulls(EmoteWheel.SLOTS))
-        .apply {
-            cosmeticsManager.savedEmotes.forEachIndexed { index, element -> set(index, element) }
-            onSetValue(component) { cosmeticsManager.savedEmotes = it }
-            unlockedCosmetics.onSetValue(component) { cosmeticsManager.savedEmotes = this.get() }
-        }
+    val emoteWheel = emoteWheelManager.selectedEmoteWheelSlots
 
     val draggingOntoOccupiedEmoteSlot =
         draggingOntoEmoteSlot.zip(emoteWheel).map { (slot, wheel) ->
@@ -340,7 +337,6 @@ class WardrobeState(
         }
 
     val equippedOutfitId = outfitManager.selectedOutfitId
-    val equippedEmoteSlot = mutableStateOf(cosmeticsManager.emoteWheels.indexOfFirst { it.isSelected })
 
     val equippedOutfitItem: State<Item.OutfitItem?> = stateBy {
         val equippedId = equippedOutfitId() ?: return@stateBy null
@@ -458,6 +454,8 @@ class WardrobeState(
 
     val purchaseConfirmationEmoteId = "ESSENTIAL_PURCHASE_CONFIRMATION"
 
+    val wardrobeOpenTime = System.currentTimeMillis()
+
     init {
         // Register purchase confirmation emote
         cosmeticsManager.infraCosmeticsData.requestCosmeticsIfMissing(listOf(purchaseConfirmationEmoteId))
@@ -506,14 +504,13 @@ class WardrobeState(
     }
 
     fun changeEmoteWheel(offset: Int) {
-        equippedEmoteSlot.set { cosmeticsManager.shiftSelectedEmoteWheel(offset) }
-        emoteWheel.setAll(cosmeticsManager.savedEmotes)
+        emoteWheelManager.shiftSelectedEmoteWheel(offset)
     }
 
     fun setFavorite(item: Item, favorite: Boolean) {
         when (item) {
             is Item.OutfitItem -> outfitManager.setFavorite(item.id, favorite)
-            is Item.SkinItem -> skinsManager.setFavoriteState(item, favorite)
+            is Item.SkinItem -> skinsManager.setFavoriteState(item.id, favorite)
             else -> {}
         }
     }
@@ -701,7 +698,7 @@ class WardrobeState(
         val displayName: String,
         comparator: Comparator<CosmeticWithSortInfo>,
     ) : Comparator<CosmeticWithSortInfo> by comparator {
-        Default("All Items", sortByOrderInCollection.then(sortBySortWeight).then(sortByPriority)),
+        Default("All Items", sortByOrderInCollection.then(sortBySortWeight).then(sortByPriority).then(sortByName)),
         Alphabetical("A-Z", sortByName.then(Default)),
         Owned("Owned Only", Default),
         Price("Price", sortByPrice.then(Default)),

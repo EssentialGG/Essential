@@ -21,6 +21,10 @@ interface CMConnection {
     /** A main-thread supervisor [CoroutineScope] which has all its children cancelled on disconnect. */
     val connectionScope: CoroutineScope
 
+    val isOpen: Boolean
+
+    fun registerOnConnected(onConnected: () -> Unit)
+
     fun <T : Packet> registerPacketHandler(cls: Class<T>, handler: (T) -> Unit)
 
     fun call(packet: Packet): Call = Call(this, packet)

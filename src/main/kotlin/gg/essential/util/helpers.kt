@@ -13,8 +13,8 @@ package gg.essential.util
 
 import com.sparkuniverse.toolbox.util.DateTime
 import gg.essential.Essential
-import gg.essential.config.EssentialConfig
 import gg.essential.config.LoadsResources
+import gg.essential.config.McEssentialConfig
 import gg.essential.elementa.components.UIImage
 import gg.essential.elementa.components.Window
 import gg.essential.gui.common.ImageLoadCallback
@@ -45,10 +45,6 @@ import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
-import java.time.LocalDate
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.time.temporal.TemporalAccessor
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
@@ -80,28 +76,6 @@ inline fun loop(block: () -> Unit) {
     while (true) {
         block()
     }
-}
-
-const val DATE_FORMAT = "MMM dd, yyyy"
-const val DATE_FORMAT_NO_YEAR = "MMM dd"
-
-fun getTimeFormat(includeSeconds: Boolean): String {
-    val seconds = if (includeSeconds) ":ss" else ""
-    return if (EssentialConfig.timeFormat == 0) "h:mm$seconds a" else "HH:mm$seconds"
-}
-
-fun formatDate(date: LocalDate, displayYear: Boolean = true) =
-    date.formatter(if (displayYear) DATE_FORMAT else DATE_FORMAT_NO_YEAR)
-
-fun formatTime(time: TemporalAccessor, includeSeconds: Boolean) =
-    time.formatter(getTimeFormat(includeSeconds))
-
-fun formatDateAndTime(date: TemporalAccessor) =
-    date.formatter("$DATE_FORMAT @ ${getTimeFormat(includeSeconds = false)}")
-
-fun TemporalAccessor.formatter(pattern: String): String {
-    val format = DateTimeFormatter.ofPattern(pattern, Locale.ENGLISH).withZone(ZoneId.systemDefault())
-    return format.format(this)
 }
 
 private val jarFileCopies = ConcurrentHashMap<URL, Path>()
@@ -522,7 +496,7 @@ val essentialUriListener: EssentialMarkdown.(EssentialMarkdown.LinkClickEvent) -
         val screenName = urlParts.getOrNull(0)
 
         when (screenName) {
-            "settings" -> GuiUtil.openScreen { EssentialConfig.gui(urlParts.getOrNull(1)) }
+            "settings" -> GuiUtil.openScreen { McEssentialConfig.gui(urlParts.getOrNull(1)) }
             "social" -> GuiUtil.openScreen { SocialMenu() }
             "minecraft" -> {
                 when (urlParts.getOrNull(1)) {

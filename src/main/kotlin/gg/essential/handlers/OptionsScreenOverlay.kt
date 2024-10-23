@@ -11,7 +11,7 @@
  */
 package gg.essential.handlers
 
-import gg.essential.config.EssentialConfig
+import gg.essential.config.McEssentialConfig
 import gg.essential.elementa.components.UIContainer
 import gg.essential.elementa.constraints.AspectConstraint
 import gg.essential.elementa.constraints.CenterConstraint
@@ -69,7 +69,7 @@ class OptionsScreenOverlay {
         } childOf window
 
         val settingsButton by MenuButton(shouldBeRetextured = true) {
-            GuiUtil.openScreen { EssentialConfig.gui() }
+            GuiUtil.openScreen { McEssentialConfig.gui() }
         }.constrain {
             x = SiblingConstraint(4f) boundTo bottomRightButton
             y = 0.pixels boundTo bottomRightButton

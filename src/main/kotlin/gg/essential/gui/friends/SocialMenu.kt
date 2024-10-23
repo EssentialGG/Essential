@@ -31,6 +31,7 @@ import gg.essential.gui.common.modal.DangerConfirmationEssentialModal
 import gg.essential.gui.common.modal.configure
 import gg.essential.gui.elementa.essentialmarkdown.EssentialMarkdown
 import gg.essential.gui.elementa.state.v2.*
+import gg.essential.gui.friends.message.v2.getInfraInstance
 import gg.essential.gui.friends.previews.ChannelPreview
 import gg.essential.gui.friends.state.SocialStateManager
 import gg.essential.gui.friends.tabs.ChatTab

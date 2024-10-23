@@ -16,6 +16,7 @@ import gg.essential.gui.screenshot.ScreenshotId
 import gg.essential.gui.screenshot.downsampling.PixelBuffer
 import gg.essential.gui.screenshot.image.PixelBufferTexture
 import gg.essential.universal.UMinecraft
+import gg.essential.util.RefCounted
 import gg.essential.util.executor
 import gg.essential.util.identifier
 import net.minecraft.client.Minecraft
@@ -59,7 +60,7 @@ class MinecraftWindowedTextureProvider(
         if (windows.isEmpty() && textureManager == null) {
             return emptyMap()
         }
-        val textureManager = textureManager ?: makeAsyncTextureManager().also { textureManager = it }
+        val textureManager = textureManager ?: AsyncTextureManager().also { textureManager = it }
 
         val processed = mutableMapOf<ScreenshotId, ResourceLocation>()
 
@@ -165,11 +166,11 @@ var asyncErrored = false
 //$$ )
 //#endif
 
-private fun makeAsyncTextureManager(): AsyncTextureManager {
+private fun makeUploadBackend(): UploadBackend {
     val supported = System.getProperty("essential.async_texture_loading")?.toBoolean() ?: true
 
     if (!supported || asyncErrored) {
-        return NotActuallyAsyncTextureManager()
+        return NotAsyncUploadBackend()
     }
 
     //#if MC>=11600
@@ -203,7 +204,7 @@ private fun makeAsyncTextureManager(): AsyncTextureManager {
     //$$
     //$$         val window = createWindow(null)
     //$$         if (window != 0L) {
-    //$$             return AsyncTextureManagerImpl(window)
+    //$$             return AsyncUploadBackendImpl(window)
     //$$         } else {
     //$$             currentHintsFailed = true;
     //$$             Essential.logger.debug("Current window hints failed, trying GL versions")
@@ -226,7 +227,7 @@ private fun makeAsyncTextureManager(): AsyncTextureManager {
     //$$                 workingGlVersion = major to minor
     //$$                 // Clear the GLFW error flag
     //$$                 GLFW.glfwGetError(null)
-    //$$                 return AsyncTextureManagerImpl(window)
+    //$$                 return AsyncUploadBackendImpl(window)
     //$$             }
     //$$         }
     //$$     }
@@ -238,7 +239,7 @@ private fun makeAsyncTextureManager(): AsyncTextureManager {
     //$$ if (version != null) {
     //$$     val window = createWindow(version)
     //$$     if (window != 0L) {
-    //$$         return AsyncTextureManagerImpl(window)
+    //$$         return AsyncUploadBackendImpl(window)
     //$$     }
     //$$ }
     //$$
@@ -252,14 +253,62 @@ private fun makeAsyncTextureManager(): AsyncTextureManager {
     //$$     }
     //$$ }
     //$$ asyncErrored = true
-    //$$ return NotActuallyAsyncTextureManager()
+    //$$ return NotAsyncUploadBackend()
     //#else
-    return AsyncTextureManagerImpl()
+    return AsyncUploadBackendImpl()
     //#endif
 }
 
+/**
+ * A wrapper around a thread with an active OpenGL context.
+ */
+interface UploadBackend {
+    /**
+     * Submits a block to run on the context thread
+     */
+    fun submit(block: () -> Unit)
+
+    /**
+     * Cleans up the backend's resources, destroying the underlying context
+     */
+    fun cleanup()
+}
+
+abstract class AsyncUploadBackend : UploadBackend {
+    private val singletonExecutor = Executors.newSingleThreadExecutor {
+        Thread(it, "Screenshot uploader thread ${nextThreadNumber.getAndIncrement()}")
+    }
+
+    private var initialized = false
+
+    abstract fun prepareContext()
+
+    abstract fun destroyContext()
+
+    private fun checkInitialized() {
+        if (!initialized) {
+            initialized = true
+            singletonExecutor.execute { prepareContext() }
+        }
+    }
+
+    override fun submit(block: () -> Unit) {
+        checkInitialized()
+        singletonExecutor.execute { block() }
+    }
+
+    override fun cleanup() {
+        singletonExecutor.execute { destroyContext() }
+        singletonExecutor.shutdown()
+    }
+
+    companion object {
+        private val nextThreadNumber = AtomicInteger(1)
+    }
+}
+
 //#if MC<11600
-class AsyncTextureManagerImpl : AsyncTextureManagerBase() {
+class AsyncUploadBackendImpl : AsyncUploadBackend() {
 
     private val drawable = SharedDrawable(Display.getDrawable())
 
@@ -273,7 +322,7 @@ class AsyncTextureManagerImpl : AsyncTextureManagerBase() {
 
 }
 //#else
-//$$ class AsyncTextureManagerImpl(private val window: Long) : AsyncTextureManagerBase() {
+//$$ class AsyncUploadBackendImpl(private val window: Long) : AsyncUploadBackend() {
 //$$
 //$$     override fun prepareContext() {
 //$$         GLFW.glfwMakeContextCurrent(window)
@@ -290,13 +339,21 @@ class AsyncTextureManagerImpl : AsyncTextureManagerBase() {
 //$$ }
 //#endif
 
+class NotAsyncUploadBackend : UploadBackend {
+    override fun submit(block: () -> Unit) {
+        block()
+    }
+
+    override fun cleanup() {
+
+    }
+}
+
 /**
  * Utility class for allowing a worker thread to upload textures off the main thread
  */
-abstract class AsyncTextureManagerBase : AsyncTextureManager {
-    private val singletonExecutor = Executors.newSingleThreadExecutor() {
-        Thread(it, "Screenshot uploader thread ${nextThreadNumber.getAndIncrement()}")
-    }
+class AsyncTextureManager {
+    private val uploadBackend = uploadBackendRefCounted.obtain { makeUploadBackend() }
 
     /**
      * Set of screenshot paths that have been uploaded since
@@ -304,29 +361,12 @@ abstract class AsyncTextureManagerBase : AsyncTextureManager {
      */
     private val complete = mutableMapOf<ScreenshotId, ResourceLocation>()
 
-    private var initialized = false
-
     /**
-     * Called on the thread that the OpenGL context should be bound to
+     * Schedules the [texture] function to be called on a worker thread.
+     * The texture object is then loaded by the Minecraft texture manager on the main thread
      */
-    abstract fun prepareContext()
-
-    /**
-     * Called on the thread with the bound OpenGL context to free up that context
-     */
-    abstract fun destroyContext()
-
-
-    private fun checkInitialization() {
-        if (!initialized) {
-            initialized = true
-            singletonExecutor.execute { prepareContext() }
-        }
-    }
-
-    override fun upload(path: ScreenshotId, texture: () -> Pair<PixelBufferTexture, ResourceLocation>) {
-        checkInitialization()
-        singletonExecutor.execute {
+    fun upload(path: ScreenshotId, texture: () -> Pair<PixelBufferTexture, ResourceLocation>) {
+        uploadBackend.submit {
             val (pixelBufferTexture, resourceLocation) = texture()
 
             GL11.glFlush()
@@ -343,15 +383,21 @@ abstract class AsyncTextureManagerBase : AsyncTextureManager {
         }
     }
 
-    override fun getFinished(): Set<ScreenshotId> {
+    /**
+     * Returns the list of paths that had their textures uploaded since the last call to getFinished()
+     */
+    fun getFinished(): Set<ScreenshotId> {
         //Clone the entries that are loaded
         return synchronized(complete) {
             complete.keys.toSet().also { complete.clear() }
         }
     }
 
-    override fun cleanup() {
-        singletonExecutor.execute {
+    /**
+     * Called to clean the context free the underlying resources
+     */
+    fun cleanup() {
+        uploadBackend.submit {
             // In-progress uploads switch from the executor to the MC thread, so we need to follow them if we want
             // to make sure they're all done running.
             UMinecraft.getMinecraft().executor.execute {
@@ -363,57 +409,11 @@ abstract class AsyncTextureManagerBase : AsyncTextureManager {
                     complete.clear()
                 }
             }
-            destroyContext()
         }
-        singletonExecutor.shutdown()
+        uploadBackendRefCounted.release { it.cleanup() }
     }
 
     companion object {
-
-        private val nextThreadNumber = AtomicInteger(1)
+        private val uploadBackendRefCounted = RefCounted<UploadBackend>()
     }
-
-}
-
-class NotActuallyAsyncTextureManager : AsyncTextureManager {
-    private val complete = mutableMapOf<ScreenshotId, ResourceLocation>()
-
-    override fun upload(path: ScreenshotId, texture: () -> Pair<PixelBufferTexture, ResourceLocation>) {
-        val (pixelBufferTexture, resourceLocation) = texture()
-
-        Minecraft.getMinecraft().textureManager.loadTexture(
-            resourceLocation,
-            pixelBufferTexture
-        )
-        complete[path] = resourceLocation
-    }
-
-    override fun getFinished(): Set<ScreenshotId> {
-        return complete.keys.toSet().also { complete.clear() }
-    }
-
-    override fun cleanup() {
-        complete.forEach { (_, resourceLocation) ->
-            Minecraft.getMinecraft().textureManager.deleteTexture(resourceLocation)
-        }
-        complete.clear()
-    }
-}
-
-interface AsyncTextureManager {
-    /**
-     * Schedules the [texture] function to be called on a worker thread.
-     * The texture object is then loaded by the Minecraft texture manager on the main thread
-     */
-    fun upload(path: ScreenshotId, texture: () -> Pair<PixelBufferTexture, ResourceLocation>)
-
-    /**
-     * Returns the list of paths that had their textures uploaded since the last call to getFinished()
-     */
-    fun getFinished(): Set<ScreenshotId>
-
-    /**
-     * Called to clean the context and shut down the worker thread
-     */
-    fun cleanup()
 }

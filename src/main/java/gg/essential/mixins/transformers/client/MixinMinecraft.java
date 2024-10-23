@@ -19,6 +19,9 @@ import com.mojang.authlib.yggdrasil.YggdrasilMinecraftSessionService;
 import gg.essential.Essential;
 import gg.essential.event.client.ReAuthEvent;
 import gg.essential.event.gui.GuiOpenedEvent;
+import gg.essential.mixins.ext.server.integrated.IntegratedServerExt;
+import gg.essential.sps.McIntegratedServerManager;
+import net.minecraft.server.integrated.IntegratedServer;
 import net.minecraft.util.Session;
 import gg.essential.event.gui.GuiOpenEvent;
 import gg.essential.mixins.impl.client.MinecraftExt;
@@ -26,6 +29,7 @@ import gg.essential.mixins.impl.client.MinecraftHook;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.multiplayer.WorldClient;
+import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -100,15 +104,6 @@ public abstract class MixinMinecraft implements MinecraftExt {
     //$$ @Shadow @Mutable @Final private SocialInteractionsService socialInteractionsService;
     //#endif
     //#endif
-
-    //#if MC < 11400
-    @ModifyConstant(method = "getLimitFramerate", constant = @Constant(intValue = 30))
-    //#else
-    //$$ @ModifyConstant(method = "getFramerateLimit", constant = @Constant(intValue = 60))
-    //#endif
-    public int modify(int value) {
-        return 144;
-    }
 
     /**
      * Invoked once the game is launching
@@ -292,4 +287,46 @@ public abstract class MixinMinecraft implements MinecraftExt {
     }
     //#endif
 
+    @Shadow @Nullable private IntegratedServer integratedServer;
+
+    //#if MC>=11900
+    //$$ private static final String LAUNCH_INTEGRATED_SERVER = "startIntegratedServer";
+    //#elseif MC>=11802
+    //$$ private static final String LAUNCH_INTEGRATED_SERVER = "startIntegratedServer(Ljava/lang/String;Ljava/util/function/Function;Ljava/util/function/Function;ZLnet/minecraft/client/MinecraftClient$WorldLoadAction;)V";
+    //#elseif MC>=11600
+    //$$ private static final String LAUNCH_INTEGRATED_SERVER = "loadWorld(Ljava/lang/String;Lnet/minecraft/util/registry/DynamicRegistries$Impl;Ljava/util/function/Function;Lcom/mojang/datafixers/util/Function4;ZLnet/minecraft/client/Minecraft$WorldSelectionType;)V";
+    //#else
+    private static final String LAUNCH_INTEGRATED_SERVER = "launchIntegratedServer";
+    //#endif
+    //#if MC>=12005
+    //$$ private static final String STOP_INTEGRATED_SERVER = "disconnect(Lnet/minecraft/client/gui/screen/Screen;Z)V";
+    //#elseif MC>=11600
+    //$$ private static final String STOP_INTEGRATED_SERVER = "unloadWorld(Lnet/minecraft/client/gui/screen/Screen;)V";
+    //#else
+    private static final String STOP_INTEGRATED_SERVER = "loadWorld(Lnet/minecraft/client/multiplayer/WorldClient;Ljava/lang/String;)V";
+    //#endif
+
+    @Inject(method = {
+        LAUNCH_INTEGRATED_SERVER,
+        //$$ // Forge patches on these versions add `boolean creating` to end of arguments
+        //#if FORGE && MC>=11600 && MC<11900
+        //#if MC>=11802
+        //$$ "doLoadLevel(Ljava/lang/String;Ljava/util/function/Function;Ljava/util/function/Function;ZLnet/minecraft/client/Minecraft$ExperimentalDialogType;Z)V",
+        //#elseif MC>=11700
+        //$$ "doLoadLevel(Ljava/lang/String;Lnet/minecraft/core/RegistryAccess$RegistryHolder;Ljava/util/function/Function;Lcom/mojang/datafixers/util/Function4;ZLnet/minecraft/client/Minecraft$ExperimentalDialogType;Z)V",
+        //#else
+        //$$ "loadWorld(Ljava/lang/String;Lnet/minecraft/util/registry/DynamicRegistries$Impl;Ljava/util/function/Function;Lcom/mojang/datafixers/util/Function4;ZLnet/minecraft/client/Minecraft$WorldSelectionType;Z)V",
+        //#endif
+        //#endif
+    }, at = @At(value = "FIELD", target = "Lnet/minecraft/client/Minecraft;integratedServer:Lnet/minecraft/server/integrated/IntegratedServer;", shift = At.Shift.AFTER))
+    private void setIntegratedServerManager(CallbackInfo ci) {
+        IntegratedServerExt ext = (IntegratedServerExt) this.integratedServer;
+        assert ext != null;
+        Essential.getInstance().getIntegratedServerManager().set(ext.getEssential$manager());
+    }
+
+    @Inject(method = STOP_INTEGRATED_SERVER, at = @At(value = "FIELD", target = "Lnet/minecraft/client/Minecraft;integratedServer:Lnet/minecraft/server/integrated/IntegratedServer;", shift = At.Shift.AFTER))
+    private void unsetIntegratedServerManager(CallbackInfo ci) {
+        Essential.getInstance().getIntegratedServerManager().set((McIntegratedServerManager) null);
+    }
 }

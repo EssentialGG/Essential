@@ -13,11 +13,18 @@ package gg.essential.util
 
 import gg.essential.elementa.components.Window
 import gg.essential.gui.common.modal.Modal
+import gg.essential.gui.elementa.essentialmarkdown.EssentialMarkdown
 import gg.essential.gui.elementa.state.v2.MutableState
 import gg.essential.gui.elementa.state.v2.State
+import gg.essential.gui.friends.message.v2.MessageRef
+import gg.essential.gui.friends.state.SocialStates
+import gg.essential.gui.notification.NotificationsManager
 import gg.essential.gui.overlay.ModalManager
+import gg.essential.gui.overlay.OverlayManager
 import gg.essential.model.backend.RenderBackend
 import gg.essential.network.CMConnection
+import gg.essential.network.connectionmanager.cosmetics.AssetLoader
+import gg.essential.network.connectionmanager.notices.INoticesManager
 import gg.essential.universal.UImage
 import gg.essential.universal.utils.ReleasedDynamicTexture
 import gg.essential.util.image.bitmap.MutableBitmap
@@ -32,8 +39,12 @@ interface GuiEssentialPlatform {
     val renderThreadDispatcher: CoroutineDispatcher
 
     val renderBackend: RenderBackend
+    val overlayManager: OverlayManager
+    val assetLoader: AssetLoader
 
     val cmConnection: CMConnection
+
+    val notifications: NotificationsManager
 
     fun createModalManager(): ModalManager
 
@@ -55,9 +66,22 @@ interface GuiEssentialPlatform {
     val config: Config
     val pauseMenuDisplayWindow: Window
 
+    val mcProtocolVersion: Int
+    val mcGameVersion: String
+
     fun currentServerType(): ServerType?
 
     fun registerActiveSessionState(state: MutableState<USession>)
+
+    fun createSocialStates(): SocialStates
+
+    fun resolveMessageRef(messageRef: MessageRef)
+
+    val essentialUriListener: EssentialMarkdown.(EssentialMarkdown.LinkClickEvent) -> Unit
+
+    val noticesManager: INoticesManager
+
+    val isOptiFineInstalled: Boolean
 
     interface Config {
         val shouldDarkenRetexturedButtons: Boolean
@@ -65,7 +89,7 @@ interface GuiEssentialPlatform {
     }
 
     companion object {
-        internal val platform: GuiEssentialPlatform =
+        val platform: GuiEssentialPlatform =
             Class.forName(GuiEssentialPlatform::class.java.name + "Impl").newInstance() as GuiEssentialPlatform
     }
 }

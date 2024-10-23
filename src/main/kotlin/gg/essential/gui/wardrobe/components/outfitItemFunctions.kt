@@ -33,7 +33,7 @@ fun displayOutfitOptions(item: Item.OutfitItem, wardrobeState: WardrobeState, ev
     val options = mutableListOf<ContextOptionMenu.Item>()
     options.add(
         ContextOptionMenu.Option("Rename", image = EssentialPalette.PENCIL_7x7) {
-            GuiUtil.pushModal { manager -> 
+            GuiUtil.pushModal { manager ->
                 CancelableInputModal(manager, "Outfit Name", maxLength = 22, initialText = item.name)
                     .configure {
                         titleText = "Rename Outfit"
@@ -92,7 +92,7 @@ fun displayOutfitOptions(item: Item.OutfitItem, wardrobeState: WardrobeState, ev
                 image = EssentialPalette.TRASH_9X,
                 hoveredColor = EssentialPalette.TEXT_WARNING
             ) {
-                GuiUtil.pushModal { manager -> 
+                GuiUtil.pushModal { manager ->
                     DangerConfirmationEssentialModal(manager, "Delete", true).configure {
                         titleText = "Are you sure you want to delete ${item.name}?"
                     }.onPrimaryAction {
@@ -107,7 +107,7 @@ fun displayOutfitOptions(item: Item.OutfitItem, wardrobeState: WardrobeState, ev
     if (cosmeticsDataWithChanges != null) {
         options.add(
             ContextOptionMenu.Option("Create bundle", image = EssentialPalette.PLUS_7X) {
-                GuiUtil.pushModal { manager -> 
+                GuiUtil.pushModal { manager ->
                     CancelableInputModal(manager, "Bundle id").configure {
                         titleText = "Create New Bundle"
                         contentText = "Enter the id for the new bundle."
@@ -122,6 +122,7 @@ fun displayOutfitOptions(item: Item.OutfitItem, wardrobeState: WardrobeState, ev
                                 item.name,
                                 CosmeticTier.COMMON,
                                 0f,
+                                false,
                                 CosmeticBundle.Skin(item.skin, item.name),
                                 item.cosmetics,
                                 item.settings,

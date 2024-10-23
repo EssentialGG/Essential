@@ -28,7 +28,11 @@ import static gg.essential.mod.cosmetics.CapeDisabledKt.CAPE_DISABLED_COSMETIC_I
 @Mixin(GameSettings.class)
 public class Mixin_RedirectVanillaCapeSetting {
     //#if MC>=11700
+    //#if MC>=12102
+    //$$ @Inject(method = "setPlayerModelPart", at = @At("HEAD"), cancellable = true)
+    //#else
     //$$ @Inject(method = "togglePlayerModelPart", at = @At("HEAD"), cancellable = true)
+    //#endif
     //$$ private void redirectCapeChangesToOutfit(PlayerModelPart part, boolean shouldBeEnabled, CallbackInfo ci) {
     //#else
     @Inject(method = "switchModelPartEnabled", at = @At("HEAD"), cancellable = true)

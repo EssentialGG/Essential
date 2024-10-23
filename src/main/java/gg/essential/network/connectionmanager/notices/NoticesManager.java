@@ -14,11 +14,11 @@ package gg.essential.network.connectionmanager.notices;
 import com.google.common.collect.Maps;
 import gg.essential.Essential;
 import gg.essential.connectionmanager.common.packet.Packet;
-import gg.essential.connectionmanager.common.packet.notices.ClientNoticeDismissPacket;
+import gg.essential.connectionmanager.common.packet.notices.ClientNoticeBulkDismissPacket;
 import gg.essential.connectionmanager.common.packet.notices.ClientNoticeRequestPacket;
+import gg.essential.connectionmanager.common.packet.notices.ServerNoticeBulkDismissPacket;
 import gg.essential.connectionmanager.common.packet.notices.ServerNoticePopulatePacket;
 import gg.essential.connectionmanager.common.packet.notices.ServerNoticeRemovePacket;
-import gg.essential.connectionmanager.common.packet.response.ResponseActionPacket;
 import gg.essential.gui.elementa.state.v2.MutableState;
 import gg.essential.gui.elementa.state.v2.State;
 import gg.essential.gui.state.Sale;
@@ -44,10 +44,13 @@ import java.util.stream.Collectors;
 
 import static gg.essential.gui.elementa.state.v2.StateKt.mutableStateOf;
 
-public class NoticesManager implements NetworkedManager {
+public class NoticesManager implements NetworkedManager, INoticesManager {
 
     @NotNull
     private final Map<String, Notice> notices = Maps.newConcurrentMap();
+
+    @NotNull
+    private final Set<String> dismissNoticesQueue = new HashSet<>();
 
     @NotNull
     private final ConnectionManager connectionManager;
@@ -150,7 +153,8 @@ public class NoticesManager implements NetworkedManager {
             .collect(Collectors.toList());
     }
 
-    public void populateNotices(@NotNull final Collection<Notice> notices) {
+    @Override
+    public void populateNotices(@NotNull final Collection<? extends Notice> notices) {
         for (@NotNull final Notice notice : notices) {
             this.notices.put(notice.getId(), notice);
             for (NoticeListener listener : listeners) {
@@ -159,6 +163,7 @@ public class NoticesManager implements NetworkedManager {
         }
     }
 
+    @Override
     public void removeNotices(@Nullable final Set<String> noticeIds) {
         if (noticeIds == null || noticeIds.isEmpty()) {
             for (Notice value : notices.values()) {
@@ -181,17 +186,47 @@ public class NoticesManager implements NetworkedManager {
         }
     }
 
+    @Override
     public void dismissNotice(String noticeId) {
-        this.connectionManager.send(new ClientNoticeDismissPacket(noticeId), packet -> {
-            if (packet.isPresent()) {
-                Packet packet1 = packet.get();
-                if (packet1 instanceof ResponseActionPacket && ((ResponseActionPacket) packet1).isSuccessful()) {
-                    this.notices.remove(noticeId);
+        dismissNotices(SetsKt.setOf(noticeId));
+    }
+
+    public void dismissNotices(Set<String> noticeIds) {
+        dismissNoticesQueue.addAll(noticeIds);
+        flushDismissNotices();
+    }
+
+    public void flushDismissNotices() {
+        if (dismissNoticesQueue.isEmpty()) {
+            return;
+        }
+        final Set<String> notices = new HashSet<>(dismissNoticesQueue);
+        this.dismissNoticesQueue.clear();
+        this.connectionManager.send(new ClientNoticeBulkDismissPacket(notices), maybePacket -> {
+            if (maybePacket.isPresent()) {
+                Packet packet = maybePacket.get();
+                if (packet instanceof ServerNoticeBulkDismissPacket) {
+                    ServerNoticeBulkDismissPacket serverNoticeBulkDismissPacket = (ServerNoticeBulkDismissPacket) packet;
+                    for (String noticeId : serverNoticeBulkDismissPacket.getNoticeIds()) {
+                        this.notices.remove(noticeId);
+                    }
+                    for (ServerNoticeBulkDismissPacket.ErrorDetails error : serverNoticeBulkDismissPacket.getErrors()) {
+                        switch (error.getReason()) {
+                            case "NOTICE_NOT_FOUND":
+                            case "NOTICE_ALREADY_DISMISSED": {
+                                this.notices.remove(error.getNoticeId());
+                                break;
+                            }
+                            default: {
+                                Essential.logger.error("Notice unable to be dismissed: NoticeId: {}, Reason: {}", error.getNoticeId(), error.getReason());
+                                break;
+                            }
+                        }
+                    }
                     return;
                 }
             }
-            Essential.logger.error("Unexpected notice response: " + packet);
-
+            Essential.logger.error("Unexpected notice response: {}", maybePacket);
         });
     }
 
@@ -226,17 +261,6 @@ public class NoticesManager implements NetworkedManager {
         return saleNoticeManager;
     }
 
-
-    interface NoticeListener {
-        void noticeAdded(Notice notice);
-
-        void noticeRemoved(Notice notice);
-
-        void onConnect();
-
-        default void resetState() {
-        }
-    }
 
     public class CosmeticNotices implements NoticeListener {
 

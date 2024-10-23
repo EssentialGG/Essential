@@ -45,6 +45,8 @@ import gg.essential.gui.screenshot.ScreenshotOverlay.animating
 import gg.essential.gui.screenshot.components.ScreenshotBrowser
 import gg.essential.gui.screenshot.components.createShareScreenshotModal
 import gg.essential.gui.screenshot.constraints.AspectPreservingFillConstraint
+import gg.essential.gui.screenshot.toast.ScreenshotPreviewAction
+import gg.essential.gui.screenshot.toast.ScreenshotPreviewActionSlot
 import gg.essential.gui.util.hoveredState
 import gg.essential.gui.util.onAnimationFrame
 import gg.essential.universal.UResolution
@@ -440,42 +442,6 @@ class ScreenshotPreviewToast(val file: File) : ScreenshotToast() {
         }
         super.animationFrame()
     }
-
-}
-
-enum class ScreenshotPreviewActionSlot(val defaultAction: ScreenshotPreviewAction) {
-
-    TOP_LEFT(ScreenshotPreviewAction.EDIT),
-    TOP_RIGTH(ScreenshotPreviewAction.FAVORITE),
-    BOTTOM_LEFT(ScreenshotPreviewAction.COPY_PICTURE),
-    BOTTOM_RIGHT(ScreenshotPreviewAction.SHARE),
-    ;
-
-    val action: ScreenshotPreviewAction
-        get() {
-            return ScreenshotPreviewAction.values().getOrNull(
-                    when (this) {
-                        TOP_LEFT -> EssentialConfig.screenshotOverlayTopLeftAction
-                        TOP_RIGTH -> EssentialConfig.screenshotOverlayTopRightAction
-                        BOTTOM_LEFT -> EssentialConfig.screenshotOverlayBottomLeftAction
-                        BOTTOM_RIGHT -> EssentialConfig.screenshotOverlayBottomRightAction
-                    }
-                ) ?: defaultAction
-        }
-
-}
-
-// The order of these actions is used/replicated in the settings.
-// Remember to change in both places at once
-enum class ScreenshotPreviewAction(val displayName: String) {
-
-    COPY_PICTURE("Copy Picture"),
-    COPY_LINK("Copy Link"),
-    FAVORITE("Favorite"),
-    DELETE("Delete"),
-    SHARE("Share to Friends"),
-    EDIT("Edit"),
-    ;
 
 }
 

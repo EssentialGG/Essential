@@ -22,8 +22,8 @@ import gg.essential.gui.common.shadow.ShadowEffect
 import gg.essential.gui.elementa.state.v2.mutableListStateOf
 import gg.essential.gui.elementa.state.v2.toV1
 import gg.essential.gui.layoutdsl.*
-import gg.essential.gui.vigilancev2.builder.StateBackedPropertyValue
 import gg.essential.gui.vigilancev2.palette.VigilancePalette
+import gg.essential.mod.vigilance2.builder.StateBackedPropertyValue
 import gg.essential.vigilance.data.PropertyData
 import gg.essential.vigilance.data.PropertyType
 import gg.essential.vigilance.gui.settings.*

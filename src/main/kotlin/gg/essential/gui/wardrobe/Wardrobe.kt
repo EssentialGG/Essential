@@ -66,6 +66,7 @@ class Wardrobe(
     val cosmeticsManager = connectionManager.cosmeticsManager
     val skinsManager = connectionManager.skinsManager
     val outfitManager = connectionManager.outfitManager
+    val emoteWheelManager = connectionManager.emoteWheelManager
     val coinsManager = connectionManager.coinsManager
 
     private val guiScaleState = mutableStateOf(newGuiScale)
@@ -76,6 +77,7 @@ class Wardrobe(
         window,
         cosmeticsManager,
         skinsManager,
+        emoteWheelManager,
         coinsManager,
         guiScaleState,
     )
@@ -339,13 +341,13 @@ class Wardrobe(
             Essential.getInstance().skinManager.flushChanges(false)
         }
         outfitManager.flushSelectedOutfit(false)
-        cosmeticsManager.flushSelectedEmoteWheel(false)
+        emoteWheelManager.flushSelectedEmoteWheel(false)
 
         val outfit = outfitManager.getSelectedOutfit()
         if (outfit != null) {
             val skin = connectionManager.skinsManager.getSkin(outfit.skinId ?: "").get()
             if (skin != null) {
-                connectionManager.skinsManager.updateLastUsedAtState(skin)
+                connectionManager.skinsManager.updateLastUsedAtState(skin.id)
             }
         }
 
@@ -371,7 +373,7 @@ class Wardrobe(
                 val emotes = state.emoteWheel.get().toMutableList() // Copy list to avoid concurrent modification
                 emotes.forEachIndexed { index, s ->
                     if (s != null && s !in state.cosmeticsManager.unlockedCosmetics.get()) {
-                        state.emoteWheel.set(index, null)
+                        state.emoteWheelManager.setEmote(index, null)
                     }
                 }
                 restorePreviousScreen()

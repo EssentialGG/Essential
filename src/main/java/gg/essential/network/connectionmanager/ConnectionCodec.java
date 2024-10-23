@@ -100,7 +100,7 @@ public class ConnectionCodec {
             final String jsonString = this.readString(dataInputStream);
 
             if (LOG_PACKETS) {
-                Essential.debug.info(packetId + " - " + packetClass.getSimpleName() + " " + jsonString);
+                Essential.debug.info("IN " + packetId + " - " + packetName + " " + jsonString);
             }
             try {
                 packet = gson.fromJson(jsonString, packetClass);
@@ -145,7 +145,7 @@ public class ConnectionCodec {
             packetIdBytes = (packetId != null ? packetId.toString().getBytes(StandardCharsets.UTF_8) : EMPTY_BYTE_ARRAY);
 
         if (LOG_PACKETS) {
-            Essential.debug.info(packetId + " - " + packet.getClass().getSimpleName() + " " + new String(packetBytes));
+            Essential.debug.info("OUT " + packetId + " - " + splitPacketPackage(packet.getClass()) + " " + new String(packetBytes));
         }
         try (
             final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();

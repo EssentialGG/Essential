@@ -13,8 +13,6 @@ package gg.essential.mixins.transformers.compatibility.labymod;
 
 //#if MC<=11202
 import gg.essential.mixins.transformers.client.renderer.entity.MixinRenderPlayer;
-import net.minecraft.client.model.ModelBase;
-import net.minecraft.client.renderer.entity.RenderManager;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
@@ -25,10 +23,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(targets = "net.labymod.mojang.RenderPlayerHook$RenderPlayerCustom")
 @SuppressWarnings("UnresolvedMixinReference")
 public abstract class MixinRenderPlayerCustom extends MixinRenderPlayer {
-    public MixinRenderPlayerCustom(RenderManager renderManagerIn, ModelBase modelBaseIn, float shadowSizeIn) {
-        super(renderManagerIn, modelBaseIn, shadowSizeIn);
-    }
-
     @Inject(method = "<init>", at = @At("RETURN"), remap = false)
     private void initEssentialCosmeticsLayer(CallbackInfo ci) {
         layerRenderers.add(super.essentialModelRenderer); // Already initialized in the parent constructor

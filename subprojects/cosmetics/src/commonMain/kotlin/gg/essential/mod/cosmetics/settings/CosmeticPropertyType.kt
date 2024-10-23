@@ -28,4 +28,5 @@ enum class CosmeticPropertyType(
     TRANSITION_DELAY("Transition Delay", true),
     VARIANTS("Variants", true),
     DEFAULT_SIDE("Default Side", true),
+    MUTUALLY_EXCLUSIVE("Mutually Exclusive", true),
 }

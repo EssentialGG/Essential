@@ -29,6 +29,9 @@ interface ServerDataExt {
     /** If the ping was proxied, this indicates the region from which the proxied ping latency was measured. */
     var `essential$pingRegion`: String?
 
+    /** A value that will be stored into the ServerData's ping field after ServerPing stores its calculated ping. */
+    var `essential$pingOverride`: Long?
+
     /** Whether to skip the mod compatibility check when connecting. */
     var `essential$skipModCompatCheck`: Boolean
 
@@ -45,6 +48,10 @@ var ServerDataExt.isTrusted
 var ServerDataExt.pingRegion
     get() = `essential$pingRegion`
     set(value) { `essential$pingRegion` = value }
+
+var ServerDataExt.pingOverride
+    get() = `essential$pingOverride`
+    set(value) { `essential$pingOverride` = value }
 
 var ServerDataExt.shareWithFriends
     get() = `essential$shareWithFriends`

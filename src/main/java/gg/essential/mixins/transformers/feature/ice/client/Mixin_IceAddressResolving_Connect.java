@@ -32,7 +32,7 @@ public abstract class Mixin_IceAddressResolving_Connect {
 
     //#if MC>=11700
     //$$ @ModifyArg(method = "run", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/AllowedAddressResolver;resolve(Lnet/minecraft/client/network/ServerAddress;)Ljava/util/Optional;", remap = true), remap = false)
-    //$$ private ServerAddress setIceTarget(ServerAddress address) {
+    //$$ private ServerAddress setIceTarget(ServerAddress address) throws Exception {
     //$$     String host = setIceTarget(address.getAddress());
     //$$     if (!host.equals(address.getAddress())) {
     //$$         address = new ServerAddress(host, address.getPort());
@@ -42,9 +42,11 @@ public abstract class Mixin_IceAddressResolving_Connect {
     //#else
     @ModifyArg(method = "run", at = @At(value = "INVOKE", target = "Ljava/net/InetAddress;getByName(Ljava/lang/String;)Ljava/net/InetAddress;"), remap = false)
     //#endif
-    private String setIceTarget(String address) {
-        SPSManager spsManager = Essential.getInstance().getConnectionManager().getSpsManager();
-        UUID user = spsManager.getHostFromSpsAddress(address);
+    private String setIceTarget(String address) throws Exception {
+        Essential essential = Essential.getInstance();
+        UUID user;
+        SPSManager spsManager = essential.getConnectionManager().getSpsManager();
+        user = spsManager.getHostFromSpsAddress(address);
         if (user != null) {
             connectTarget.set(user);
             address = "127.0.0.1"; // just needs to resolve

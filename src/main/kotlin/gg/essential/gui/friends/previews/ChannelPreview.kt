@@ -14,10 +14,8 @@ package gg.essential.gui.friends.previews
 import com.sparkuniverse.toolbox.chat.model.Channel
 import com.sparkuniverse.toolbox.chat.model.Message
 import gg.essential.Essential
-import gg.essential.config.LoadsResources
 import gg.essential.elementa.components.UIBlock
 import gg.essential.elementa.components.UIContainer
-import gg.essential.elementa.components.UIImage
 import gg.essential.elementa.constraints.*
 import gg.essential.elementa.dsl.*
 import gg.essential.elementa.impl.commonmark.node.BlockQuote
@@ -61,7 +59,6 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.*
-import kotlin.random.Random
 import gg.essential.gui.elementa.state.v2.stateBy as stateByV2
 
 class ChannelPreview(
@@ -107,7 +104,7 @@ class ChannelPreview(
             if (channel.isAnnouncement()) {
                 EssentialPalette.ANNOUNCEMENT_ICON_8X.create()
             } else {
-                newGroupIcon(channel.id)
+                EssentialPalette.groupIconForChannel(channel.id).create()
             }
         }
         val color = Modifier.whenTrue(
@@ -238,14 +235,6 @@ class ChannelPreview(
     }
 
     companion object {
-        private val groupIcons = listOf("blue", "purple", "red", "yellow")
-
-        @LoadsResources("/assets/essential/textures/friends/group_[a-z]+.png")
-        fun newGroupIcon(channelId: Long): UIImage {
-            val name = groupIcons.random(Random(channelId))
-            return UIImage.ofResourceCached("/assets/essential/textures/friends/group_$name.png")
-        }
-
         private val markdownRenderer = TextContentRenderer.builder()
             .stripNewlines(false)
             .nodeRendererFactory(::PlainBlockQuoteNodeRenderer)

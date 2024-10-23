@@ -14,6 +14,8 @@ package gg.essential.mixins.impl.client.renderer.entity;
 import gg.essential.config.EssentialConfig;
 import gg.essential.cosmetics.EssentialModelRenderer;
 import gg.essential.mixins.impl.client.entity.AbstractClientPlayerExt;
+import net.minecraft.client.entity.EntityPlayerSP;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 
 public class ArmorRenderingUtil {
@@ -27,10 +29,18 @@ public class ArmorRenderingUtil {
         if (entity instanceof AbstractClientPlayerExt) {
             AbstractClientPlayerExt playerExt = (AbstractClientPlayerExt) entity;
 
-            int armorHidingSetting = EssentialConfig.INSTANCE.getCosmeticArmorSetting(entity);
+            int armorHidingSetting = getCosmeticArmorSetting(entity);
             return armorHidingSetting == 1 && playerExt.getCosmeticsState().getPartsEquipped().contains(slotIndex) && !EssentialModelRenderer.suppressCosmeticRendering;
         }
 
         return false;
+    }
+
+    public static int getCosmeticArmorSetting(Entity entity) {
+        if (entity instanceof EntityPlayerSP) {
+            return EssentialConfig.INSTANCE.getCosmeticArmorSettingSelf();
+        } else {
+            return EssentialConfig.INSTANCE.getCosmeticArmorSettingOther();
+        }
     }
 }

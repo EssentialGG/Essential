@@ -13,7 +13,7 @@ package gg.essential.commands.impl;
 
 import gg.essential.api.commands.Command;
 import gg.essential.api.commands.DefaultHandler;
-import gg.essential.config.EssentialConfig;
+import gg.essential.config.McEssentialConfig;
 import gg.essential.gui.vigilancev2.VigilanceV2SettingsGui;
 import gg.essential.util.GuiUtil;
 
@@ -27,6 +27,6 @@ public class CommandConfig extends Command {
 
     @DefaultHandler
     public void handle() {
-        GuiUtil.openScreen(VigilanceV2SettingsGui.class, EssentialConfig.INSTANCE::gui);
+        GuiUtil.openScreen(VigilanceV2SettingsGui.class, McEssentialConfig.INSTANCE::gui);
     }
 }

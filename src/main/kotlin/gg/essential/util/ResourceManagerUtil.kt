@@ -65,8 +65,10 @@ object ResourceManagerUtil : IResourceManagerReloadListener {
         //$$ override fun reload(
         //$$      stage: IStage,
         //$$      resourceManager: IResourceManager?,
+        //#if MC<12102
         //$$      preparationsProfiler: IProfiler?,
         //$$      reloadProfiler: IProfiler?,
+        //#endif
         //$$      backgroundExecutor: Executor?,
         //$$      gameExecutor: Executor?,
         //$$  ): CompletableFuture<Void?> {

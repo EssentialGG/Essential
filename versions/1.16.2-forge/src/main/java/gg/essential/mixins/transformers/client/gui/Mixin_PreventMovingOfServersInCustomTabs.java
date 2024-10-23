@@ -23,6 +23,11 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+//#if MC>=12102
+//$$ import net.minecraft.client.render.RenderLayer;
+//$$ import java.util.function.Function;
+//#endif
+
 //#if MC>=12000
 //$$ import net.minecraft.util.Identifier;
 //#endif
@@ -37,8 +42,13 @@ public abstract class Mixin_PreventMovingOfServersInCustomTabs {
     private MultiplayerScreen owner;
 
     //#if MC>=12002
+    //#if MC>=12102
+    //$$ @ModifyArg(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/DrawContext;drawGuiTexture(Ljava/util/function/Function;Lnet/minecraft/util/Identifier;IIII)V"), index = 2)
+    //$$ private int hideMovingButtonsInCustomTabs(Function<Identifier, RenderLayer> renderLayers, Identifier location, int x, int y, int width, int height) {
+    //#else
     //$$ @ModifyArg(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/DrawContext;drawGuiTexture(Lnet/minecraft/util/Identifier;IIII)V"), index = 1)
     //$$ private int hideMovingButtonsInCustomTabs(Identifier location, int x, int y, int width, int height) {
+    //#endif
     //$$     if (EssentialConfig.INSTANCE.getCurrentMultiplayerTab() != 0 && location.getPath().startsWith("server_list/move_")) {
     //$$         x = Integer.MIN_VALUE;
     //$$     }

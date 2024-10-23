@@ -9,7 +9,7 @@
  * commercialize, or otherwise exploit, or create derivative works based
  * upon, this file or any other in this repository, all of which is reserved by Essential.
  */
-// 1.16 and above
+// 1.16 - 1.21
 package gg.essential.mixins.transformers.events;
 
 import gg.essential.Essential;

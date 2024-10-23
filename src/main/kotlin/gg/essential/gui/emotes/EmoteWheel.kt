@@ -32,7 +32,6 @@ import gg.essential.gui.elementa.state.v2.ReferenceHolderImpl
 import gg.essential.gui.elementa.state.v2.State
 import gg.essential.gui.elementa.state.v2.combinators.map
 import gg.essential.gui.elementa.state.v2.memo
-import gg.essential.gui.elementa.state.v2.mutableStateOf
 import gg.essential.gui.elementa.state.v2.stateOf
 import gg.essential.gui.elementa.state.v2.toListState
 import gg.essential.gui.layoutdsl.Alignment
@@ -65,7 +64,6 @@ import gg.essential.gui.notification.error
 import gg.essential.gui.util.onAnimationFrame
 import gg.essential.gui.wardrobe.Wardrobe
 import gg.essential.gui.wardrobe.WardrobeCategory
-import gg.essential.mod.cosmetics.CosmeticOutfit
 import gg.essential.mod.cosmetics.CosmeticSlot
 import gg.essential.mod.cosmetics.settings.CosmeticProperty
 import gg.essential.model.BedrockModel
@@ -87,8 +85,14 @@ import gg.essential.util.textLiteral
 import gg.essential.util.toState
 import gg.essential.vigilance.utils.onLeftClick
 import net.minecraft.client.entity.AbstractClientPlayer
+import net.minecraft.item.EnumAction
+import net.minecraft.item.ItemStack
 import java.util.concurrent.TimeUnit
 
+//#if MC>=11400
+//$$ import net.minecraft.item.CrossbowItem
+//$$ import net.minecraft.item.Items
+//#endif
 
 class EmoteWheel : WindowScreen(
     version = ElementaVersion.V6,
@@ -97,13 +101,12 @@ class EmoteWheel : WindowScreen(
 ) {
     private val essential = Essential.getInstance()
     private val cosmeticManager = essential.connectionManager.cosmeticsManager
+    private val emoteWheelManager = essential.connectionManager.emoteWheelManager
     private val keybind = essential.keybindingRegistry.openEmoteWheel
     private val debug = BasicState(false)
 
-    private val selectedEmoteWheel = mutableStateOf(cosmeticManager.emoteWheels.indexOfFirst { it.isSelected })
-
     private val emoteModelsForCurrentWheel: ListState<State<BedrockModel?>?> = memo {
-        val emoteIds = cosmeticManager.emoteWheels.elementAtOrNull(selectedEmoteWheel())?.slots
+        val emoteIds = emoteWheelManager.selectedEmoteWheel()?.slots
             ?: return@memo emptyList()
 
         emoteIds.map { emoteId ->
@@ -150,7 +153,7 @@ class EmoteWheel : WindowScreen(
                         box(Modifier.height(25f)) {
                             column(Modifier.alignVertical(Alignment.End).childBasedWidth(5f).color(EssentialPalette.BLACK.withAlpha(0.7f))) {
                                 spacer(height = 4f)
-                                text(selectedEmoteWheel.map { "Wheel #${it + 1}" }, Modifier.color(EssentialPalette.WHITE).shadow(EssentialPalette.TEXT_SHADOW))
+                                text(emoteWheelManager.selectedEmoteWheelIndex.map { "Wheel #${it + 1}" }, Modifier.color(EssentialPalette.WHITE).shadow(EssentialPalette.TEXT_SHADOW))
                                 spacer(height = 3f)
                             }
                         }
@@ -196,7 +199,7 @@ class EmoteWheel : WindowScreen(
                 scrollEvent.delta <= -1.0 -> 1
                 else -> return@onMouseScroll
             }
-            selectedEmoteWheel.set(cosmeticManager.shiftSelectedEmoteWheel(shiftValue))
+            emoteWheelManager.shiftSelectedEmoteWheel(shiftValue)
         }
     }
 
@@ -212,7 +215,7 @@ class EmoteWheel : WindowScreen(
     }
 
     override fun onScreenClose() {
-        cosmeticManager.flushSelectedEmoteWheel(false)
+        emoteWheelManager.flushSelectedEmoteWheel(false)
         super.onScreenClose()
     }
 
@@ -237,7 +240,7 @@ class EmoteWheel : WindowScreen(
         val arrow = if (left) EssentialPalette.ARROW_LEFT_4X7 else EssentialPalette.ARROW_RIGHT_4X7
         box(Modifier.width(15f).heightAspect(1f).color(EssentialPalette.BLACK.withAlpha(0.7f)).hoverScope().whenHovered(outline)) {
             icon(arrow, (Modifier.alignHorizontal(Alignment.Center(!left)).alignVertical(Alignment.Center)).color(EssentialPalette.TEXT_HIGHLIGHT))
-        }.onLeftClick { selectedEmoteWheel.set(cosmeticManager.shiftSelectedEmoteWheel(if (left) -1 else 1)) }
+        }.onLeftClick { emoteWheelManager.shiftSelectedEmoteWheel(if (left) -1 else 1) }
     }
 
     override fun doesGuiPauseGame(): Boolean {
@@ -246,8 +249,6 @@ class EmoteWheel : WindowScreen(
 
     companion object {
         private const val emoteTransitionTimeMs = 0L
-
-        const val SLOTS = 8
 
         @JvmField
         var isPlayerArmRendering = false
@@ -276,7 +277,7 @@ class EmoteWheel : WindowScreen(
 
             // We allow the user to play emotes if they were connected to the CM before (they have emote wheels loaded).
             val connectionManager = Essential.getInstance().connectionManager
-            if (connectionManager.cosmeticsManager.emoteWheels.isEmpty() && !connectionManager.isAuthenticated) {
+            if (connectionManager.emoteWheelManager.orderedEmoteWheels.getUntracked().isEmpty() && !connectionManager.isAuthenticated) {
                 Notifications.error(
                     "Essential Network Error",
                     "Unable to establish connection with the Essential Network."
@@ -298,6 +299,7 @@ class EmoteWheel : WindowScreen(
         @JvmStatic
         fun canEmote(player: AbstractClientPlayer): Boolean {
             return (player.isEntityAlive && !player.isSpectator && !player.isSneaking && !player.isPlayerSleeping && !player.isRiding
+                    && !isUsingItem(player)
                     //#if MC>=11602
                     //$$ && !player.isSwimming()
                     //#endif
@@ -305,6 +307,26 @@ class EmoteWheel : WindowScreen(
                     && !player.isElytraFlying
                     //#endif
                     )
+        }
+
+        private fun isUsingItem(player: AbstractClientPlayer): Boolean =
+            //#if MC>=11200
+            isUsingItem(player, player.heldItemMainhand) || isUsingItem(player, player.heldItemOffhand)
+            //#else
+            //$$ isUsingItem(player, player.heldItem)
+            //#endif
+
+        private fun isUsingItem(player: AbstractClientPlayer, stack: ItemStack?): Boolean {
+            //#if MC>=11200
+            if (stack == null || stack.isEmpty) return false
+            //#else
+            //$$ if (stack == null) return false
+            //#endif
+            if (player.itemInUseCount > 0 && stack.itemUseAction != EnumAction.NONE) return true
+            //#if MC>=11400
+            //$$ if (stack.item == Items.CROSSBOW && CrossbowItem.isCharged(stack)) return true
+            //#endif
+            return false
         }
 
         fun getEmoteTransitionTime(cosmetic: Cosmetic): Long {
@@ -378,20 +400,19 @@ class EmoteWheel : WindowScreen(
             }, startDelay.toLong(), TimeUnit.MILLISECONDS)
         }
 
-        @JvmOverloads
         @JvmStatic
-        fun unequipCurrentEmote(outfit: CosmeticOutfit? = null) {
-            val cosmeticsManager = Essential.getInstance().connectionManager.cosmeticsManager
+        fun unequipCurrentEmote() {
+            val connectionManager = Essential.getInstance().connectionManager
+            val cosmeticsData = connectionManager.cosmeticsManager.cosmeticsData
+            val outfitManager = connectionManager.outfitManager
 
-            if (cosmeticsManager.equippedCosmetics[CosmeticSlot.EMOTE] == null) return
+            val outfit = outfitManager.outfits.getUntracked()
+                .find { CosmeticSlot.EMOTE in it.equippedCosmetics }
+                ?: return
 
-            val cosmetic = cosmeticsManager.getCosmetic(cosmeticsManager.equippedCosmetics[CosmeticSlot.EMOTE] ?: return) ?: return
+            outfitManager.updateEquippedCosmetic(outfit.id, CosmeticSlot.EMOTE, null)
 
-            if (outfit != null) {
-                cosmeticsManager.updateEquippedCosmetic(outfit, CosmeticSlot.EMOTE, null)
-            } else {
-                cosmeticsManager.updateEquippedCosmetic(CosmeticSlot.EMOTE, null)
-            }
+            val cosmetic = cosmeticsData.getCosmetic(outfit.equippedCosmetics[CosmeticSlot.EMOTE]!!) ?: return
 
             Multithreading.scheduleOnMainThread({
                 if (EssentialConfig.thirdPersonEmotes) {

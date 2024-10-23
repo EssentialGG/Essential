@@ -19,6 +19,7 @@ import gg.essential.compatibility.vanilla.difficulty.Net;
 import gg.essential.config.AccessedViaReflection;
 import gg.essential.config.EssentialConfig;
 import gg.essential.config.EssentialConfigApiImpl;
+import gg.essential.config.McEssentialConfig;
 import gg.essential.cosmetics.PlayerWearableManager;
 import gg.essential.cosmetics.events.AnimationEffectHandler;
 import gg.essential.data.OnboardingData;
@@ -35,6 +36,8 @@ import gg.essential.gui.EssentialPalette;
 import gg.essential.gui.account.factory.*;
 import gg.essential.gui.api.ComponentFactory;
 import gg.essential.gui.common.UI3DPlayer;
+import gg.essential.gui.elementa.state.v2.MutableState;
+import gg.essential.gui.image.ResourceImageFactory;
 import gg.essential.gui.notification.Notifications;
 import gg.essential.handlers.OptionsScreenOverlay;
 import gg.essential.gui.overlay.OverlayManager;
@@ -46,6 +49,7 @@ import gg.essential.key.EssentialKeybindingRegistry;
 import gg.essential.lib.gson.Gson;
 import gg.essential.lib.gson.GsonBuilder;
 import gg.essential.network.connectionmanager.ConnectionManager;
+import gg.essential.sps.McIntegratedServerManager;
 import gg.essential.universal.UMinecraft;
 import gg.essential.util.*;
 import gg.essential.util.crash.StacktraceDeobfuscator;
@@ -77,6 +81,8 @@ import java.util.concurrent.TimeUnit;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModContainer;
 //#endif
+
+import static gg.essential.gui.elementa.state.v2.StateKt.mutableStateOf;
 
 public class Essential implements EssentialAPI {
     public static final String MODID = "essential";
@@ -122,8 +128,9 @@ public class Essential implements EssentialAPI {
     public final boolean isNewInstallation = !new File(baseDir, "config.toml").exists();
 
     private final Lwjgl3Loader lwjgl3 = new Lwjgl3Loader(baseDir.toPath().resolve("lwjgl3-natives"), GLUtil.INSTANCE.isGL30());
+    private final MutableState<@Nullable McIntegratedServerManager> integratedServerManager = mutableStateOf(null);
     @NotNull
-    private final ConnectionManager connectionManager = new ConnectionManager(new NetworkHook(), baseDir, lwjgl3);
+    private final ConnectionManager connectionManager = new ConnectionManager(new NetworkHook(), baseDir, lwjgl3, integratedServerManager);
     private final List<SessionFactory> sessionFactories = new ArrayList<>();
     @NotNull
     private final EssentialKeybindingRegistry keybindingRegistry = new EssentialKeybindingRegistry();
@@ -159,6 +166,11 @@ public class Essential implements EssentialAPI {
 
             return instance;
         }
+    }
+
+    @NotNull
+    public MutableState<@Nullable McIntegratedServerManager> getIntegratedServerManager() {
+        return this.integratedServerManager;
     }
 
     @NotNull
@@ -201,7 +213,10 @@ public class Essential implements EssentialAPI {
         Multithreading.runAsync(() -> ElementaFonts.INSTANCE.getClass());
         Multithreading.runAsync(() -> EssentialAPI.Companion.getClass());
         Multithreading.runAsync(() -> AutoUpdate.INSTANCE.getClass());
-        Multithreading.runAsync(() -> EssentialPalette.INSTANCE.getClass());
+        Multithreading.runAsync(() -> {
+            EssentialPalette.INSTANCE.getClass();
+            ResourceImageFactory.Companion.preload();
+        });
     }
 
     @SuppressWarnings({
@@ -267,7 +282,7 @@ public class Essential implements EssentialAPI {
 
         EventHandler.init();
         StencilEffect.Companion.enableStencil();
-        essentialConfig.hookUp();
+        McEssentialConfig.INSTANCE.hookUp();
         //#if MC<11400
         createStacktraceDeobfuscator();
         //#endif
@@ -348,6 +363,7 @@ public class Essential implements EssentialAPI {
         }
 
         EssentialChannelHandler.registerEssentialChannel();
+
     }
 
     private File createEssentialDir() {

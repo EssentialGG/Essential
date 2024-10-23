@@ -29,7 +29,7 @@ import gg.essential.util.executor
 import net.minecraft.client.Minecraft
 import java.util.concurrent.CompletableFuture
 
-object Notifications : Notifications {
+object NotificationsImpl : Notifications, NotificationsManager {
     private const val MAXIMUM_NOTIFICATIONS = 3
 
     private val mc = Minecraft.getMinecraft()
@@ -105,7 +105,7 @@ object Notifications : Notifications {
         }
     }
 
-    fun pushPersistentToast(
+    override fun pushPersistentToast(
         title: String,
         message: String,
         action: () -> Unit,
@@ -230,16 +230,28 @@ object Notifications : Notifications {
         )
     }
 
-    fun hide() {
+    override fun hide() {
         layer.rendered = false
     }
 
-    fun show() {
+    override fun show() {
         layer.rendered = true
     }
 
-    fun hasActiveNotifications(): Boolean {
+    override fun hasActiveNotifications(): Boolean {
         return window.children.size > 0
+    }
+
+    override fun removeNotificationById(id: Any) {
+        notifications.removeIf { it.uniqueId == id }
+
+        window.childrenOfType<Notification>()
+            .filter { it.uniqueId == id }
+            .forEach { it.dismissInstantly() }
+
+        if (blockedNotifications.isNotEmpty()) {
+            blockedNotifications.add { removeNotificationById(id) }
+        }
     }
 
     private fun hasNotification(uniqueId: Any): Boolean {

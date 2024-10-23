@@ -29,25 +29,29 @@ public class CosmeticStoreBundle {
 
     private final float discount;
 
+    private final boolean rotateOnPreview;
+
     private final @NotNull Map<@NotNull CosmeticSlot, @NotNull String> cosmetics;
 
     private final @NotNull Map<@NotNull String, @NotNull List<@NotNull CosmeticSetting>> settings;
 
 
     public CosmeticStoreBundle(
-            @NotNull String id,
-            @NotNull String name,
-            @NotNull CosmeticStoreBundleSkin skin,
-            @NotNull CosmeticTier tier,
-            float discount,
-            @NotNull Map<@NotNull CosmeticSlot, @NotNull String> cosmetics,
-            @NotNull Map<@NotNull String, @NotNull List<@NotNull CosmeticSetting>> settings
+        @NotNull String id,
+        @NotNull String name,
+        @NotNull CosmeticStoreBundleSkin skin,
+        @NotNull CosmeticTier tier,
+        float discount,
+        boolean rotateOnPreview,
+        @NotNull Map<@NotNull CosmeticSlot, @NotNull String> cosmetics,
+        @NotNull Map<@NotNull String, @NotNull List<@NotNull CosmeticSetting>> settings
     ) {
         this.id = id;
         this.name = name;
         this.skin = skin;
         this.tier = tier;
         this.discount = discount;
+        this.rotateOnPreview = rotateOnPreview;
         this.cosmetics = cosmetics;
         this.settings = settings;
     }
@@ -70,6 +74,10 @@ public class CosmeticStoreBundle {
 
     public float getDiscount() {
         return discount;
+    }
+
+    public boolean getRotateOnPreview() {
+        return rotateOnPreview;
     }
 
     public @NotNull Map<@NotNull CosmeticSlot, @NotNull String> getCosmetics() {

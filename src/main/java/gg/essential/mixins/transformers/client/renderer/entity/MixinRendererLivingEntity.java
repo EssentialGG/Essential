@@ -27,6 +27,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import net.minecraft.client.renderer.entity.RenderLivingBase;
 //#endif
 
+//#if MC>=12102
+//$$ import net.minecraft.client.render.entity.state.LivingEntityRenderState;
+//#endif
+
 //#if MC>=11700
 //$$ import net.minecraft.client.render.entity.EntityRendererFactory;
 //#endif
@@ -37,13 +41,22 @@ import net.minecraft.client.renderer.entity.RenderLivingBase;
 @Mixin(value = RenderLivingBase.class, priority = 500)
 //#endif
 
+//#if MC>=12102
+//$$ public abstract class MixinRendererLivingEntity<T extends LivingEntity, S extends LivingEntityRenderState> extends EntityRenderer<T, S> {
+//#else
 public abstract class MixinRendererLivingEntity<T extends EntityLivingBase> extends Render<T> {
+//#endif
     protected MixinRendererLivingEntity() {
         super(null);
     }
 
+    //#if MC>=12102
+    //$$ @Inject(method = "hasLabel(Lnet/minecraft/entity/LivingEntity;D)Z", at = @At("HEAD"), cancellable = true)
+    //$$ private void canRenderNameOfEmulatedPlayer(T entity, double squaredDistanceToCamera, CallbackInfoReturnable<Boolean> ci) {
+    //#else
     @Inject(method = "canRenderName(Lnet/minecraft/entity/EntityLivingBase;)Z", at = @At("HEAD"), cancellable = true)
     private void canRenderNameOfEmulatedPlayer(T entity, CallbackInfoReturnable<Boolean> ci) {
+    //#endif
         UI3DPlayer component = UI3DPlayer.current;
         if (component != null) {
             ci.setReturnValue(!component.getHideNameTags().get());

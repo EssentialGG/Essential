@@ -13,6 +13,7 @@ import gg.essential.gradle.util.KotlinVersion
 
 plugins {
     kotlin("multiplatform")
+    kotlin("plugin.serialization")
 }
 
 repositories {
@@ -23,8 +24,11 @@ kotlin {
     jvm()
 
     sourceSets["commonMain"].dependencies {
-        implementation(kotlin("stdlib", KotlinVersion.minimal.stdlib))
-        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${KotlinVersion.minimal.coroutines}")
+        val kotlin = KotlinVersion.minimal
+        implementation(kotlin("stdlib", kotlin.stdlib))
+        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${kotlin.coroutines}")
+        implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:${kotlin.serialization}")
+        implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${kotlin.serialization}")
         api("dev.folomeev.kotgl:kotgl-matrix:0.0.1-beta")
     }
 

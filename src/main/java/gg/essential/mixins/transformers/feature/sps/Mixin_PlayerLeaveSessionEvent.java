@@ -14,21 +14,35 @@ package gg.essential.mixins.transformers.feature.sps;
 import com.mojang.authlib.GameProfile;
 import gg.essential.Essential;
 import gg.essential.event.sps.PlayerLeaveSessionEvent;
+import gg.essential.mixins.ext.server.integrated.IntegratedServerExt;
 import gg.essential.network.connectionmanager.sps.SPSManager;
 import gg.essential.util.ExtensionsKt;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.management.PlayerList;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.UUID;
+
+import static gg.essential.gui.elementa.state.v2.ListKt.remove;
+
 @Mixin(PlayerList.class)
 public class Mixin_PlayerLeaveSessionEvent {
 
     @Inject(method = "playerLoggedOut", at = @At("RETURN"))
     private void essential$playerLeaveSession(EntityPlayerMP player, CallbackInfo info) {
+        MinecraftServer server = player.mcServer;
+        UUID uuid = player.getUniqueID();
+        ExtensionsKt.getExecutor(Minecraft.getMinecraft()).execute(() -> {
+            if (server instanceof IntegratedServerExt) {
+                remove(((IntegratedServerExt) server).getEssential$manager().getConnectedPlayers(), uuid);
+            }
+        });
+
         final SPSManager spsManager = Essential.getInstance().getConnectionManager().getSpsManager();
         if (spsManager.getLocalSession() != null) {
             GameProfile gameProfile = player.getGameProfile();

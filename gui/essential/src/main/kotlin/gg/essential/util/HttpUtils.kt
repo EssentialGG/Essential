@@ -14,6 +14,7 @@ package gg.essential.util
 
 import gg.essential.data.VersionInfo
 import gg.essential.handlers.CertChain
+import kotlinx.coroutines.future.asDeferred
 import okhttp3.OkHttpClient
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
@@ -33,3 +34,9 @@ val httpClient: CompletableFuture<OkHttpClient> = CompletableFuture.supplyAsync 
             )
         }.build()
 }
+
+private val httpClientDeferred = httpClient.asDeferred()
+
+suspend fun httpClient(): OkHttpClient =
+    httpClientDeferred.await()
+

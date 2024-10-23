@@ -41,6 +41,9 @@ data class ImageGeneratorSettings(
 abstract class ImageFactory(
     protected val settings: ImageGeneratorSettings = ImageGeneratorSettings()
 ) {
+    /** A human readable name for the image produced. Used for debugging. */
+    abstract val name: String
+
     /**
      * Produces a new [UIImage] and applies [settings]
      */
@@ -90,6 +93,8 @@ private class DelegatedImageImageFactory(
     settings: ImageGeneratorSettings
 ) : ImageFactory(settings) {
 
+    override val name: String by innerSupplier::name
+
     override fun generate(): UIImage {
         return innerSupplier.create()
     }
@@ -105,8 +110,13 @@ private class DelegatedImageImageFactory(
  * Does not support caching.
  */
 fun ImageFactory(
+    name: String = "",
     generator: () -> UIImage,
 ): ImageFactory = object : ImageFactory() {
+
+    override val name: String
+        get() = name.ifEmpty { generator.toString() }
+
     override fun generate(): UIImage {
         return generator()
     }

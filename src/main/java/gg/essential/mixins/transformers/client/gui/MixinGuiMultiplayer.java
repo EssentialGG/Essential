@@ -11,6 +11,7 @@
  */
 package gg.essential.mixins.transformers.client.gui;
 
+import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import gg.essential.config.EssentialConfig;
 import gg.essential.gui.multiplayer.EssentialMultiplayerGui;
 import gg.essential.mixins.ext.client.gui.GuiMultiplayerExt;
@@ -20,6 +21,7 @@ import kotlin.collections.CollectionsKt;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiMultiplayer;
 import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.client.gui.ServerSelectionList;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.network.LanServerInfo;
 import net.minecraft.client.renderer.GlStateManager;
@@ -33,7 +35,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.Collections;
 import java.util.List;
 
 //#if MC>=12000
@@ -171,13 +172,10 @@ public abstract class MixinGuiMultiplayer extends GuiScreen implements GuiMultip
     }
     //#endif
 
-    @ModifyArg(method = "updateScreen", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/ServerSelectionList;updateNetworkServers(Ljava/util/List;)V"))
-    private List<LanServerInfo> suppressLanServersOnEssentialTabs(List<LanServerInfo> lanServers) {
-        if (!EssentialConfig.INSTANCE.getEssentialFull()) return lanServers;
-        if (EssentialConfig.INSTANCE.getCurrentMultiplayerTab() != 0) {
-            return Collections.emptyList();
-        }
-        return lanServers;
+    @WrapWithCondition(method = "updateScreen", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/ServerSelectionList;updateNetworkServers(Ljava/util/List;)V"))
+    private boolean suppressLanServersOnEssentialTabs(ServerSelectionList self, List<LanServerInfo> lanServers) {
+        if (!EssentialConfig.INSTANCE.getEssentialFull()) return true;
+        return EssentialConfig.INSTANCE.getCurrentMultiplayerTab() == 0;
     }
 
     //#if MC>=11600

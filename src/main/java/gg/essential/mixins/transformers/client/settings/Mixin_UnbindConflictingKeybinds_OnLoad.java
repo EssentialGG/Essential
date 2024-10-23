@@ -1,0 +1,36 @@
+/*
+ * Copyright (c) 2024 ModCore Inc. All rights reserved.
+ *
+ * This code is part of ModCore Inc.'s Essential Mod repository and is protected
+ * under copyright registration # TX0009138511. For the full license, see:
+ * https://github.com/EssentialGG/Essential/blob/main/LICENSE
+ *
+ * You may not use, copy, reproduce, modify, sell, license, distribute,
+ * commercialize, or otherwise exploit, or create derivative works based
+ * upon, this file or any other in this repository, all of which is reserved by Essential.
+ */
+package gg.essential.mixins.transformers.client.settings;
+
+import net.minecraft.client.settings.GameSettings;
+import net.minecraft.client.settings.KeyBinding;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import static gg.essential.mixins.impl.client.settings.KeybindUtils.getKeyBindZoom;
+import static gg.essential.mixins.impl.client.settings.KeybindUtils.unbindIfConflicting;
+
+@Mixin(GameSettings.class)
+public class Mixin_UnbindConflictingKeybinds_OnLoad {
+
+    @Shadow
+    private KeyBinding keyBindSaveToolbar;
+
+    @Inject(method = "loadOptions", at = @At("RETURN"))
+    private void Essential$unbindLoadedConflictingKeybinds(CallbackInfo ci) {
+        // Unbind default save toolbar activator keybind if it conflicts with zoom keybind
+        unbindIfConflicting(getKeyBindZoom(), this.keyBindSaveToolbar);
+    }
+}

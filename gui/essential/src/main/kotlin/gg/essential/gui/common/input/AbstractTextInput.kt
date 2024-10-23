@@ -544,7 +544,7 @@ abstract class AbstractTextInput(
             return
         }
 
-        val addTextOperation = AddTextOperation(text, cursor)
+        val addTextOperation = AddTextOperation(text, selectionStart())
 
         if (hasSelection()) {
             val removeTextOperation = RemoveTextOperation(selectionStart(), selectionEnd(), selectAfterUndo = true)

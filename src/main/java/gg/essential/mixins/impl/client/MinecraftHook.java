@@ -49,7 +49,9 @@ public class MinecraftHook extends ClassHook<Minecraft> {
     }
 
     public void runTick() {
-        //#if MC < 11400
+        //#if MC>=12102
+        //$$ final Profiler mcProfiler = net.minecraft.util.profiler.Profilers.get();
+        //#elseif MC < 11400
         final Profiler mcProfiler = UMinecraft.getMinecraft().mcProfiler;
         //#else
         //$$ final IProfiler mcProfiler = UMinecraft.getMinecraft().getProfiler();

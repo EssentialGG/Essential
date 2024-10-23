@@ -16,10 +16,12 @@ import gg.essential.connectionmanager.common.packet.connection.*;
 import gg.essential.connectionmanager.common.packet.multiplayer.ServerMultiplayerJoinServerPacket;
 import gg.essential.connectionmanager.common.packet.relationships.ServerUuidNameMapPacket;
 import gg.essential.event.client.PostInitializationEvent;
+import gg.essential.gui.elementa.state.v2.State;
 import gg.essential.network.client.MinecraftHook;
 import gg.essential.network.connectionmanager.chat.ChatManager;
 import gg.essential.network.connectionmanager.coins.CoinsManager;
 import gg.essential.network.connectionmanager.cosmetics.CosmeticsManager;
+import gg.essential.network.connectionmanager.cosmetics.EmoteWheelManager;
 import gg.essential.network.connectionmanager.cosmetics.OutfitManager;
 import gg.essential.network.connectionmanager.cosmetics.PacketHandlers;
 import gg.essential.network.connectionmanager.handler.PacketHandler;
@@ -39,11 +41,13 @@ import gg.essential.network.connectionmanager.social.SocialManager;
 import gg.essential.network.connectionmanager.sps.SPSManager;
 import gg.essential.network.connectionmanager.subscription.SubscriptionManager;
 import gg.essential.network.connectionmanager.telemetry.TelemetryManager;
+import gg.essential.sps.McIntegratedServerManager;
 import gg.essential.util.ModLoaderUtil;
 import gg.essential.util.Multithreading;
 import gg.essential.util.lwjgl3.Lwjgl3Loader;
 import kotlin.Unit;
 import kotlin.collections.MapsKt;
+import kotlin.jvm.functions.Function0;
 import kotlin.jvm.functions.Function1;
 import kotlinx.coroutines.JobKt;
 import me.kbrewster.eventbus.Subscribe;
@@ -96,6 +100,8 @@ public class ConnectionManager extends ConnectionManagerKt {
     private /*final*/ SkinsManager skinsManager;
     @NotNull
     private final OutfitManager outfitManager;
+    @NotNull
+    private final EmoteWheelManager emoteWheelManager;
 
     private boolean modsLoaded = false;
     private boolean modsSent = false;
@@ -113,7 +119,12 @@ public class ConnectionManager extends ConnectionManagerKt {
         SUCCESS,
     }
 
-    public ConnectionManager(@NotNull final MinecraftHook minecraftHook, File baseDir, Lwjgl3Loader lwjgl3) {
+    public ConnectionManager(
+        @NotNull final MinecraftHook minecraftHook,
+        File baseDir,
+        Lwjgl3Loader lwjgl3,
+        State<@Nullable McIntegratedServerManager> integratedServerManager
+    ) {
         this.minecraftHook = minecraftHook;
         this.subscriptionManager = new SubscriptionManager(this);
         this.managers.add(this.subscriptionManager);
@@ -160,7 +171,22 @@ public class ConnectionManager extends ConnectionManagerKt {
         this.managers.add(this.socialManager = new SocialManager(this));
 
         // Ice
-        this.iceManager = new IceManagerMcImpl(this, baseDir.toPath(), uuid -> this.spsManager.getInvitedUsers().contains(uuid));
+        this.iceManager = new IceManagerMcImpl(
+            this,
+            baseDir.toPath(),
+            integratedServerManager,
+            uuid -> {
+                if (this.spsManager.getInvitedUsers().contains(uuid)) {
+                    return true;
+                }
+                McIntegratedServerManager server = integratedServerManager.getUntracked();
+                if (server != null) {
+                    Set<UUID> whitelist = server.getWhitelist().getUntracked();
+                    return whitelist != null && whitelist.contains(uuid);
+                }
+                return false;
+            }
+        );
 
         //Screenshots
         this.managers.add(this.screenshotManager = new ScreenshotManager(this, baseDir, lwjgl3));
@@ -177,6 +203,9 @@ public class ConnectionManager extends ConnectionManagerKt {
         // Outfits
         this.outfitManager = new OutfitManager(this, this.cosmeticsManager, map(this.skinsManager.getSkins(), map -> MapsKt.mapValues(map, it -> it.getValue().getSkin())));
         this.managers.add(this.outfitManager);
+
+        // Emote Wheels
+        this.managers.add(this.emoteWheelManager = new EmoteWheelManager(this, this.cosmeticsManager));
 
     }
 
@@ -255,6 +284,12 @@ public class ConnectionManager extends ConnectionManagerKt {
         return this.outfitManager;
     }
 
+    @NotNull
+    public EmoteWheelManager getEmoteWheelManager() {
+        return this.emoteWheelManager;
+    }
+
+    @Override
     public boolean isOpen() {
         Connection connection = this.connection;
         return connection != null && connection.isOpen();
@@ -262,6 +297,16 @@ public class ConnectionManager extends ConnectionManagerKt {
 
     public boolean isAuthenticated() {
         return this.connection != null;
+    }
+
+    @Override
+    public void registerOnConnected(@NotNull Function0<Unit> onConnected) {
+        this.managers.add(new NetworkedManager() {
+            @Override
+            public void onConnected() {
+                onConnected.invoke();
+            }
+        });
     }
 
     public <T extends Packet> void registerPacketHandler(Class<T> cls, PacketHandler<T> handler) {

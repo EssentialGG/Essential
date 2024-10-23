@@ -16,6 +16,7 @@ import gg.essential.Essential
 import gg.essential.connectionmanager.common.packet.pingproxy.ClientPingProxyPacket
 import gg.essential.connectionmanager.common.packet.pingproxy.ServerPingProxyResponsePacket
 import gg.essential.mixins.ext.client.multiplayer.ext
+import gg.essential.mixins.ext.client.multiplayer.pingOverride
 import gg.essential.mixins.ext.client.multiplayer.pingRegion
 import gg.essential.network.connectionmanager.AsyncResponseHandler
 import gg.essential.network.connectionmanager.ice.netty.CloseAfterFirstMessage
@@ -107,24 +108,28 @@ class ProxyPingPacketHandler(val serverData: ServerData): SimpleChannelInboundHa
             }
         } else {
             if (id == 0x00) { // Status Request
-                Essential.getInstance().connectionManager.send(pingData!!, AsyncResponseHandler { maybeResponse ->
+                val pingData = pingData!!
+                Essential.getInstance().connectionManager.send(pingData, AsyncResponseHandler { maybeResponse ->
                     val response = maybeResponse.orElse(null) as? ServerPingProxyResponsePacket
                     if (response != null) {
                         sendPacket(0x00) { // Query Response
                             writeString(response.rawJson)
                         }
-                        // We can safely set these here, since we don't respond to the Ping with a Pong, see below
-                        serverData.pingToServer = response.latency
+                        // If we set the ping directly, it will get override with the value calculated in ServerPinger
+                        // This override value is copied to the ping field after the calculated value is set, see Mixin_OverridePing
+                        serverData.ext.pingOverride = response.latency
                         serverData.ext.pingRegion = response.region
                     } else {
                         // If we didn't get a response from CM, just force disconnect which shows "(no connection)" in the gui
                         channel.close()
-                        Essential.logger.info("Received no response from ping proxy for ${pingData?.hostname}:${pingData?.port} (${pingData?.protocolVersion})")
+                        Essential.logger.info("Received no response from ping proxy for ${pingData.hostname}:${pingData.port} (${pingData.protocolVersion})")
                     }
                 }, TimeUnit.SECONDS, 7)
             } else if (id == 0x01) { // Ping
-                // Instead of responding to the ping with a pong, close the connection so that the client doesn't write the latency to the ServerData
-                channel.close()
+                val payload = buf.readLong()
+                sendPacket(0x01) { // Pong
+                    writeLong(payload)
+                }
             }
         }
     }

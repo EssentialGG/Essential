@@ -16,12 +16,9 @@ import net.minecraft.client.gui.ServerListEntryNormal;
 import net.minecraft.client.gui.ServerSelectionList;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
+import org.spongepowered.asm.mixin.gen.Invoker;
 
 import java.util.List;
-
-//#if MC>=11600
-//$$ import org.spongepowered.asm.mixin.gen.Invoker;
-//#endif
 
 @Mixin(ServerSelectionList.class)
 public interface ServerSelectionListAccessor {
@@ -30,6 +27,11 @@ public interface ServerSelectionListAccessor {
 
     @Accessor
     List<ServerListEntryLanDetected> getServerListLan();
+
+    //#if MC<11600
+    @Invoker
+    int invokeGetSize();
+    //#endif
 
     //#if MC>=11600
     //$$ @Invoker("setList")

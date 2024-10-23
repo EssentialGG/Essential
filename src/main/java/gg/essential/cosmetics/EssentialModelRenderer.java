@@ -46,6 +46,11 @@ import static gg.essential.cosmetics.EssentialModelRendererKt.renderForHoverOutl
 import static gg.essential.gui.elementa.state.v2.StateKt.stateOf;
 import static gg.essential.util.ExtensionsKt.toCommon;
 
+//#if MC>=12102
+//$$ import gg.essential.mixins.impl.client.model.PlayerEntityRenderStateExt;
+//$$ import net.minecraft.client.render.entity.state.PlayerEntityRenderState;
+//#endif
+
 //#if MC>=11400
 //$$ import com.mojang.blaze3d.matrix.MatrixStack;
 //$$ import net.minecraft.client.renderer.IRenderTypeBuffer;
@@ -56,7 +61,9 @@ import gg.essential.universal.UGraphics;
 import static gg.essential.model.backend.minecraft.LegacyCameraPositioningKt.getRelativeCameraPosFromGlState;
 //#endif
 
-//#if MC>=11400
+//#if MC>=12102
+//$$ public class EssentialModelRenderer extends FeatureRenderer<PlayerEntityRenderState, PlayerEntityModel> {
+//#elseif MC>=11400
 //$$ public class EssentialModelRenderer extends LayerRenderer<AbstractClientPlayerEntity, PlayerModel<AbstractClientPlayerEntity>> {
 //#else
 public class EssentialModelRenderer implements LayerRenderer<AbstractClientPlayer> {
@@ -227,7 +234,12 @@ public class EssentialModelRenderer implements LayerRenderer<AbstractClientPlaye
 
     @Override
     //#if MC>=11400
+    //#if MC>=12102
+    //$$ public void render(MatrixStack vMatrixStack, VertexConsumerProvider buffer, int light, PlayerEntityRenderState state, float limbAngle, float limbDistance) {
+    //$$     AbstractClientPlayerEntity player = ((PlayerEntityRenderStateExt) state).essential$getEntity();
+    //#else
     //$$ public void render(@NotNull MatrixStack vMatrixStack, @NotNull IRenderTypeBuffer buffer, int light, @NotNull AbstractClientPlayerEntity player, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch) {
+    //#endif
     //$$     UMatrixStack matrixStack = new UMatrixStack(vMatrixStack);
     //$$     RenderBackend.VertexConsumerProvider vertexConsumerProvider = new MinecraftRenderBackend.VertexConsumerProvider(buffer, light);
     //#else

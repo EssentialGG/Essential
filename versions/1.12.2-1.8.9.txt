@@ -1,3 +1,4 @@
+net.minecraft.util.text.TextFormatting net.minecraft.util.EnumChatFormatting
 net.minecraft.client.renderer.ItemRenderer renderArm() renderPlayerArm()
 net.minecraft.client.renderer.ItemRenderer renderArmFirstPerson() renderPlayerArms()
 net.minecraft.entity.Entity getDataManager() getDataWatcher()

@@ -18,6 +18,7 @@ import gg.essential.gui.common.state
 import gg.essential.gui.elementa.state.v2.*
 import gg.essential.gui.layoutdsl.*
 import gg.essential.gui.wardrobe.WardrobeState
+import gg.essential.gui.wardrobe.configuration.ConfigurationUtils.labeledBooleanInputRow
 import gg.essential.gui.wardrobe.configuration.ConfigurationUtils.labeledEnumInputRow
 import gg.essential.gui.wardrobe.configuration.ConfigurationUtils.labeledFloatInputRow
 import gg.essential.gui.wardrobe.configuration.ConfigurationUtils.labeledNullableStringInputRow
@@ -41,6 +42,7 @@ class CosmeticBundleConfiguration(
         labeledStringInputRow("Name:", mutableStateOf(bundle.name)).state.onSetValue(stateScope) { bundle.update(bundle.copy(name = it)) }
         labeledEnumInputRow("Tier:", bundle.tier) { bundle.update(bundle.copy(tier = it)) }
         labeledFloatInputRow("Discount %:", mutableStateOf(bundle.discountPercent)).state.onSetValue(stateScope) { bundle.update(bundle.copy(discountPercent = it)) }
+        labeledBooleanInputRow("Rotate on Preview:", bundle.rotateOnPreview) { bundle.update(bundle.copy(rotateOnPreview = it)) }
         labeledEnumInputRow("Skin model:", skin.model) { bundle.update(bundle.copy(skin = bundle.skin.copy(model = it))) }
         labeledStringInputRow("Skin hash:", mutableStateOf(skin.hash), Modifier.fillRemainingWidth(), Arrangement.spacedBy(10f)).state.onSetValue(stateScope) { bundle.update(bundle.copy(skin = bundle.skin.copy(hash = it))) }
         labeledNullableStringInputRow("Skin name:", mutableStateOf(skin.name)).state.onSetValue(stateScope) { bundle.update(bundle.copy(skin = bundle.skin.copy(name = it))) }
@@ -54,12 +56,25 @@ class CosmeticBundleConfiguration(
                     { it ?: "" },
                     { if (it.isBlank()) null else (cosmeticsDataWithChanges.getCosmetic(it)?.id ?: throw StateTextInput.ParseException()) }
                 )
-                cosmeticState.onSetValue(stateScope) {
+                cosmeticState.onSetValue(stateScope) { cosmeticId ->
                     bundle.update(
-                        if (it == null) {
+                        if (cosmeticId == null) {
                             bundle.copy(cosmetics = bundle.cosmetics - slot, settings = if (initialId == null) bundle.settings else bundle.settings - initialId)
                         } else {
-                            bundle.copy(cosmetics = bundle.cosmetics + (slot to it))
+                            val newCosmetics = bundle.cosmetics.toMutableMap()
+                            // All slots that the equipped cosmetic is mutually exclusive with
+                            for (mutuallyExclusiveSlot in cosmeticsDataWithChanges.getCosmetic(cosmeticId)?.mutuallyExclusiveWith ?: emptySet()) {
+                                newCosmetics.remove(mutuallyExclusiveSlot)
+                            }
+                            // All other slots with an equipped cosmetic that is mutually exclusive with the newly equipped slot
+                            for ((equippedSlot, equippedCosmeticId) in newCosmetics.entries) {
+                                if (cosmeticsDataWithChanges.getCosmetic(equippedCosmeticId)?.mutuallyExclusiveWith?.contains(slot) == true) {
+                                    newCosmetics.remove(equippedSlot)
+                                }
+                            }
+
+                            newCosmetics[slot] = cosmeticId
+                            bundle.copy(cosmetics = newCosmetics, settings = bundle.settings - (bundle.settings.keys - newCosmetics.values))
                         }
                     )
                 }

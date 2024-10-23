@@ -11,6 +11,7 @@
  */
 package gg.essential.mixins.transformers.client.renderer.entity;
 
+import com.llamalad7.mixinextras.sugar.Local;
 import gg.essential.mixins.impl.client.model.ModelBipedExt;
 import gg.essential.mixins.impl.client.model.ModelBipedUtil;
 import gg.essential.model.backend.PlayerPose;
@@ -21,6 +22,11 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+//#if MC>=12102
+//$$ import gg.essential.mixins.impl.client.model.PlayerEntityRenderStateExt;
+//$$ import net.minecraft.client.render.entity.state.BipedEntityRenderState;
+//#endif
 
 @Mixin(ModelBiped.class)
 public abstract class Mixin_ApplyPoseTransform implements ModelBipedExt {
@@ -53,22 +59,25 @@ public abstract class Mixin_ApplyPoseTransform implements ModelBipedExt {
         ModelBipedUtil.resetPose((ModelBiped) (Object) this);
     }
 
+    //#if MC>=12102
+    //$$ @Inject(method = "setAngles", at = @At("RETURN"))
+    //#else
     @Inject(method = "setRotationAngles", at = @At(value = "INVOKE", target = COPY_MODEL_ANGLES))
+    //#endif
     private void applyPoseTransform(
-        //#if MC>=11400
-        //$$ net.minecraft.entity.LivingEntity entity,
+        CallbackInfo ci,
+        //#if MC>=12102
+        //$$ @Local(argsOnly = true) BipedEntityRenderState state
+        //#elseif MC>=11400
+        //$$ @Local(argsOnly = true) net.minecraft.entity.LivingEntity entity
+        //#else
+        @Local(argsOnly = true) Entity entity
         //#endif
-        float limbSwing,
-        float limbSwingAmount,
-        float ageInTicks,
-        float netHeadYaw,
-        float headPitch,
-        //#if MC<11400
-        float scaleFactor,
-        Entity entity,
-        //#endif
-        CallbackInfo ci
     ) {
+        //#if MC>=12102
+        //$$ if (!(state instanceof PlayerEntityRenderStateExt)) return;
+        //$$ Entity entity = ((PlayerEntityRenderStateExt) state).essential$getEntity();
+        //#endif
         ModelBipedUtil.applyPoseTransform((ModelBiped) (Object) this, entity);
     }
 }

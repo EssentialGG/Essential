@@ -12,12 +12,16 @@
 package gg.essential.network.connectionmanager.ice
 
 import gg.essential.connectionmanager.common.packet.telemetry.ClientTelemetryPacket
+import gg.essential.gui.elementa.state.v2.ReferenceHolderImpl
+import gg.essential.gui.elementa.state.v2.State
+import gg.essential.gui.elementa.state.v2.effect
 import gg.essential.mixins.ext.network.getIceEndpoint
 import gg.essential.network.connectionmanager.ConnectionManager
 import gg.essential.network.connectionmanager.ice.IceManager.ICE_CLIENT_EVENT_LOOP_GROUP
 import gg.essential.network.connectionmanager.ice.IceManager.ICE_SERVER_EVENT_LOOP_GROUP
 import gg.essential.network.connectionmanager.ice.netty.CloseAfterFirstMessage
 import gg.essential.network.connectionmanager.ice.netty.CoroutinesChannelInitializer
+import gg.essential.sps.McIntegratedServerManager
 import gg.essential.sps.ResourcePackSharingHttpServer
 import gg.essential.util.Client
 import gg.essential.util.ProtocolUtils.IPV4_HEADER_SIZE
@@ -45,9 +49,18 @@ import kotlin.coroutines.cancellation.CancellationException
 class IceManagerMcImpl(
     private val cmConnection: ConnectionManager,
     baseDir: Path,
+    private val integratedServerManager: State<McIntegratedServerManager?>,
     isInvited: (UUID) -> Boolean,
 ) : IceManagerImpl(cmConnection, baseDir.resolve("ice-logs"), isInvited), IIceManager {
+    private val refHolder = ReferenceHolderImpl()
+
     override var integratedServerVoicePort: Int = 0
+
+    init {
+        effect(refHolder) {
+            integratedServerVoicePort = integratedServerManager()?.thirdPartyVoicePort() ?: return@effect
+        }
+    }
 
     override fun setVoicePort(port: Int) {
         this.integratedServerVoicePort = port

@@ -16,13 +16,15 @@ import gg.essential.universal.UMatrixStack;
 public final class RenderTickEvent {
 
     private final boolean pre;
+    private final boolean loadingScreen;
 
     private final UMatrixStack matrixStack;
     private final float partialTicksMenu;
     private final float partialTicksInGame;
 
-    public RenderTickEvent(boolean pre, UMatrixStack matrixStack, float partialTicksMenu, float partialTicksInGame) {
+    public RenderTickEvent(boolean pre, boolean loadingScreen, UMatrixStack matrixStack, float partialTicksMenu, float partialTicksInGame) {
         this.pre = pre;
+        this.loadingScreen = loadingScreen;
         this.matrixStack = matrixStack;
         this.partialTicksMenu = partialTicksMenu;
         this.partialTicksInGame = partialTicksInGame;
@@ -30,6 +32,10 @@ public final class RenderTickEvent {
 
     public boolean isPre() {
         return pre;
+    }
+
+    public boolean isLoadingScreen() {
+        return loadingScreen;
     }
 
     public UMatrixStack getMatrixStack() {

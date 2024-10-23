@@ -13,7 +13,6 @@ package gg.essential.network.connectionmanager.notices
 
 import gg.essential.elementa.state.BasicState
 import gg.essential.gui.common.WeakState
-import gg.essential.network.connectionmanager.notices.NoticesManager.NoticeListener
 import gg.essential.notices.NoticeType
 import gg.essential.notices.model.Notice
 import java.util.UUID

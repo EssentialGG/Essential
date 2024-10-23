@@ -345,7 +345,7 @@ fun LayoutScope.cosmeticItem(item: Item, category: WardrobeCategory, state: Ward
                             claimFreeItemNow(item, state)
                         }
 
-                        state.emoteWheel.set(target, item.cosmetic.id)
+                        state.emoteWheelManager.setEmote(target, item.cosmetic.id)
                         USound.playButtonPress()
                     }
 

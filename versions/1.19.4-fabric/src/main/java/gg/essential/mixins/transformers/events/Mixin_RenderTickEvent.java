@@ -65,7 +65,7 @@ public class Mixin_RenderTickEvent {
         float partialTicksMenu = UMinecraft.getMinecraft().getTickDelta();
         float partialTicksInGame = tickDelta;
         //#endif
-        Essential.EVENT_BUS.post(new RenderTickEvent(pre, matrixStack, partialTicksMenu, partialTicksInGame));
+        Essential.EVENT_BUS.post(new RenderTickEvent(pre, false, matrixStack, partialTicksMenu, partialTicksInGame));
     }
 
 }

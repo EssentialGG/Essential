@@ -19,11 +19,13 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 @Mixin(EntityRenderer.class)
 public class MixinEntityRenderer_Zoom {
-    //#if MC>=11600
-    //$$ @ModifyVariable(method = "getFOVModifier", at = @At(value = "STORE", ordinal = 1), ordinal = 0)
+    private static final String GET_FOV = "getFOVModifier";
+
+    //#if MC>=11600 && MC<12102
+    //$$ @ModifyVariable(method = GET_FOV, at = @At(value = "STORE", ordinal = 1), ordinal = 0)
     //$$ private double applyZoomModifiers(double f) {
     //#else
-    @ModifyVariable(method = "getFOVModifier", at = @At(value = "STORE", ordinal = 1), ordinal = 1)
+    @ModifyVariable(method = GET_FOV, at = @At(value = "STORE", ordinal = 1), ordinal = 1)
     private float applyZoomModifiers(float f) {
     //#endif
         //noinspection RedundantCast

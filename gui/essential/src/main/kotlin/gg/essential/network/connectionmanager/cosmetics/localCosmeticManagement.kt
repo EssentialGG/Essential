@@ -81,6 +81,7 @@ fun CosmeticsDataWithChanges.setCosmeticSingletonPropertyEnabled(
                 is CosmeticProperty.TransitionDelay -> existingProperty.copy(enabled = enabled)
                 is CosmeticProperty.Variants -> existingProperty.copy(enabled = enabled)
                 is CosmeticProperty.DefaultSide -> existingProperty.copy(enabled = enabled)
+                is CosmeticProperty.MutuallyExclusive -> existingProperty.copy(enabled = enabled)
 
                 is CosmeticProperty.CosmeticBoneHiding,
                 is CosmeticProperty.ExternalHiddenBone,
@@ -145,6 +146,12 @@ fun CosmeticsDataWithChanges.setCosmeticSingletonPropertyEnabled(
                     "UNUSED",
                     enabled,
                     CosmeticProperty.DefaultSide.Data(Side.getDefaultSideOrNull(Side.values().toSet()) ?: Side.LEFT)
+                )
+
+                CosmeticPropertyType.MUTUALLY_EXCLUSIVE -> CosmeticProperty.MutuallyExclusive(
+                    "UNUSED",
+                    enabled,
+                    CosmeticProperty.MutuallyExclusive.Data(emptySet())
                 )
 
                 CosmeticPropertyType.COSMETIC_BONE_HIDING,

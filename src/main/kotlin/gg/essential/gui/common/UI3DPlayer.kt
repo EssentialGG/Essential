@@ -74,6 +74,7 @@ import gg.essential.universal.UMatrixStack
 import gg.essential.universal.UResolution
 import gg.essential.util.Client
 import gg.essential.util.ModLoaderUtil
+import gg.essential.util.getPerspective;
 import gg.essential.util.identifier
 import gg.essential.util.orNull
 import gg.essential.util.toUC
@@ -101,6 +102,10 @@ import kotlin.math.min
 import kotlin.math.PI
 import kotlin.random.Random
 import java.util.*
+
+//#if MC>=12102
+//$$ import com.mojang.blaze3d.systems.ProjectionType
+//#endif
 
 //#if MC>=12002
 //$$ import org.joml.Quaternionf
@@ -357,7 +362,11 @@ open class UI3DPlayer(
         //$$ projectionMatrix.peek().model.mul(Matrix4f.perspective(camera.fov.toDouble(), getWidth() / getHeight(), 0.5f, 20f))
         //#endif
 
-        //#if MC>=12000
+        //#if MC>=12102
+        //$$ val orgProjectionMatrix = RenderSystem.getProjectionMatrix()
+        //$$ val orgProjectionType = RenderSystem.getProjectionType()
+        //$$ RenderSystem.setProjectionMatrix(projectionMatrix.peek().model, ProjectionType.PERSPECTIVE)
+        //#elseif MC>=12000
         //$$ val orgProjectionMatrix = RenderSystem.getProjectionMatrix()
         //$$ val orgVertexSorting = RenderSystem.getVertexSorting()
         //$$ RenderSystem.setProjectionMatrix(projectionMatrix.peek().model, VertexSorter.BY_DISTANCE)
@@ -381,7 +390,9 @@ open class UI3DPlayer(
         }
         isRenderingPerspective = false
 
-        //#if MC>=12000
+        //#if MC>=12102
+        //$$ RenderSystem.setProjectionMatrix(orgProjectionMatrix, orgProjectionType);
+        //#elseif MC>=12000
         //$$ RenderSystem.setProjectionMatrix(orgProjectionMatrix, orgVertexSorting);
         //#elseif MC>=11700
         //$$ RenderSystem.setProjectionMatrix(orgProjectionMatrix);
@@ -659,7 +670,7 @@ open class UI3DPlayer(
 
         val camera = perspectiveCamera ?: rotationAngleCamera
         val cameraPos = camera.camera.rotateBy(realRotation).plus(realPosition)
-        particleSystem.render(stack, cameraPos, realRotation * camera.rotation, vertexConsumerProvider)
+        particleSystem.render(stack, cameraPos, realRotation * camera.rotation, vertexConsumerProvider, UUID(0, 0), false)
 
         UGraphics.disableDepth()
     }

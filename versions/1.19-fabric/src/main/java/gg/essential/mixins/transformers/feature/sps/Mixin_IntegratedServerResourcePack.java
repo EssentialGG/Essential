@@ -12,7 +12,10 @@
 package gg.essential.mixins.transformers.feature.sps;
 
 import gg.essential.Essential;
+import gg.essential.mixins.ext.server.integrated.IntegratedServerExt;
 import gg.essential.network.connectionmanager.sps.SPSManager;
+import gg.essential.sps.IntegratedServerManager;
+import gg.essential.sps.McIntegratedServerManager;
 import net.minecraft.server.MinecraftServer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -31,6 +34,23 @@ public class Mixin_IntegratedServerResourcePack {
 
     @Inject(method = "getResourcePackProperties", at = @At("HEAD"), cancellable = true)
     private void getResourcePackProperties(CallbackInfoReturnable<Optional<MinecraftServer.ServerResourcePackProperties>> info) {
+        if (this instanceof IntegratedServerExt) {
+            McIntegratedServerManager manager = ((IntegratedServerExt) this).getEssential$manager();
+            Optional<IntegratedServerManager.ServerResourcePack> resourcePack = manager.getAppliedServerResourcePack();
+            if (resourcePack != null && resourcePack.isPresent()) {
+                String url = resourcePack.get().getUrl();
+                String checksum = resourcePack.get().getChecksum();
+                info.setReturnValue(Optional.of(new MinecraftServer.ServerResourcePackProperties(
+                    //#if MC>=12004
+                    //$$ // Server resource packs are now given a unique ID for caching purposes.
+                    //$$ // Vanilla uses this fallback when the ID is not present.
+                    //$$ UUID.nameUUIDFromBytes(url.getBytes(StandardCharsets.UTF_8)),
+                    //#endif
+                    url, checksum, false, null)));
+                return;
+            }
+        }
+
         final SPSManager spsManager = Essential.getInstance().getConnectionManager().getSpsManager();
         final String resourcePackUrl = spsManager.getResourcePackUrl();
         final String resourcePackChecksum = spsManager.getResourcePackChecksum();

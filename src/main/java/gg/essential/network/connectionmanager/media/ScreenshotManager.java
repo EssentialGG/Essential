@@ -69,6 +69,7 @@ import gg.essential.util.HelpersKt;
 import gg.essential.util.MinecraftUtils;
 import gg.essential.util.Multithreading;
 import gg.essential.util.TemporaryFile;
+import gg.essential.util.TimeFormatKt;
 import gg.essential.util.UUIDUtil;
 import gg.essential.util.lwjgl3.Lwjgl3Loader;
 import gg.essential.util.lwjgl3.api.NativeImageReader;
@@ -387,7 +388,7 @@ public class ScreenshotManager implements NetworkedManager {
         progressConsumer.accept(new ScreenshotUploadToast.ToastProgress.Step(75));
         final DateTime time = metadata.getEditTime() != null ? metadata.getEditTime() : metadata.getTime();
         final String identifier = metadata.getLocationMetadata().getIdentifier();
-        connectionManager.send(new ClientMediaCreatePacket(packet.getMediaId(), username + "'s Screenshot", "Captured " + HelpersKt.formatDateAndTime(time.toInstant()), new MediaMetadata(
+        connectionManager.send(new ClientMediaCreatePacket(packet.getMediaId(), username + "'s Screenshot", "Captured " + TimeFormatKt.formatDateAndTime(time.toInstant()), new MediaMetadata(
             metadata.getAuthorId(),
             time,
             new MediaLocationMetadata(metadata.getLocationMetadata().getType().toNetworkType(), identifier, identifier == null ? null : connectionManager.getSpsManager().getHostFromSpsAddress(identifier)),

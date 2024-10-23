@@ -13,6 +13,7 @@ package gg.essential.mixins.transformers.server;
 
 import gg.essential.Essential;
 import gg.essential.network.connectionmanager.sps.SPSManager;
+import gg.essential.sps.McIntegratedServerManager;
 import net.minecraft.world.WorldSettings;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -24,6 +25,15 @@ public class Mixin_ControlAreCommandsAllowed {
 
     @Inject(method = "isCommandsAllowed", at = @At("HEAD"), cancellable = true)
     private void isCommandsAllowed(CallbackInfoReturnable<Boolean> cir) {
+        McIntegratedServerManager manager = Essential.getInstance().getIntegratedServerManager().getUntracked();
+        if (manager != null) {
+            Boolean cheatsEnabled = manager.getAppliedCheatsEnabled();
+            if (cheatsEnabled != null) {
+                cir.setReturnValue(cheatsEnabled);
+                return;
+            }
+        }
+
         final SPSManager spsManager = Essential.getInstance().getConnectionManager().getSpsManager();
         if (spsManager.getLocalSession() == null) {
             return;

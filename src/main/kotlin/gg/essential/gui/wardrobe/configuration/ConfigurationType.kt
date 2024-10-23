@@ -19,7 +19,6 @@ import gg.essential.gui.elementa.state.v2.*
 import gg.essential.gui.overlay.ModalManager
 import gg.essential.gui.wardrobe.WardrobeState
 import gg.essential.mod.Model
-import gg.essential.mod.Skin
 import gg.essential.mod.cosmetics.CosmeticBundle
 import gg.essential.mod.cosmetics.CosmeticSlot
 import gg.essential.mod.cosmetics.CosmeticTier
@@ -137,6 +136,7 @@ class ConfigurationType<I, T> private constructor(
                             "Bundle name",
                             CosmeticTier.COMMON,
                             0f,
+                            false,
                             CosmeticBundle.Skin("bff1570fdf623153e6b4a4d2ca97559b471f1ec776584ceec2ebb8bf0b7ba504", Model.ALEX), // A default skin I use for my alt, just so it's not empty :)
                             mapOf(),
                             mapOf(),

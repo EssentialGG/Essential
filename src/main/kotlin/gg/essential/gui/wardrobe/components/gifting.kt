@@ -41,6 +41,7 @@ import gg.essential.gui.modals.select.users
 import gg.essential.gui.notification.Notifications
 import gg.essential.gui.notification.content.CosmeticPreviewToastComponent
 import gg.essential.gui.wardrobe.Item
+import gg.essential.gui.wardrobe.ItemId
 import gg.essential.gui.wardrobe.Wardrobe
 import gg.essential.gui.wardrobe.WardrobeCategory
 import gg.essential.gui.wardrobe.WardrobeState
@@ -184,14 +185,14 @@ fun openGiftModal(item: Item.CosmeticOrEmote, state: WardrobeState) {
     }
 }
 
-fun openWardrobeWithHighlight(item: Item) {
+fun openWardrobeWithHighlight(itemId: ItemId) {
     val openedScreen = GuiUtil.openedScreen()
     if (openedScreen is Wardrobe) {
-        openedScreen.state.highlightItem.set(item.itemId)
+        openedScreen.state.highlightItem.set(itemId)
     } else {
         GuiUtil.openScreen {
             // Change initial category to stop the highlighted item highlighting on the featured page
-            Wardrobe(WardrobeCategory.Cosmetics).apply { state.highlightItem.set(item.itemId) }
+            Wardrobe(WardrobeCategory.Cosmetics).apply { state.highlightItem.set(itemId) }
         }
     }
 }
@@ -246,7 +247,7 @@ fun showGiftSentToast(cosmetic: Cosmetic, username: String) {
 fun showGiftReceivedToast(cosmeticId: String, uuid: UUID, username: String) {
     val cosmetic = Essential.getInstance().connectionManager.cosmeticsManager.getCosmetic(cosmeticId) ?: return
     Notifications.push(username, "", 4f, {
-        openWardrobeWithHighlight(Item.CosmeticOrEmote(cosmetic))
+        openWardrobeWithHighlight(ItemId.CosmeticOrEmote(cosmetic.id))
     }) {
         withCustomComponent(Slot.ICON, CachedAvatarImage.create(uuid))
         withCustomComponent(Slot.SMALL_PREVIEW, CosmeticPreviewToastComponent(cosmetic))

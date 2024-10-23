@@ -57,7 +57,7 @@ class StunManager(private val scope: CoroutineScope) {
             try {
                 job.join()
                 // wait some extra time for in-flight packets (we don't want to warn about them being unexpected)
-                delay(3.seconds)
+                delay(15.seconds)
             } finally {
                 servers.remove(ufrag)
                 server.knownRemotes.forEach { remoteToServer.remove(it, server) }

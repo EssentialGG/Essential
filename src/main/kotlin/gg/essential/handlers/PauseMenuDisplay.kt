@@ -180,16 +180,18 @@ class PauseMenuDisplay {
         if (AutoUpdate.updateAvailable.get() && !AutoUpdate.seenUpdateToast && !AutoUpdate.updateIgnored.get()) {
             fun showUpdateToast(message: String? = null) {
                 var updateClicked = false
-                val updateButton = UIBlock(EssentialPalette.GREEN_BUTTON).onLeftClick {
+
+                val updateButton = UIBlock().apply {
+                    layout(Modifier.childBasedWidth(10f).childBasedHeight(4.5f)
+                            .color(EssentialPalette.GREEN_BUTTON).hoverColor(EssentialPalette.GREEN_BUTTON_HOVER).hoverScope()
+                    ) {
+                        text("Update", Modifier.alignBoth(Alignment.Center(true)).color(EssentialPalette.TEXT_HIGHLIGHT).shadow(EssentialPalette.TEXT_SHADOW))
+                    }
+                }
+
+                Notifications.pushPersistentToast(AutoUpdate.getNotificationTitle(false), message ?: " ", {
                     GuiUtil.pushModal { manager -> UpdateAvailableModal(manager) }
-                    it.stopPropagation()
-                }
-
-                updateButton.layout(Modifier.childBasedWidth(10f).childBasedHeight(4.5f).hoverColor(EssentialPalette.GREEN_BUTTON_HOVER).hoverScope()) {
-                    text("Update", Modifier.alignBoth(Alignment.Center(true)).color(EssentialPalette.TEXT_HIGHLIGHT).shadow(EssentialPalette.TEXT_SHADOW))
-                }
-
-                Notifications.pushPersistentToast(AutoUpdate.getNotificationTitle(false), message ?: " ", {}, {
+                }, {
                     if (!updateClicked) {
                         AutoUpdate.ignoreUpdate()
                     }

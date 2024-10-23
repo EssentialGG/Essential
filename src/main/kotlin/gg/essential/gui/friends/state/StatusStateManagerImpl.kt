@@ -12,9 +12,9 @@
 package gg.essential.gui.friends.state
 
 import gg.essential.connectionmanager.common.enums.ProfileStatus
-import gg.essential.elementa.state.BasicState
-import gg.essential.elementa.state.State
-import gg.essential.gui.common.ReadOnlyState
+import gg.essential.gui.elementa.state.v2.MutableState
+import gg.essential.gui.elementa.state.v2.mutableStateOf
+import gg.essential.gui.elementa.state.v2.State
 import gg.essential.network.connectionmanager.profile.ProfileManager
 import gg.essential.network.connectionmanager.sps.SPSManager
 import gg.essential.util.AddressUtil
@@ -29,16 +29,14 @@ class StatusStateManagerImpl(
     private val spsManager: SPSManager
 ) : IStatusStates, IStatusManager {
 
-    private val statesMap = mutableMapOf<UUID, State<PlayerActivity>>()
+    private val statesMap = mutableMapOf<UUID, MutableState<PlayerActivity>>()
 
     init {
         profileManager.registerStateManager(this)
         spsManager.registerStateManager(this)
     }
 
-    override fun getActivityState(uuid: UUID): ReadOnlyState<PlayerActivity> {
-        return ReadOnlyState(getWritableState(uuid))
-    }
+    override fun getActivityState(uuid: UUID): State<PlayerActivity> = getWritableState(uuid)
 
     override fun getActivity(uuid: UUID): PlayerActivity {
         val status = profileManager.getStatus(uuid)
@@ -85,9 +83,9 @@ class StatusStateManagerImpl(
         return true
     }
 
-    private fun getWritableState(uuid: UUID): State<PlayerActivity> {
+    private fun getWritableState(uuid: UUID): MutableState<PlayerActivity> {
         return statesMap.computeIfAbsent(uuid) {
-            BasicState(getActivity(uuid))
+            mutableStateOf(getActivity(uuid))
         }
     }
 
@@ -100,7 +98,7 @@ class StatusStateManagerImpl(
             if (it.key == uuid) {
                 return
             }
-            val activity = it.value.get()
+            val activity = it.value.getUntracked()
             if (activity is PlayerActivity.SPSSession && activity.host == uuid) {
                 refreshActivity(it.key)
             }

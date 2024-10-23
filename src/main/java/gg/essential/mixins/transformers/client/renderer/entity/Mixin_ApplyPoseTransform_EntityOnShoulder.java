@@ -11,6 +11,7 @@
  */
 package gg.essential.mixins.transformers.client.renderer.entity;
 
+import com.llamalad7.mixinextras.sugar.Local;
 import dev.folomeev.kotgl.matrix.matrices.mutables.MutableMat4;
 import gg.essential.config.EssentialConfig;
 import gg.essential.gui.common.EmulatedUI3DPlayer;
@@ -28,13 +29,20 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Surrogate;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import static dev.folomeev.kotgl.matrix.matrices.Matrices.identityMat3;
 import static dev.folomeev.kotgl.matrix.matrices.Matrices.identityMat4;
 import static dev.folomeev.kotgl.matrix.matrices.mutables.MutableMatrices.timesSelf;
 
+//#if MC>=12102
+//$$ import gg.essential.mixins.impl.client.model.PlayerEntityRenderStateExt;
+//$$ import net.minecraft.client.render.entity.state.PlayerEntityRenderState;
+//#endif
+
 //#if MC>=11600
 //$$ import gg.essential.mixins.impl.util.math.Matrix4fExt;
+//$$ import com.mojang.blaze3d.matrix.MatrixStack;
 //$$ import static dev.folomeev.kotgl.matrix.matrices.mutables.MutableMatrices.times;
 //#endif
 
@@ -81,6 +89,22 @@ public abstract class Mixin_ApplyPoseTransform_EntityOnShoulder {
         //#endif
     }
 
+    //#if MC>=12102
+    //$$ @Inject(
+    //$$     method = "render(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;ILnet/minecraft/client/render/entity/state/PlayerEntityRenderState;Lnet/minecraft/entity/passive/ParrotEntity$Variant;FFZ)V",
+    //$$     at = @At(value = "INVOKE", target = "Lnet/minecraft/client/util/math/MatrixStack;push()V", shift = At.Shift.AFTER)
+    //$$ )
+    //$$ private void applyPoseTransform(
+    //$$     CallbackInfo ci,
+    //$$     @Local(argsOnly = true) MatrixStack matrixStack,
+    //$$     @Local(argsOnly = true) PlayerEntityRenderState state,
+    //$$     @Local(argsOnly = true) boolean leftSide
+    //$$ ) {
+    //$$     PlayerEntity player = ((PlayerEntityRenderStateExt) state).essential$getEntity();
+    //$$     if (player == null) return;
+    //$$     applyPoseTransform(player, leftSide, matrixStack);
+    //$$ }
+    //#else
     //#if MC>=11600
     //$$ @Inject(method = {
         //#if FABRIC
@@ -206,5 +230,6 @@ public abstract class Mixin_ApplyPoseTransform_EntityOnShoulder {
     //$$ ) {
     //$$     applyPoseTransform(player, leftSide, matrixStack);
     //$$ }
+    //#endif
     //#endif
 }

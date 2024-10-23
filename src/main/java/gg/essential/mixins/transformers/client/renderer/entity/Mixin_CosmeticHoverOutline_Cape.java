@@ -29,6 +29,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import static gg.essential.mod.cosmetics.CapeDisabledKt.CAPE_DISABLED_COSMETIC;
 
+//#if MC>=12102
+//$$ import gg.essential.mixins.impl.client.model.PlayerEntityRenderStateExt;
+//$$ import net.minecraft.client.render.entity.state.PlayerEntityRenderState;
+//#endif
+
 //#if MC>=11600
 //$$ import com.mojang.blaze3d.matrix.MatrixStack;
 //$$ import net.minecraft.client.renderer.IRenderTypeBuffer;
@@ -39,12 +44,16 @@ import static gg.essential.mod.cosmetics.CapeDisabledKt.CAPE_DISABLED_COSMETIC;
 // For fallback renderer see renderThirdPartyCapeForHoverOutline
 @Mixin(LayerCape.class)
 public abstract class Mixin_CosmeticHoverOutline_Cape
-    //#if MC>=11600
+    //#if MC>=12102
+    //$$ extends FeatureRenderer<PlayerEntityRenderState, PlayerEntityModel>
+    //#elseif MC>=11600
     //$$ extends LayerRenderer<AbstractClientPlayerEntity, PlayerModel<AbstractClientPlayerEntity>>
     //#endif
 {
 
-    //#if MC>=11600
+    //#if MC>=12102
+    //$$ private static final String RENDER_LAYER = "render(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;ILnet/minecraft/client/render/entity/state/PlayerEntityRenderState;FF)V";
+    //#elseif MC>=11600
     //$$ private static final String RENDER_LAYER = "render(Lcom/mojang/blaze3d/matrix/MatrixStack;Lnet/minecraft/client/renderer/IRenderTypeBuffer;ILnet/minecraft/client/entity/player/AbstractClientPlayerEntity;FFFFFF)V";
     //#else
     private static final String RENDER_LAYER = "doRenderLayer(Lnet/minecraft/client/entity/AbstractClientPlayer;FFFFFFF)V";
@@ -60,11 +69,15 @@ public abstract class Mixin_CosmeticHoverOutline_Cape
         //$$ IRenderTypeBuffer buffer,
         //$$ int light,
         //#endif
+        //#if MC>=12102
+        //$$ PlayerEntityRenderState state,
+        //#else
         AbstractClientPlayer player,
         float limbSwing,
         float limbSwingAmount,
         float partialTicks,
         float ageInTicks,
+        //#endif
         float netHeadYaw,
         float headPitch,
         //#if MC<11400
@@ -77,7 +90,11 @@ public abstract class Mixin_CosmeticHoverOutline_Cape
             return;
         }
 
+        //#if MC>=12102
+        //$$ AbstractClientPlayerExt playerExt = (AbstractClientPlayerExt) ((PlayerEntityRenderStateExt) state).essential$getEntity();
+        //#else
         AbstractClientPlayerExt playerExt = (AbstractClientPlayerExt) player;
+        //#endif
         CosmeticsState cosmeticsState = playerExt.getCosmeticsState();
         EquippedCosmetic equippedCosmetic = cosmeticsState.getCosmetics().get(CosmeticSlot.CAPE);
         Cosmetic cosmetic = equippedCosmetic != null ? equippedCosmetic.getCosmetic() : null;
@@ -93,7 +110,9 @@ public abstract class Mixin_CosmeticHoverOutline_Cape
             //#endif
 
             outlineEffect.allocOutlineBuffer(cosmetic).use(() -> {
-                //#if MC>=11400
+                //#if MC>=12102
+                //$$ render(matrixStack, buffer, light, state, netHeadYaw, headPitch);
+                //#elseif MC>=11400
                 //$$ render(matrixStack, buffer, light, player, limbSwing, limbSwingAmount, partialTicks, ageInTicks, netHeadYaw, headPitch);
                 //#else
                 doRenderLayer(player, limbSwing, limbSwingAmount, partialTicks, ageInTicks, netHeadYaw, headPitch, scale);
@@ -121,11 +140,15 @@ public abstract class Mixin_CosmeticHoverOutline_Cape
         //$$ IRenderTypeBuffer buffer,
         //$$ int light,
         //#endif
+        //#if MC>=12102
+        //$$ PlayerEntityRenderState state,
+        //#else
         AbstractClientPlayer player,
         float limbSwing,
         float limbSwingAmount,
         float partialTicks,
         float ageInTicks,
+        //#endif
         float netHeadYaw,
         float headPitch
         //#if MC<11400

@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  //#if MC>=11700
+  //$$ "compatibilityLevel": "JAVA_16",
+  //#else
+  "compatibilityLevel": "JAVA_8",
+  //#endif
+  "package": "gg.essential.mixins.tests",
+  "plugin": "gg.essential.mixins.IntegrationTestsPlugin",
+  "refmap": "mixins.essential.refmap.json",
+  "mixins": [
+  ]
+}

@@ -11,6 +11,7 @@
  */
 package gg.essential.mixins.transformers.client.renderer.entity;
 
+import com.llamalad7.mixinextras.sugar.Local;
 import gg.essential.mixins.impl.client.renderer.entity.ArmorRenderingUtil;
 import net.minecraft.client.renderer.entity.layers.LayerCustomHead;
 import net.minecraft.entity.EntityLivingBase;
@@ -19,13 +20,13 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-//#if MC>10809
-import net.minecraft.inventory.EntityEquipmentSlot;
+//#if MC>=12102
+//$$ import gg.essential.mixins.impl.client.model.PlayerEntityRenderStateExt;
+//$$ import net.minecraft.client.render.entity.state.LivingEntityRenderState;
 //#endif
 
-//#if MC>=11600
-//$$ import com.mojang.blaze3d.matrix.MatrixStack;
-//$$ import net.minecraft.client.renderer.IRenderTypeBuffer;
+//#if MC>10809
+import net.minecraft.inventory.EntityEquipmentSlot;
 //#endif
 
 /**
@@ -37,7 +38,9 @@ import net.minecraft.inventory.EntityEquipmentSlot;
  */
 @Mixin(LayerCustomHead.class)
 public abstract class Mixin_DisablePlayerSkullRendering {
-    //#if MC>=11400
+    //#if MC>=12102
+    //$$ private static final String RENDER_TARGET = "render(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;ILnet/minecraft/client/render/entity/state/LivingEntityRenderState;FF)V";
+    //#elseif MC>=11400
     //$$ private static final String RENDER_TARGET = "render(Lcom/mojang/blaze3d/matrix/MatrixStack;Lnet/minecraft/client/renderer/IRenderTypeBuffer;ILnet/minecraft/entity/LivingEntity;FFFFFF)V";
     //#else
     private static final String RENDER_TARGET = "doRenderLayer";
@@ -45,23 +48,17 @@ public abstract class Mixin_DisablePlayerSkullRendering {
 
     @Inject(method = RENDER_TARGET, at = @At(value = "HEAD"), cancellable = true)
     private void essential$disableArmorRendering(
-        //#if MC>=11400
-        //$$ MatrixStack matrixStack,
-        //$$ IRenderTypeBuffer buffer,
-        //$$ int light,
+        CallbackInfo ci,
+        //#if MC>=12102
+        //$$ @Local(argsOnly = true) LivingEntityRenderState state
+        //#else
+        @Local(argsOnly = true) EntityLivingBase entity
         //#endif
-        EntityLivingBase entity,
-        float limbSwing,
-        float limbSwingAmount,
-        float partialTicks,
-        float ageInTicks,
-        float netHeadYaw,
-        float headPitch,
-        //#if MC<11400
-        float scale,
-        //#endif
-        CallbackInfo ci
     ) {
+        //#if MC>=12102
+        //$$ if (!(state instanceof PlayerEntityRenderStateExt)) return;
+        //$$ LivingEntity entity = ((PlayerEntityRenderStateExt) state).essential$getEntity();
+        //#endif
         //#if MC<=10809
         //$$ int headSlotIndex = 2; // The slot for HEAD is 3, but we need to remove 1 to get the index.
         //#else

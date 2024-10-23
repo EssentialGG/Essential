@@ -24,7 +24,6 @@ import gg.essential.gui.common.and
 import gg.essential.gui.common.input.UITextInput
 import gg.essential.gui.common.input.essentialInput
 import gg.essential.gui.common.modal.Modal
-import gg.essential.gui.common.modal.OpenLinkModal
 import gg.essential.gui.elementa.state.v2.*
 import gg.essential.gui.elementa.state.v2.combinators.*
 import gg.essential.gui.elementa.state.v2.stateBy
@@ -39,6 +38,7 @@ import gg.essential.network.connectionmanager.coins.CoinBundle
 import gg.essential.universal.USound
 import gg.essential.util.*
 import gg.essential.vigilance.utils.onLeftClick
+import kotlin.math.max
 
 class CoinsPurchaseModal(
     modalManager: ModalManager,
@@ -98,7 +98,13 @@ class CoinsPurchaseModal(
         )
 
         fun LayoutScope.bundleBox(originalBundle: CoinBundle) {
-            val bundleState = coinsNeededState.map { missingCoins -> if (originalBundle.isExchangeBundle && missingCoins > 0) originalBundle.getBundleForNumberOfCoins(missingCoins) else originalBundle }
+            val bundleState = memo {
+                val missingCoins = coinsNeededState()
+                if (originalBundle.isExchangeBundle && missingCoins > 0) {
+                    val minimumBundleSize = state.cosmeticsManager.wardrobeSettings.youNeedMinimumAmount()
+                    originalBundle.getBundleForNumberOfCoins(max(minimumBundleSize, missingCoins))
+                } else originalBundle
+            }
             bind(bundleState) { bundle ->
                 val colorBackground = if (bundle.isHighlighted || bundle.isSpecificAmount) EssentialPalette.COINS_BLUE_BACKGROUND else EssentialPalette.COMPONENT_BACKGROUND_HIGHLIGHT
                 val colorBackgroundHover = if (bundle.isHighlighted || bundle.isSpecificAmount) EssentialPalette.COINS_BLUE_BACKGROUND_HOVER else EssentialPalette.LIGHTEST_BACKGROUND
@@ -168,7 +174,7 @@ class CoinsPurchaseModal(
                     USound.playButtonPress()
                     coinsManager.purchaseBundle(bundle) { uri ->
                         close()
-                        OpenLinkModal.browse(uri, true)
+                        openInBrowser(uri)
                     }
                 }
             }

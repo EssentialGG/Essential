@@ -14,6 +14,7 @@ package gg.essential.gui.image
 import gg.essential.config.LoadsResources
 import gg.essential.elementa.components.UIImage
 import gg.essential.elementa.utils.ResourceCache
+import java.util.*
 
 /**
  * An ImageFactory that returns images resulting from the specified [resource].
@@ -26,17 +27,38 @@ class ResourceImageFactory @LoadsResources("%resource%") constructor(
 
     init {
         if (preload) {
-            generate()
+            synchronized(preloadQueue) {
+                if (!preloadEnabled) {
+                    preloadQueue.add(this)
+                } else {
+                    generate()
+                }
+            }
         }
     }
+
+    override val name: String
+        get() = resource
 
     override fun generate(): UIImage {
         return UIImage.ofResourceCached(resource, cache)
     }
 
-    private companion object {
+    companion object {
+        private var preloadEnabled = false
+        private val preloadQueue = Collections.newSetFromMap<ResourceImageFactory>(WeakHashMap())
 
-        val cache: ResourceCache = ResourceCache(Int.MAX_VALUE)
+        fun preload() {
+            synchronized(preloadQueue) {
+                preloadEnabled = true
+                for (factory in preloadQueue) {
+                    factory.generate()
+                }
+                preloadQueue.clear()
+            }
+        }
+
+        private val cache: ResourceCache = ResourceCache(Int.MAX_VALUE)
 
     }
 }

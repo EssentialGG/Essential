@@ -30,6 +30,10 @@ import java.io.IOException
 
 object MojangCapeApi {
     private val JSON = MediaType.parse("application/json")
+    private val URL_BASE = System.getProperty(
+        "essential.mojang_profile_url",
+        "https://api.minecraftservices.com/minecraft/profile",
+    )
 
     fun fetchCurrentTextures(): Property = MojangSkinManager.getTextureProperty(UUIDUtil.getClientUUID())
         ?: throw IOException("Failed to fetch current texture property")
@@ -38,7 +42,7 @@ object MojangCapeApi {
         val accessToken = Minecraft.getMinecraft().session.token
 
         val request = Request.Builder().apply {
-            url("https://api.minecraftservices.com/minecraft/profile")
+            url(URL_BASE)
             header("Authorization", "Bearer $accessToken")
         }.build()
 
@@ -53,7 +57,7 @@ object MojangCapeApi {
         val accessToken = Minecraft.getMinecraft().session.token
 
         val request = Request.Builder().apply {
-            url("https://api.minecraftservices.com/minecraft/profile/capes/active")
+            url("$URL_BASE/capes/active")
             header("Authorization", "Bearer $accessToken")
             if (id != null) {
                 data class Payload(val capeId: String)

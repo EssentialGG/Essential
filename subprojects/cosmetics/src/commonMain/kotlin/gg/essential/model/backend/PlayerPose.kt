@@ -13,7 +13,12 @@ package gg.essential.model.backend
 
 import dev.folomeev.kotgl.matrix.matrices.Mat4
 import dev.folomeev.kotgl.matrix.vectors.Vec3
+import dev.folomeev.kotgl.matrix.vectors.vec3
+import dev.folomeev.kotgl.matrix.vectors.vecUnitX
+import dev.folomeev.kotgl.matrix.vectors.vecUnitY
+import dev.folomeev.kotgl.matrix.vectors.vecUnitZ
 import gg.essential.model.EnumPart
+import gg.essential.model.util.Quaternion
 import kotlin.math.PI
 
 data class PlayerPose(
@@ -74,6 +79,14 @@ data class PlayerPose(
             pivotY = pivotY + pivotOffset.y,
             pivotZ = pivotZ + pivotOffset.z,
         )
+
+        val pivot: Vec3
+            get() = vec3(pivotX, pivotY, pivotZ)
+
+        val rotation: Quaternion
+            get() = Quaternion.fromAxisAngle(vecUnitZ(), rotateAngleZ) *
+                    Quaternion.fromAxisAngle(vecUnitY(), rotateAngleY) *
+                    Quaternion.fromAxisAngle(vecUnitX(), rotateAngleX)
 
         companion object {
             // Parts that weren't rendered, we'll just draw far away so they'll appear is if they weren't there

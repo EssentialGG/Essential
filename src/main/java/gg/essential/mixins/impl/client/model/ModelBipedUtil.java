@@ -19,7 +19,6 @@ import gg.essential.mixins.impl.client.entity.AbstractClientPlayerExt;
 import gg.essential.model.backend.PlayerPose;
 import gg.essential.model.backend.minecraft.PlayerPoseKt;
 import gg.essential.model.util.PlayerPoseManager;
-import gg.essential.util.UUIDUtil;
 import net.minecraft.client.model.ModelBiped;
 import net.minecraft.entity.Entity;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -37,9 +36,13 @@ public class ModelBipedUtil {
         if (ext.getResetPose() == null) {
             ext.setResetPose(PlayerPoseKt.toPose(model));
         } else {
+            //#if MC>=12102
+            //$$ PlayerPoseKt.applyTo(ext.getResetPose(), model);
+            //#else
             boolean isChild = model.isChild; // child isn't set by the method we inject into, so we need to preserve it
             PlayerPoseKt.applyTo(ext.getResetPose(), model);
             model.isChild = isChild;
+            //#endif
         }
     }
 
@@ -56,22 +59,6 @@ public class ModelBipedUtil {
 
         WearablesManager wearablesManager = playerExt.getWearablesManager();
         PlayerPoseManager poseManager = playerExt.getPoseManager();
-        if (entity.getUniqueID().equals(UUIDUtil.getClientUUID())) {
-            if (
-                //#if MC==11202
-                model.leftArmPose == ModelBiped.ArmPose.BOW_AND_ARROW || model.rightArmPose == ModelBiped.ArmPose.BOW_AND_ARROW ||
-                    model.leftArmPose == ModelBiped.ArmPose.BLOCK || model.rightArmPose == ModelBiped.ArmPose.BLOCK
-                //#elseif MC==10809
-                //$$ model.heldItemRight == 3 || model.heldItemLeft > 0 || model.aimedBow
-                //#else
-                //$$ model.leftArmPose == BipedModel.ArmPose.BOW_AND_ARROW || model.rightArmPose == BipedModel.ArmPose.BOW_AND_ARROW ||
-                //$$ model.leftArmPose == BipedModel.ArmPose.THROW_SPEAR || model.rightArmPose == BipedModel.ArmPose.THROW_SPEAR ||
-                //$$ model.leftArmPose == BipedModel.ArmPose.CROSSBOW_CHARGE || model.rightArmPose == BipedModel.ArmPose.CROSSBOW_CHARGE
-                //#endif
-            ) {
-                EmoteWheel.unequipCurrentEmote();
-            }
-        }
 
         poseManager.update(wearablesManager);
 

@@ -19,9 +19,9 @@ import gg.essential.gui.common.CosmeticPreview
 import gg.essential.gui.elementa.state.v2.combinators.map
 import gg.essential.gui.elementa.state.v2.stateBy
 import gg.essential.gui.layoutdsl.*
-import gg.essential.gui.wardrobe.Item
 import gg.essential.gui.wardrobe.components.openWardrobeWithHighlight
 import gg.essential.gui.util.hoveredState
+import gg.essential.gui.wardrobe.ItemId
 import gg.essential.vigilance.utils.onLeftClick
 
 class GiftEmbedImpl(
@@ -79,7 +79,7 @@ class GiftEmbedImpl(
             spacer(height = 1f) // Extra pixel for text shadow
             text("View", Modifier.shadow(EssentialPalette.TEXT_SHADOW))
         }.onLeftClick {
-            cosmetic.get()?.let { openWardrobeWithHighlight(Item.CosmeticOrEmote(it)) }
+            cosmetic.get()?.let { openWardrobeWithHighlight(ItemId.CosmeticOrEmote(it.id)) }
         }
     }
 

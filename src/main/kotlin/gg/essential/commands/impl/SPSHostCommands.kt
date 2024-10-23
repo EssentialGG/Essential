@@ -260,7 +260,7 @@ object CommandSession : Command("esession") {
             val username = UUIDUtil.getName(invitedUser).await()
             val colorPrefix = when {
                 invitedUser == UUIDUtil.getClientUUID() -> ChatColor.AQUA
-                spsManager.getOnlineState(invitedUser).get() -> ChatColor.GREEN
+                spsManager.getOnlineState(invitedUser).getUntracked() -> ChatColor.GREEN
                 else -> ChatColor.GRAY
             }
             val suffix = when(invitedUser) {

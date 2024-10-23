@@ -19,9 +19,6 @@ import gg.essential.connectionmanager.common.packet.Packet;
 import gg.essential.connectionmanager.common.packet.checkout.ClientCheckoutCosmeticsPacket;
 import gg.essential.connectionmanager.common.packet.cosmetic.*;
 import gg.essential.connectionmanager.common.packet.cosmetic.categories.ServerCosmeticCategoriesPopulatePacket;
-import gg.essential.connectionmanager.common.packet.cosmetic.emote.ClientCosmeticEmoteWheelSelectPacket;
-import gg.essential.connectionmanager.common.packet.cosmetic.emote.ClientCosmeticEmoteWheelUpdatePacket;
-import gg.essential.connectionmanager.common.packet.cosmetic.emote.ServerCosmeticEmoteWheelPopulatePacket;
 import gg.essential.connectionmanager.common.packet.response.ResponseActionPacket;
 import gg.essential.cosmetics.EquippedCosmetic;
 import gg.essential.cosmetics.model.CosmeticUnlockData;
@@ -38,7 +35,6 @@ import gg.essential.gui.elementa.state.v2.ReferenceHolderImpl;
 import gg.essential.gui.elementa.state.v2.State;
 import gg.essential.gui.elementa.state.v2.StateKt;
 import gg.essential.gui.elementa.state.v2.collections.TrackedList;
-import gg.essential.gui.emotes.EmoteWheel;
 import gg.essential.gui.modals.TOSModal;
 import gg.essential.gui.notification.Notifications;
 import gg.essential.mod.EssentialAsset;
@@ -50,16 +46,13 @@ import gg.essential.network.connectionmanager.handler.wardrobe.ServerWardrobeSto
 import gg.essential.network.connectionmanager.queue.PacketQueue;
 import gg.essential.network.connectionmanager.queue.SequentialPacketQueue;
 import gg.essential.network.connectionmanager.sps.SPSManager;
-import gg.essential.network.cosmetics.ConversionsKt;
 import gg.essential.network.cosmetics.Cosmetic;
 import gg.essential.network.cosmetics.cape.CapeCosmeticsManager;
 import gg.essential.universal.UMinecraft;
 import gg.essential.util.GuiUtil;
-import gg.essential.util.Multithreading;
 import kotlin.Pair;
 import kotlin.Unit;
 import kotlin.collections.MapsKt;
-import kotlin.collections.CollectionsKt;
 import me.kbrewster.eventbus.Subscribe;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetHandlerPlayClient;
@@ -71,7 +64,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static gg.essential.gui.elementa.state.v2.combinators.StateKt.map;
@@ -103,8 +95,6 @@ public class CosmeticsManager implements NetworkedManager {
     @Nullable
     private final CosmeticsDataWithChanges cosmeticsDataWithChanges;
     @NotNull
-    private final Set<EmoteWheelPage> emoteWheels = new TreeSet<>(Comparator.comparingLong(page -> page.getCreatedAt().toEpochMilli()));
-    @NotNull
     private final EquippedCosmeticsManager equippedCosmeticsManager;
     @NotNull
     private final MutableState<Map<String, CosmeticUnlockData>> unlockedCosmeticsData = StateKt.mutableStateOf(new HashMap<>());
@@ -121,9 +111,6 @@ public class CosmeticsManager implements NetworkedManager {
 
     // If we've warned the user about cosmetics not working on offline mode servers
     private boolean shownOfflineModeWarning = false;
-
-    private int currentFlushEmoteWheelTaskId = 0;
-    private String sentEmoteWheelId = null;
 
     public CosmeticsManager(@NotNull final ConnectionManager connectionManager, File baseDir) {
         this.connectionManager = connectionManager;
@@ -175,7 +162,6 @@ public class CosmeticsManager implements NetworkedManager {
         connectionManager.registerPacketHandler(ServerCosmeticsUserEquippedVisibilityPacket.class, new ServerCosmeticsUserEquippedVisibilityPacketHandler());
         connectionManager.registerPacketHandler(ServerCosmeticsSkinTexturePacket.class, new ServerCosmeticSkinTexturePacketHandler());
         connectionManager.registerPacketHandler(ServerCosmeticCategoriesPopulatePacket.class, new ServerCosmeticCategoriesPopulatePacketHandler(this));
-        connectionManager.registerPacketHandler(ServerCosmeticEmoteWheelPopulatePacket.class, new ServerCosmeticEmoteWheelPopulatePacketHandler());
         connectionManager.registerPacketHandler(ServerWardrobeSettingsPacket.class, new ServerWardrobeSettingsPacketHandler());
         connectionManager.registerPacketHandler(ServerWardrobeStoreBundlePacket.class, new ServerWardrobeStoreBundlePacketHandler());
 
@@ -282,8 +268,6 @@ public class CosmeticsManager implements NetworkedManager {
     @Override
     public void resetState() {
         this.updateQueue.reset();
-        this.emoteWheels.clear();
-        this.sentEmoteWheelId = null;
         this.clearUnlockedCosmetics(true);
         this.infraCosmeticsData.resetState();
         this.cosmeticsLoadedFuture = new CompletableFuture<>();
@@ -295,80 +279,6 @@ public class CosmeticsManager implements NetworkedManager {
     public void onConnected() {
         resetState();
     }
-
-    @NotNull
-    public Set<EmoteWheelPage> getEmoteWheels() {
-        return this.emoteWheels;
-    }
-
-    @Nullable
-    public EmoteWheelPage getSelectedEmoteWheel() {
-        return this.emoteWheels.stream().filter(EmoteWheelPage::isSelected).findFirst().orElse(null);
-    }
-
-    public void selectEmoteWheel(int index) {
-        if (index > this.emoteWheels.size() - 1) return;
-
-        this.emoteWheels.stream().filter(EmoteWheelPage::isSelected)
-                .forEach(emoteWheelPage -> emoteWheelPage.setSelected(false));
-
-        EmoteWheelPage emoteWheel = CollectionsKt.elementAt(this.emoteWheels, index);
-        emoteWheel.setSelected(true);
-
-        flushSelectedEmoteWheel(true);
-    }
-
-    /**
-     * Selects the emote wheel at a given offset from the currently selected emote wheel, wrapping around if necessary.
-     *
-     * @return The index of the newly selected emote wheel
-     */
-    public int shiftSelectedEmoteWheel(int offset) {
-        int numWheels = this.emoteWheels.size();
-        int curIndex = CollectionsKt.indexOfFirst(this.emoteWheels, EmoteWheelPage::isSelected);
-        int newIndex = (curIndex + offset + numWheels) % numWheels;
-        selectEmoteWheel(newIndex);
-        return newIndex;
-    }
-
-    public void populateEmoteWheels(List<gg.essential.cosmetics.model.EmoteWheel> emoteWheels) {
-        for (gg.essential.cosmetics.model.EmoteWheel emoteWheel : emoteWheels) {
-            this.emoteWheels.add(ConversionsKt.toMod(emoteWheel));
-            if (emoteWheel.selected()) {
-                sentEmoteWheelId = emoteWheel.id();
-            }
-        }
-
-        if (getSelectedEmoteWheel() == null) {
-            Essential.logger.error("No emote wheel was selected, selecting the first one.");
-            selectEmoteWheel(0);
-        }
-    }
-
-    public void flushSelectedEmoteWheel(boolean debounce) {
-        int taskId = ++currentFlushEmoteWheelTaskId;
-        if (debounce) {
-            Multithreading.scheduleOnMainThread(() -> {
-                if (taskId != currentFlushEmoteWheelTaskId) {
-                    return;
-                }
-                flushSelectedEmoteWheel(false);
-            }, 3, TimeUnit.SECONDS);
-            return;
-        }
-
-        EmoteWheelPage selectedEmoteWheel = getSelectedEmoteWheel();
-        if (selectedEmoteWheel == null) {
-            return;
-        }
-        String selectedEmoteWheelId = selectedEmoteWheel.getId();
-        if (selectedEmoteWheelId.equals(sentEmoteWheelId)) {
-            return;
-        }
-        sentEmoteWheelId = selectedEmoteWheelId;
-        this.connectionManager.send(new ClientCosmeticEmoteWheelSelectPacket(selectedEmoteWheelId));
-    }
-
 
     @Subscribe
     public void onSpsJoin(PlayerJoinSessionEvent event) {
@@ -447,49 +357,6 @@ public class CosmeticsManager implements NetworkedManager {
                 new CosmeticEquipVisibilityResponse(visible, notification)
             );
         }
-    }
-
-    /**
-     * Sets the saved emotes for the emote wheel
-     *
-     * @param emotes The (String) list of emotes to save
-     */
-    public void setSavedEmotes(List<@Nullable String> emotes) {
-        EmoteWheelPage selectedEmoteWheel = getSelectedEmoteWheel();
-        if (selectedEmoteWheel == null) {
-            return;
-        }
-        List<String> slots = selectedEmoteWheel.getSlots();
-
-        for (int i = 0; i < emotes.size(); i++) {
-            String value = emotes.get(i);
-
-            if (value != null && !getUnlockedCosmetics().get().contains(value)) {
-                continue;
-            }
-
-            String previous = slots.set(i, value);
-            if (!Objects.equals(value, previous)) {
-                connectionManager.send(new ClientCosmeticEmoteWheelUpdatePacket(selectedEmoteWheel.getId(), i, value));
-            }
-        }
-    }
-
-    /**
-     * Get the list of saved emotes for the emote wheel
-     *
-     * @return List of saved emotes
-     */
-    public List<@Nullable String> getSavedEmotes() {
-        EmoteWheelPage selectedEmoteWheel = getSelectedEmoteWheel();
-        if (selectedEmoteWheel == null) {
-            return new ArrayList<String>(EmoteWheel.SLOTS) {{
-                for (int i = 0; i < EmoteWheel.SLOTS; i++) {
-                    add(null);
-                }
-            }};
-        }
-        return new ArrayList<>(selectedEmoteWheel.getSlots());
     }
 
     public CompletableFuture<Boolean> claimFreeItems(@NotNull Set<String> ids) {

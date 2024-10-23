@@ -23,7 +23,6 @@ import gg.essential.elementa.state.BasicState
 import gg.essential.gui.EssentialPalette
 import gg.essential.gui.common.MenuButton
 import gg.essential.gui.common.modal.EssentialModal
-import gg.essential.gui.common.modal.OpenLinkModal
 import gg.essential.gui.common.modal.configure
 import gg.essential.gui.layoutdsl.Arrangement
 import gg.essential.gui.layoutdsl.Modifier
@@ -44,6 +43,7 @@ import gg.essential.universal.ChatColor
 import gg.essential.util.EssentialContainerUtil
 import gg.essential.util.GuiUtil
 import gg.essential.util.ModLoaderUtil
+import gg.essential.util.openInBrowser
 import java.awt.Color
 import java.net.URI
 
@@ -52,13 +52,10 @@ class EssentialAutoInstalledModal(modalManager: ModalManager) : EssentialModal(m
     init {
         configure {
             primaryButtonText = "Learn More"
-            titleText = "Essential Mod has been installed,\nbecause its libraries are required"
+            titleText = "Essential Mod has been installed\nbecause its libraries are required"
             titleTextColor = EssentialPalette.TEXT
             primaryButtonAction = {
-                OpenLinkModal.browse(
-                    URI("https://essential.gg/wiki/installed-by-other-mods"),
-                    true
-                )
+                openInBrowser(URI("https://essential.gg/wiki/installed-by-other-mods"))
             }
         }
 

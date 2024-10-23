@@ -17,9 +17,21 @@ import gg.essential.config.EssentialConfig
 import gg.essential.elementa.components.Window
 import gg.essential.event.client.ReAuthEvent
 import gg.essential.gui.common.modal.Modal
+import gg.essential.gui.elementa.essentialmarkdown.EssentialMarkdown
 import gg.essential.gui.elementa.state.v2.MutableState
+import gg.essential.gui.friends.message.v2.MessageRef
+import gg.essential.gui.friends.state.IMessengerStates
+import gg.essential.gui.friends.state.IRelationshipStates
+import gg.essential.gui.friends.state.IStatusStates
+import gg.essential.gui.friends.state.MessengerStateManagerImpl
+import gg.essential.gui.friends.state.RelationshipStateManagerImpl
+import gg.essential.gui.friends.state.SocialStates
+import gg.essential.gui.friends.state.StatusStateManagerImpl
+import gg.essential.gui.notification.NotificationsImpl
+import gg.essential.gui.notification.NotificationsManager
 import gg.essential.gui.overlay.ModalManager
 import gg.essential.gui.overlay.ModalManagerImpl
+import gg.essential.gui.overlay.OverlayManager
 import gg.essential.gui.overlay.OverlayManagerImpl
 import gg.essential.gui.util.onAnimationFrame
 import gg.essential.handlers.PauseMenuDisplay
@@ -27,6 +39,8 @@ import gg.essential.model.backend.RenderBackend
 import gg.essential.model.backend.minecraft.MinecraftRenderBackend
 import gg.essential.model.util.Color
 import gg.essential.network.CMConnection
+import gg.essential.network.connectionmanager.cosmetics.AssetLoader
+import gg.essential.network.connectionmanager.notices.INoticesManager
 import gg.essential.universal.UImage
 import gg.essential.universal.UScreen
 import gg.essential.universal.utils.ReleasedDynamicTexture
@@ -52,8 +66,17 @@ class GuiEssentialPlatformImpl : GuiEssentialPlatform {
     override val renderBackend: RenderBackend
         get() = MinecraftRenderBackend
 
+    override val overlayManager: OverlayManager
+        get() = OverlayManagerImpl
+
+    override val assetLoader: AssetLoader
+        get() = Essential.getInstance().connectionManager.cosmeticsManager.assetLoader
+
     override val cmConnection: CMConnection
         get() = Essential.getInstance().connectionManager
+
+    override val notifications: NotificationsManager
+        get() = NotificationsImpl
 
     override fun createModalManager(): ModalManager {
         return ModalManagerImpl(OverlayManagerImpl)
@@ -115,6 +138,18 @@ class GuiEssentialPlatformImpl : GuiEssentialPlatform {
     override val pauseMenuDisplayWindow: Window
         get() = PauseMenuDisplay.window
 
+    override val mcProtocolVersion: Int
+        get() = MinecraftUtils.currentProtocolVersion
+
+    override val mcGameVersion: String
+        //#if MC>=11600
+        //$$ get() = net.minecraft.util.SharedConstants.getVersion().name
+        //#elseif MC>=11200
+        get() = "1.12.2"
+        //#else
+        //$$ get() = "1.8.9"
+        //#endif
+
     override fun currentServerType(): ServerType? {
         val minecraft = Minecraft.getMinecraft()
         val spsManager = Essential.getInstance().connectionManager.spsManager
@@ -159,4 +194,26 @@ class GuiEssentialPlatformImpl : GuiEssentialPlatform {
             }
         })
     }
+
+    override fun createSocialStates(): SocialStates {
+        val cm = Essential.getInstance().connectionManager
+        return object : SocialStates {
+            override val relationships: IRelationshipStates by lazy { RelationshipStateManagerImpl(cm.relationshipManager) }
+            override val messages: IMessengerStates by lazy { MessengerStateManagerImpl(cm.chatManager) }
+            override val activity: IStatusStates by lazy { StatusStateManagerImpl(cm.profileManager, cm.spsManager) }
+        }
+    }
+
+    override fun resolveMessageRef(messageRef: MessageRef) {
+        Essential.getInstance().connectionManager.chatManager.retrieveChannelHistoryUntil(messageRef)
+    }
+
+    override val essentialUriListener: EssentialMarkdown.(EssentialMarkdown.LinkClickEvent) -> Unit
+        get() = gg.essential.util.essentialUriListener
+
+    override val noticesManager: INoticesManager
+        get() = Essential.getInstance().connectionManager.noticesManager
+
+    override val isOptiFineInstalled: Boolean
+        get() = OptiFineUtil.isLoaded()
 }

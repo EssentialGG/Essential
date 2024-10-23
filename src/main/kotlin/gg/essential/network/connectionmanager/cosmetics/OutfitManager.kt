@@ -34,7 +34,6 @@ import gg.essential.gui.elementa.state.v2.onChange
 import gg.essential.gui.elementa.state.v2.remove
 import gg.essential.gui.elementa.state.v2.stateBy
 import gg.essential.gui.elementa.state.v2.toListState
-import gg.essential.gui.emotes.EmoteWheel
 import gg.essential.gui.notification.Notifications
 import gg.essential.handlers.GameProfileManager
 import gg.essential.mod.Skin
@@ -146,21 +145,13 @@ class OutfitManager(
      * Sets the given outfit as the active one.
      * This runs [flushSelectedOutfit] afterwards to save selected outfit to infra with debounce.
      * To save immediately use [flushSelectedOutfit] with debounce false after calling.
-     *
-     * @return The previously active outfit, if any
      */
-    private fun setSelectedOutfit(outfit: CosmeticOutfit?): CosmeticOutfit? {
-        val oldOutfit: CosmeticOutfit? = getSelectedOutfit()
+    private fun setSelectedOutfit(outfit: CosmeticOutfit?) {
         this.mutableSelectedOutfitId.set(outfit?.id)
         if (outfit == null) {
-            return null
-        }
-
-        if (oldOutfit != null) {
-            EmoteWheel.unequipCurrentEmote(oldOutfit)
+            return
         }
         flushSelectedOutfit(true)
-        return oldOutfit
     }
 
     fun populateOutfits(outfits: List<CosmeticOutfit>) {
@@ -287,6 +278,21 @@ class OutfitManager(
 
         val equippedCosmetics = outfit.equippedCosmetics.toMutableMap()
         if (cosmeticId != null) {
+            // All slots that the equipped cosmetic is mutually exclusive with
+            for (mutuallyExclusiveSlot in cosmeticsManager.getCosmetic(cosmeticId)?.mutuallyExclusiveWith ?: emptySet()) {
+                if (equippedCosmetics.containsKey(mutuallyExclusiveSlot)) {
+                    equippedCosmetics.remove(mutuallyExclusiveSlot)
+                    packetQueue.enqueue(ClientCosmeticOutfitEquippedCosmeticsUpdatePacket(outfit.id, mutuallyExclusiveSlot.toInfra(), null))
+                }
+            }
+            // All other slots with an equipped cosmetic that is mutually exclusive with the newly equipped slot
+            for ((equippedSlot, equippedCosmeticId) in equippedCosmetics.entries) {
+                if (cosmeticsManager.getCosmetic(equippedCosmeticId)?.mutuallyExclusiveWith?.contains(slot) == true) {
+                    equippedCosmetics.remove(equippedSlot)
+                    packetQueue.enqueue(ClientCosmeticOutfitEquippedCosmeticsUpdatePacket(outfit.id, equippedSlot.toInfra(), null))
+                }
+            }
+
             equippedCosmetics[slot] = cosmeticId
         } else {
             equippedCosmetics.remove(slot)

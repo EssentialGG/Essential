@@ -95,9 +95,10 @@ object OverlayManagerImpl : OverlayManager {
     }
 
     /**
-     * Disposes of any ephemeral layers which no longer have any children in accordance with [EphemeralLayer.onClose].
+     * Disposes of any ephemeral layers which no longer have any children in accordance with [EphemeralLayer.onClose]
+     * and any layers with a Window where [Window.hasErrored] is set to true.
      */
-    private fun cleanupEphemeralLayers() {
+    private fun cleanupLayers() {
         // Ephemeral layers may be temporarily empty e.g. when a modal is closed in response to a click and a new
         // component is scheduled to be opened via `Window.enqueueRenderOperation`. Ordinarily we'd clean up these
         // layers anyway, because there's no way for us to know that it's only temporarily empty.
@@ -116,7 +117,7 @@ object OverlayManagerImpl : OverlayManager {
                     return@removeIf true
                 }
             }
-            return@removeIf false
+            return@removeIf layer.window.hasErrored
         }
     }
 
@@ -292,7 +293,7 @@ object OverlayManagerImpl : OverlayManager {
         private var originalMousePos: Pair<Double, Double>? = null
 
         private fun preDraw(event: GuiDrawScreenEvent) {
-            cleanupEphemeralLayers()
+            cleanupLayers()
             computeLayersWithTrueMousePos()
 
             handleDraw(event.matrixStack, LayerPriority.BelowScreenContent)
@@ -332,7 +333,7 @@ object OverlayManagerImpl : OverlayManager {
         }
 
         private fun nonScreenDraw(event: RenderTickEvent) {
-            cleanupEphemeralLayers()
+            cleanupLayers()
             layersWithTrueMousePos = emptySet() // mouse is captured, no one gets to see it
 
             // TODO could add more specific events in the HUD rendering code, but we only use Modal and above atm anyway
@@ -384,6 +385,19 @@ object OverlayManagerImpl : OverlayManager {
 
         @Subscribe
         fun handleNonScreenDraw(event: RenderTickEvent) {
+            if (event.isPre) {
+                return
+            }
+
+            if (event.isLoadingScreen) {
+                flushVanillaBuffers()
+                layersWithTrueMousePos = emptySet() // the loading screen isn't a real screen and can't handle input
+                // The loading screen is drawn on top of whatever screen is active, so the actual active screen isn't
+                // visible, so we don't want to render screen-related layers either.
+                handleDraw(event.matrixStack, LayerPriority.Modal..LayerPriority.Highest)
+                return
+            }
+
             if (UScreen.currentScreen != null) {
                 return // more specific GuiDrawScreenEvents will be emitted
             }

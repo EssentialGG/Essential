@@ -14,6 +14,10 @@ package gg.essential.handlers
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.GameRules
 
+//#if MC>=12102
+//$$ import net.minecraft.resource.featuretoggle.FeatureSet
+//#endif
+
 //#if MC>=11600
 //$$ import gg.essential.mixins.transformers.server.GameRulesAccessor
 //$$ import gg.essential.mixins.transformers.server.GameRulesBooleanValueAccessor
@@ -49,7 +53,12 @@ class EssentialGameRules {
     //#if MC>=11600
     //$$ private fun ruleExists(name: String): Boolean {
     //$$     var exists = false
-    //$$     GameRules.visitAll(object : GameRules.IRuleEntryVisitor {
+        //#if MC>=12102
+        //$$ // Note: FeatureSet value doesn't actually matter, `accept` will (at least currently) visit all gamerules
+        //$$ GameRules(FeatureSet.empty()).accept(object : GameRules.Visitor {
+        //#else
+        //$$ GameRules.visitAll(object : GameRules.IRuleEntryVisitor {
+        //#endif
     //$$         override fun <T : GameRules.RuleValue<T>?> visit(key: GameRules.RuleKey<T>, type: GameRules.RuleType<T>) {
     //$$             if (key.name == name) exists = true
     //$$         }

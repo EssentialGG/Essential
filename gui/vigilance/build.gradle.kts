@@ -19,6 +19,7 @@ plugins {
 dependencies {
     universalLibs()
     implementation(project(":feature-flags"))
+    implementation(project(":vigilance2"))
     implementation(project(":gui:elementa"))
     implementation(project(":gui:essential"))
 }

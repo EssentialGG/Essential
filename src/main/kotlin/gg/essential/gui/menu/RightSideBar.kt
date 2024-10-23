@@ -12,7 +12,7 @@
 package gg.essential.gui.menu
 
 import gg.essential.Essential
-import gg.essential.config.EssentialConfig
+import gg.essential.config.McEssentialConfig
 import gg.essential.data.VersionData
 import gg.essential.elementa.components.UIContainer
 import gg.essential.elementa.constraints.AspectConstraint
@@ -45,14 +45,13 @@ open class RightSideBar(menuType: PauseMenuDisplay.MenuType, menuVisible: State<
     val connectionManager = Essential.getInstance().connectionManager
     val collapsed = BasicState(false).map { it }
     private val hostable = BasicState(menuType == PauseMenuDisplay.MenuType.MAIN)
-    private val showHostWorldInsteadOfInvite = stateBy { hostable() }
     private val isHostingWorld = pollingState { connectionManager.spsManager.localSession != null }
 
     val essentialTooltip = BasicState("About Essential")
     val inviteTooltip = stateBy {
         when {
             !collapsed() -> ""
-            showHostWorldInsteadOfInvite() -> "Host World"
+            hostable() -> "Host World"
             else -> "Invite Friends"
         }
     }
@@ -65,7 +64,7 @@ open class RightSideBar(menuType: PauseMenuDisplay.MenuType, menuVisible: State<
 
     val worldSettingsVisible = isHostingWorld
 
-    private val inviteIcon = showHostWorldInsteadOfInvite.map {
+    private val inviteIcon = hostable.map {
         if (it) EssentialPalette.WORLD_8X
         else EssentialPalette.ENVELOPE_9X7
     }
@@ -122,7 +121,7 @@ open class RightSideBar(menuType: PauseMenuDisplay.MenuType, menuVisible: State<
     }.setIcon(BasicState(EssentialPalette.WORLD_8X))
 
     val inviteButton by MenuButton(
-        showHostWorldInsteadOfInvite.map { if (it) "Host World" else "Invite" },
+        hostable.map { if (it) "Host World" else "Invite" },
         textAlignment = MenuButton.Alignment.LEFT,
     ) {
         PauseMenuDisplay.showInviteOrHostModal(SPSSessionSource.PAUSE_MENU)
@@ -152,7 +151,7 @@ open class RightSideBar(menuType: PauseMenuDisplay.MenuType, menuVisible: State<
         .bindCollapsed(collapsed, 20f)
 
     val settings by MenuButton(BasicState("Settings"), textAlignment = MenuButton.Alignment.LEFT) {
-        GuiUtil.openScreen { EssentialConfig.gui() }
+        GuiUtil.openScreen { McEssentialConfig.gui() }
     }.constrain {
         width = 80.pixels
         height = 20.pixels

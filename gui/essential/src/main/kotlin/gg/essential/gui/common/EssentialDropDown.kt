@@ -205,6 +205,11 @@ class EssentialDropDown<T>(
         }
     }
 
+    fun select(value: T) {
+        val option = items.getUntracked().find { it.value == value } ?: return
+        select(option)
+    }
+
     fun select(option: Option<T>) {
         if (items.get().contains(option)) {
             selectedOption.set(option)

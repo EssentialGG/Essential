@@ -24,6 +24,7 @@ fun CosmeticsDataWithChanges.registerBundle(
     name: String,
     tier: CosmeticTier,
     discount: Float,
+    rotateOnPreview: Boolean,
     skin: CosmeticBundle.Skin,
     cosmetics: Map<CosmeticSlot, CosmeticId>,
     settings: Map<CosmeticId, List<CosmeticSetting>>,
@@ -38,6 +39,7 @@ fun CosmeticsDataWithChanges.registerBundle(
             name,
             tier,
             discount,
+            rotateOnPreview,
             skin,
             cosmetics,
             settings

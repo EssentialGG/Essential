@@ -30,6 +30,7 @@ import gg.essential.gui.common.shadow.EssentialUIWrappedText
 import gg.essential.gui.common.shadow.ShadowIcon
 import gg.essential.gui.elementa.state.v2.*
 import gg.essential.gui.elementa.state.v2.ListState
+import gg.essential.gui.elementa.state.v2.combinators.map
 import gg.essential.gui.util.hoveredState
 import gg.essential.mixins.transformers.server.integrated.LanConnectionsAccessor
 import gg.essential.universal.USound
@@ -183,7 +184,7 @@ class SpsOption(
                         y = 2.pixels
                     } childOf playerInfo
 
-                val onSession = Essential.getInstance().connectionManager.spsManager.getOnlineState(information.uuid)
+                val onSession = Essential.getInstance().connectionManager.spsManager.getOnlineState(information.uuid).toV1(this)
 
                 val descriptionText = if (information.uuid == UUIDUtil.getClientUUID()) {
                     BasicState("Host")
@@ -309,7 +310,7 @@ class SpsOption(
                 fun removePlayerFromSession() {
                     spsManager.updateInvitedUsers(spsManager.invitedUsers - player.uuid)
                     // Updating the invited users is not sufficient to kick this player if the privacy is set to friends
-                    if (onlineState.get() && spsManager.localSession!!.privacy == UPnPPrivacy.FRIENDS) {
+                    if (onlineState.getUntracked() && spsManager.localSession!!.privacy == UPnPPrivacy.FRIENDS) {
                         val integratedServer = Minecraft.getMinecraft().integratedServer ?: return
                         integratedServer.executor.execute {
 
@@ -349,7 +350,7 @@ class SpsOption(
                         } else {
                             "Cancel invite"
                         }
-                    })
+                    }.toV1(this))
                 }.onLeftClick {
                     if (onlineState.get()) {
                         UUIDUtil.getName(player.uuid).thenAcceptOnMainThread { username ->

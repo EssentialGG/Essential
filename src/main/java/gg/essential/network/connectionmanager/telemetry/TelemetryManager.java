@@ -201,13 +201,13 @@ public class TelemetryManager implements NetworkedManager {
         // We go async, since we are reading a file
         Multithreading.runAsync(() -> {
             try {
-                Path installerMetadataPath = Essential.getInstance().getBaseDir().toPath().resolve("installer-metadata.json").toRealPath();
+                Path installerMetadataPath = Essential.getInstance().getBaseDir().toPath().resolve("installer-metadata.json");
 
                 if (Files.notExists(installerMetadataPath))
                     return;
 
                 // Calculate the sha-1 checksum of the current game directory in the same way the installer does.
-                byte[] pathBytes = installerMetadataPath.toString().getBytes(StandardCharsets.UTF_8);
+                byte[] pathBytes = installerMetadataPath.toRealPath().toString().getBytes(StandardCharsets.UTF_8);
                 byte[] pathChecksumBytes = MessageDigest.getInstance("SHA-1").digest(pathBytes);
                 StringBuilder pathChecksumBuilder = new StringBuilder();
                 for (byte checksumByte : pathChecksumBytes) {

@@ -27,7 +27,6 @@ import gg.essential.util.GLUtil;
 import net.minecraft.client.model.ModelPlayer;
 import gg.essential.handlers.RenderPlayerBypass;
 import net.minecraft.client.entity.AbstractClientPlayer;
-import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.client.renderer.entity.RenderPlayer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -40,6 +39,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.EnumSet;
 import java.util.Set;
 
+//#if MC>=12102
+//$$ import gg.essential.mixins.impl.client.model.PlayerEntityRenderStateExt;
+//$$ import net.minecraft.client.MinecraftClient;
+//$$ import net.minecraft.client.render.entity.state.PlayerEntityRenderState;
+//$$ import net.minecraft.util.Identifier;
+//#endif
+
 //#if MC>=11700
 //$$ import net.minecraft.client.render.entity.EntityRendererFactory.Context;
 //$$ import net.minecraft.text.Text;
@@ -50,7 +56,6 @@ import java.util.Set;
 //$$ import net.minecraft.client.renderer.IRenderTypeBuffer;
 //$$ import net.minecraft.client.renderer.model.ModelRenderer;
 //#else
-import net.minecraft.client.model.ModelBase;
 //#endif
 
 //#if MC<=10809
@@ -67,7 +72,9 @@ import net.minecraftforge.fml.common.eventhandler.EventBus;
 
 @Mixin(RenderPlayer.class)
 public abstract class MixinRenderPlayer
-    //#if MC>=11400
+    //#if MC>=12102
+    //$$ extends LivingEntityRenderer<AbstractClientPlayerEntity, PlayerEntityRenderState, PlayerEntityModel>
+    //#elseif MC>=11400
     //$$ extends LivingRenderer<AbstractClientPlayerEntity, PlayerModel<AbstractClientPlayerEntity>>
     //#elseif MC>=12000
     extends RenderLivingBase<AbstractClientPlayer>
@@ -85,20 +92,6 @@ public abstract class MixinRenderPlayer
     protected EssentialModelRenderer essentialModelRenderer;
 
     //#if MC>=11700
-    //$$ public MixinRenderPlayer(Context ctx, PlayerEntityModel<AbstractClientPlayerEntity> model, float shadowRadius) {
-    //$$     super(ctx, model, shadowRadius);
-    //$$ }
-    //#else
-    //#if MC>=11400
-    //$$ public MixinRenderPlayer(EntityRendererManager renderManagerIn, PlayerModel<AbstractClientPlayerEntity> modelBaseIn, float shadowSizeIn) {
-    //#else
-    public MixinRenderPlayer(RenderManager renderManagerIn, ModelBase modelBaseIn, float shadowSizeIn) {
-    //#endif
-        super(renderManagerIn, modelBaseIn, shadowSizeIn);
-    }
-    //#endif
-
-    //#if MC>=11700
     //$$ @Inject(method = "<init>", at = @At("RETURN"))
     //#else
     @Inject(method = "<init>(Lnet/minecraft/client/renderer/entity/RenderManager;Z)V", at = @At("RETURN"))
@@ -113,6 +106,18 @@ public abstract class MixinRenderPlayer
         return this.layerRenderers;
     }
 
+    //#if MC>=12102
+    //$$ @Inject(method = "updateRenderState(Lnet/minecraft/client/network/AbstractClientPlayerEntity;Lnet/minecraft/client/render/entity/state/PlayerEntityRenderState;F)V", at = @At("RETURN"))
+    //$$ private void disableOuterLayerWhereCoveredByCosmetic(AbstractClientPlayerEntity player, PlayerEntityRenderState state, float tickDelta, CallbackInfo ci) {
+    //$$     Set<SkinLayer> coveredLayers = ((AbstractClientPlayerExt) player).getCosmeticsState().getCoveredLayers();
+    //$$     state.hatVisible &= !coveredLayers.contains(SkinLayer.HAT);
+    //$$     state.jacketVisible &= !coveredLayers.contains(SkinLayer.JACKET);
+    //$$     state.leftSleeveVisible &= !coveredLayers.contains(SkinLayer.LEFT_SLEEVE);
+    //$$     state.rightSleeveVisible &= !coveredLayers.contains(SkinLayer.RIGHT_SLEEVE);
+    //$$     state.leftPantsLegVisible &= !coveredLayers.contains(SkinLayer.LEFT_PANTS_LEG);
+    //$$     state.rightPantsLegVisible &= !coveredLayers.contains(SkinLayer.RIGHT_PANTS_LEG);
+    //$$ }
+    //#else
     @Inject(method = "setModelVisibilities", at = @At("RETURN"))
     private void disableOuterLayerWhereCoveredByCosmetic(AbstractClientPlayer player, CallbackInfo ci) {
         Set<SkinLayer> coveredLayers = ((AbstractClientPlayerExt) player).getCosmeticsState().getCoveredLayers();
@@ -124,6 +129,7 @@ public abstract class MixinRenderPlayer
         model.bipedLeftLegwear.showModel &= !coveredLayers.contains(SkinLayer.LEFT_PANTS_LEG);
         model.bipedRightLegwear.showModel &= !coveredLayers.contains(SkinLayer.RIGHT_PANTS_LEG);
     }
+    //#endif
 
     //#if FORGE && MC<11700
     @Redirect(
@@ -147,7 +153,13 @@ public abstract class MixinRenderPlayer
 
     @Inject(method = "renderLeftArm", at = @At("RETURN"))
     //#if MC>=11400
+    //#if MC>=12102
+    //$$ private void renderLeftArm(MatrixStack vMatrixStack, VertexConsumerProvider buffers, int combinedLight, Identifier skinTexture, boolean sleeveVisible, CallbackInfo ci) {
+    //$$     AbstractClientPlayerEntity player = MinecraftClient.getInstance().player;
+    //$$     if (player == null) return;
+    //#else
     //$$ private void renderLeftArm(MatrixStack vMatrixStack, IRenderTypeBuffer buffers, int combinedLight, AbstractClientPlayerEntity player, CallbackInfo ci) {
+    //#endif
     //$$     UMatrixStack matrixStack = new UMatrixStack(vMatrixStack);
     //$$     RenderBackend.VertexConsumerProvider vertexConsumerProvider = new MinecraftRenderBackend.VertexConsumerProvider(buffers, combinedLight);
     //#else
@@ -155,7 +167,9 @@ public abstract class MixinRenderPlayer
         UMatrixStack matrixStack = new UMatrixStack();
         RenderBackend.VertexConsumerProvider vertexConsumerProvider = new MinecraftRenderBackend.VertexConsumerProvider();
     //#endif
+        //#if MC<12102
         getMainModel().isChild = false;
+        //#endif
         essentialModelRenderer.render(matrixStack, vertexConsumerProvider, EnumSet.of(EnumPart.LEFT_ARM), player);
         EmoteWheel.isPlayerArmRendering = false;
     }
@@ -167,7 +181,13 @@ public abstract class MixinRenderPlayer
 
     @Inject(method = "renderRightArm", at = @At("RETURN"))
     //#if MC>=11400
+    //#if MC>=12102
+    //$$ private void renderRightArm(MatrixStack vMatrixStack, VertexConsumerProvider buffers, int combinedLight, Identifier skinTexture, boolean sleeveVisible, CallbackInfo ci) {
+    //$$     AbstractClientPlayerEntity player = MinecraftClient.getInstance().player;
+    //$$     if (player == null) return;
+    //#else
     //$$ private void renderRightArm(MatrixStack vMatrixStack, IRenderTypeBuffer buffers, int combinedLight, AbstractClientPlayerEntity player, CallbackInfo ci) {
+    //#endif
     //$$     UMatrixStack matrixStack = new UMatrixStack(vMatrixStack);
     //$$     RenderBackend.VertexConsumerProvider vertexConsumerProvider = new MinecraftRenderBackend.VertexConsumerProvider(buffers, combinedLight);
     //#else
@@ -175,11 +195,19 @@ public abstract class MixinRenderPlayer
         UMatrixStack matrixStack = new UMatrixStack();
         RenderBackend.VertexConsumerProvider vertexConsumerProvider = new MinecraftRenderBackend.VertexConsumerProvider();
     //#endif
+        //#if MC<12102
         getMainModel().isChild = false;
+        //#endif
         essentialModelRenderer.render(matrixStack, vertexConsumerProvider, EnumSet.of(EnumPart.RIGHT_ARM), player);
         EmoteWheel.isPlayerArmRendering = false;
     }
 
+    //#if MC>=12102
+    //$$ @Inject(method = "renderLabelIfPresent(Lnet/minecraft/client/render/entity/state/PlayerEntityRenderState;Lnet/minecraft/text/Text;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;I)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/entity/LivingEntityRenderer;renderLabelIfPresent(Lnet/minecraft/client/render/entity/state/EntityRenderState;Lnet/minecraft/text/Text;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;I)V", ordinal = 1))
+    //$$ private void setNametagEntity(CallbackInfo ci, @Local(argsOnly = true) PlayerEntityRenderState state) {
+    //$$     OnlineIndicator.nametagEntity = ((PlayerEntityRenderStateExt) state).essential$getEntity();
+    //$$ }
+    //#else
     //#if MC>=12005
     //$$ @Inject(method = "renderLabelIfPresent(Lnet/minecraft/client/network/AbstractClientPlayerEntity;Lnet/minecraft/text/Text;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;IF)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/entity/LivingEntityRenderer;renderLabelIfPresent(Lnet/minecraft/entity/Entity;Lnet/minecraft/text/Text;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;IF)V", ordinal = 1))
     //#elseif MC>=11600
@@ -192,17 +220,25 @@ public abstract class MixinRenderPlayer
     private void setNametagEntity(CallbackInfo ci, @Local(argsOnly = true) AbstractClientPlayer entityIn) {
         OnlineIndicator.nametagEntity = entityIn;
     }
+    //#endif
 
     @Override
     public Mat4 essential$getTransform(AbstractClientPlayer player, float yaw, float partialTicks) {
+        // FIXME 1.21.2 this is getting unreasonably expensive
         //#if MC>=11400
         //$$ MatrixStack stack = new MatrixStack();
+        //#if MC>=12102
+        //$$ PlayerEntityRenderState state = this.createRenderState();
+        //$$ this.updateRenderState(player, state, partialTicks);
+        //$$ this.setupTransforms(state, stack, state.bodyYaw, state.baseScale);
+        //#else
         //$$ this.applyRotations(
         //$$     player, stack, player.ticksExisted + partialTicks, yaw, partialTicks
             //#if MC>=12006
             //$$ , player.getScale()
             //#endif
         //$$ );
+        //#endif
         //$$ return GLUtil.INSTANCE.glGetMatrix(stack, 1f);
         //#else
         return new UMatrixStack().runReplacingGlobalState(() -> {
@@ -212,6 +248,7 @@ public abstract class MixinRenderPlayer
         //#endif
     }
 
+    //#if MC<12102
     @Shadow protected abstract void applyRotations(
         AbstractClientPlayer player,
         //#if MC>=11400
@@ -224,4 +261,7 @@ public abstract class MixinRenderPlayer
         //$$ , float scale
         //#endif
     );
+    //#endif
+
+    public MixinRenderPlayer() { super(null, null, 0f); }
 }

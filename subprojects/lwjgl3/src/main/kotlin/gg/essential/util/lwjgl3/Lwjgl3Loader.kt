@@ -40,6 +40,9 @@ class Lwjgl3Loader(nativesDir: Path, gl3: Lazy<Boolean>) {
         addPackageExclusion("kotlinx.")
         // We'll also want to use netty in our API for buffer management.
         addPackageExclusion("io.netty.")
+        // Workaround for [Library.checkHash] taking the last hash it finds (but we return our jar first, so it actually
+        // ends up using the hash from MC's jar and when that don't match, it'll inappropriately emit an error message).
+        setResourceFilter { path -> path.endsWith(".sha1") }
         // Invoke the bootstrap code which sets up LWJGL's natives extraction code to look in a dedicated directory
         loadClass("$PKG_IMPL.Bootstrap")
             .getMethod("init", Path::class.java, Lazy::class.java)

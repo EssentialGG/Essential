@@ -42,6 +42,8 @@ import gg.essential.gui.util.stateBy
 import gg.essential.vigilance.utils.onLeftClick
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asExecutor
+import org.apache.logging.log4j.LogManager
+import org.apache.logging.log4j.Logger
 import java.awt.Color
 import java.util.concurrent.CompletableFuture
 
@@ -440,6 +442,32 @@ inline fun <T : UIComponent> T.onRightClick(crossinline method: UIComponent.(eve
 fun <T> CompletableFuture<T>.thenAcceptOnMainThread(callback: (T) -> Unit): CompletableFuture<Void?> =
     this.thenAcceptAsync({ callback(it) }, Dispatchers.Client.asExecutor())
 
+private val ESSENTIAL_LOGGER = LogManager.getLogger("Essential Logger")
+
+@JvmOverloads
+fun <T> CompletableFuture<T>.logExceptions(logger: Logger = ESSENTIAL_LOGGER): CompletableFuture<T> =
+    whenComplete { _, e ->
+        if (e != null) {
+            logger.error("Unhandled error:", e)
+        }
+    }
+
 fun <T> CompletableFuture<T>.toState(): gg.essential.gui.elementa.state.v2.State<T?> =
     toState(Dispatchers.Client.asExecutor())
 
+/**
+ * Returns a darker shade of this color by reducing its brightness.
+ *
+ * @param percentage The fraction by which to darken the color, where:
+ * - `0.0f` returns the original color.
+ * - `1.0f` returns black.
+ */
+fun Color.darker(percentage: Float): Color {
+    val brightnessFactor = 1.0f - percentage
+    return Color(
+        (red * brightnessFactor).toInt().coerceIn(0, 255),
+        (green * brightnessFactor).toInt().coerceIn(0, 255),
+        (blue * brightnessFactor).toInt().coerceIn(0, 255),
+        alpha
+    )
+}

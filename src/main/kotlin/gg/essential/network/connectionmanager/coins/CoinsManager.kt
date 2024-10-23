@@ -30,14 +30,11 @@ import gg.essential.connectionmanager.common.packet.response.ResponseActionPacke
 import gg.essential.gui.elementa.state.v2.*
 import gg.essential.gui.elementa.state.v2.combinators.*
 import gg.essential.gui.elementa.state.v2.stateBy
-import gg.essential.gui.image.EssentialAssetImageFactory
 import gg.essential.gui.notification.Notifications
 import gg.essential.gui.notification.sendCheckoutFailedNotification
 import gg.essential.gui.wardrobe.modals.CoinsReceivedModal
-import gg.essential.mod.EssentialAsset
 import gg.essential.network.connectionmanager.ConnectionManager
 import gg.essential.network.connectionmanager.NetworkedManager
-import gg.essential.network.connectionmanager.cosmetics.*
 import gg.essential.network.connectionmanager.handler.checkout.ServerCheckoutPartnerCodeDataPacketHandler
 import gg.essential.network.connectionmanager.handler.coins.ServerCoinsBalancePacketHandler
 import gg.essential.network.cosmetics.toMod
@@ -47,9 +44,6 @@ import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.*
 import java.util.concurrent.TimeUnit
-import kotlin.math.max
-import kotlin.math.pow
-import kotlin.math.round
 
 class CoinsManager(val connectionManager: ConnectionManager) : NetworkedManager {
 
@@ -272,37 +266,3 @@ class CoinsManager(val connectionManager: ConnectionManager) : NetworkedManager 
     }
 
 }
-
-data class CoinBundle(
-    val id: String,
-    val numberOfCoins: Int,
-    val currency: Currency,
-    val price: Double,
-    val extraPercent: Int,
-    val iconAsset: EssentialAsset,
-    val isHighlighted: Boolean,
-    val isExchangeBundle: Boolean,
-    val isSpecificAmount: Boolean = false,
-) {
-
-    val iconFactory = EssentialAssetImageFactory(iconAsset)
-
-    init {
-        iconFactory.primeCache(AssetLoader.Priority.Low)
-    }
-
-    val formattedPrice: String = currency.format(price)
-
-    fun getBundleForNumberOfCoins(coins: Int): CoinBundle {
-        val precision = 10.0.pow(currency.defaultFractionDigits)
-        val minimumBundleSize = Essential.getInstance().connectionManager.cosmeticsManager.wardrobeSettings.youNeedMinimumAmount.get()
-        val coinsAmount = max(minimumBundleSize, coins)
-        return copy(
-            numberOfCoins = coinsAmount,
-            price = round((price / numberOfCoins) * coinsAmount * precision) / precision,
-            isSpecificAmount = true
-        )
-    }
-
-}
-

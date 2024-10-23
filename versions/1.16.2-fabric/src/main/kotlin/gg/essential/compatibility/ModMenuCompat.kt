@@ -14,11 +14,11 @@ package gg.essential.compatibility
 
 import com.terraformersmc.modmenu.api.ConfigScreenFactory
 import com.terraformersmc.modmenu.api.ModMenuApi
-import gg.essential.config.EssentialConfig
+import gg.essential.config.McEssentialConfig
 
 class ModMenuCompat : ModMenuApi {
     override fun getModConfigScreenFactory() = ConfigScreenFactory {
-        EssentialConfig.gui()
+        McEssentialConfig.gui()
     }
 }
 //#endif

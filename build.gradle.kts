@@ -43,6 +43,7 @@ dependencies {
     implementation(bundle(project(":feature-flags"))!!)
     implementation(bundle(project(":libs"))!!)
     implementation(bundle(project(":infra"))!!)
+    implementation(bundle(project(":vigilance2"))!!)
     implementation(bundle(project(":gui:elementa"))!!)
     implementation(bundle(project(":gui:essential"))!!)
     implementation(bundle(project(":gui:vigilance"))!!)
@@ -58,6 +59,7 @@ dependencies {
 
     implementation(bundle(project(":lwjgl3"))!!)
     runtimeOnly(bundle(project(":lwjgl3:impl"))!!)
+
 
     // In order to get proper IDE support, we want to use a non-relocated MixinExtras version in dev.
     // This gets transformed by `relocatedJar` to use our bundled relocated version for production.
@@ -124,6 +126,7 @@ dependencies {
         val fapiVersion = when (platform.mcVersion) {
             12006 -> "0.97.8+1.20.6"
             12100 -> "0.99.2+1.21"
+            12102 -> "0.106.0+1.21.2"
             else -> error("No fabric API version configured!")
         }
         include(modImplementation(fabricApi.module("fabric-api-base", fapiVersion))!!)
@@ -166,7 +169,7 @@ tasks.jar {
     if (!platform.isFabric) {
         manifest {
             if (mcVersion >= 11400) {
-                attributes("MixinConfigs" to "mixins.essential.json,mixins.essential.init.json,mixins.essential.modcompat.json")
+                attributes("MixinConfigs" to "mixins.essential.json,mixins.essential.init.json,mixins.essential.modcompat.json,mixins.essential.tests.json")
                 attributes("Requires-Essential-Stage2-Version" to "1.6.0")
             }
         }

@@ -169,6 +169,7 @@ class CosmeticConfiguration(
                     CosmeticPropertyType.REQUIRES_UNLOCK_ACTION -> RequiresUnlockActionConfiguration(cosmeticsDataWithChanges, cosmetic)
                     CosmeticPropertyType.VARIANTS -> VariantsPropertyConfiguration(cosmeticsDataWithChanges, cosmetic)
                     CosmeticPropertyType.DEFAULT_SIDE -> DefaultSidePropertyConfiguration(cosmeticsDataWithChanges, cosmetic)
+                    CosmeticPropertyType.MUTUALLY_EXCLUSIVE -> MutuallyExclusivePropertyConfiguration(cosmeticsDataWithChanges, cosmetic)
                 }).let {
                     it()
                 }

@@ -81,18 +81,68 @@ public class PlayerMolangQuery implements MolangQueryEntity, ParticleSystem.Loca
         }
     }
 
+    //#if MC>=12102
+    //$$ // MC no longer tracks the prevDistanceTraveled, so we now do that ourselves.
+    //$$ // The value will only be updated while someone is observing it, which should be good enough though assuming the
+    //$$ // same PlayerMolangQuery is being reused across time (which is the case). It'll sill be slightly wrong on the
+    //$$ // first tick that an emote/cosmetic which cares about this value is equipped, but I doubt that's even noticeable.
+    //$$ private float prevDistanceTraveled;
+    //$$ private float latestDistanceTraveled;
+    //$$ private int latestDistanceTraveledAge;
+    //$$ private void updateDistanceTraveled() {
+    //$$     int age = player.age;
+    //$$
+    //$$     // If we haven't updated in a while, reset everything to the current values
+    //$$     if (age > latestDistanceTraveledAge + 10) {
+    //$$         latestDistanceTraveledAge = age;
+    //$$         prevDistanceTraveled = latestDistanceTraveled = player.distanceTraveled;
+    //$$         return;
+    //$$     }
+    //$$
+    //$$     // If this is the first update call this tick
+    //$$     int ticksSinceLastUpdate = age - latestDistanceTraveledAge;
+    //$$     if (ticksSinceLastUpdate > 0) {
+    //$$         // compute the value of the previous tick
+    //$$         if (ticksSinceLastUpdate == 1) {
+    //$$             // trivial case, stored value is the value of the previous tick
+    //$$             prevDistanceTraveled = latestDistanceTraveled;
+    //$$         } else {
+    //$$             // multiple ticks have happened, assume movement to be uniform across them
+    //$$             float movedSinceLastUpdate = player.distanceTraveled - latestDistanceTraveled;
+    //$$             prevDistanceTraveled = player.distanceTraveled - movedSinceLastUpdate / ticksSinceLastUpdate;
+    //$$         }
+    //$$
+    //$$         // and store the latest value again
+    //$$         latestDistanceTraveled = player.distanceTraveled;
+    //$$         latestDistanceTraveledAge = age;
+    //$$     }
+    //$$ }
+    //#endif
+
     @Override
     public float getModifiedDistanceMoved() {
+        //#if MC>=12102
+        //$$ updateDistanceTraveled();
+        //$$ float next = player.distanceTraveled * 0.6f;
+        //$$ float prev = prevDistanceTraveled * 0.6f;
+        //#else
         float next = player.distanceWalkedModified;
         float prev = player.prevDistanceWalkedModified;
+        //#endif
         float now = prev + (next - prev) * getPartialTicks();
         return now * 16; // unclear what the unit is supposed to be
     }
 
     @Override
     public float getModifiedMoveSpeed() {
+        //#if MC>=12102
+        //$$ updateDistanceTraveled();
+        //$$ float next = player.distanceTraveled * 0.6f;
+        //$$ float prev = prevDistanceTraveled * 0.6f;
+        //#else
         float next = player.distanceWalkedModified;
         float prev = player.prevDistanceWalkedModified;
+        //#endif
         return (next - prev) * 16; // unclear what the unit is supposed to be
     }
 

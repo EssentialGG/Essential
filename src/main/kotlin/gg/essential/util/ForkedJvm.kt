@@ -11,6 +11,8 @@
  */
 package gg.essential.util
 
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import org.apache.logging.log4j.LogManager
 import java.io.Closeable
 import java.nio.file.Paths
@@ -28,7 +30,7 @@ import kotlin.reflect.full.IllegalCallableAccessException
 class ForkedJvm(main: String, classpath: String? = null, jvmArgs: List<String> = listOf()) : Closeable {
     val process: Process
 
-    constructor(main: Class<*>) : this(main.name)
+    constructor(main: Class<*>) : this(main.name, defaultClassPath(main))
 
     init {
         val cmd = mutableListOf<String>()
@@ -71,13 +73,16 @@ class ForkedJvm(main: String, classpath: String? = null, jvmArgs: List<String> =
     companion object {
         private val LOGGER = LogManager.getLogger(ForkedJvm::class.java)
 
-        fun defaultClassPath(): String = listOf(
+        fun defaultClassPath(vararg extraClasses: Class<*>): String = listOf(
             ForkedJvm::class.java,
             Unit::class.java, // kotlin-stdlib
             Class.forName("kotlin.io.path.PathsKt"), // kotlin-stdlib-jdk7
             Class.forName("kotlin.collections.jdk8.CollectionsJDK8Kt"), // kotlin-stdlib-jdk8
             IllegalCallableAccessException::class.java, // kotlin-reflect
             CoroutineContext::class.java, // kotlin-coroutines
+            Serializable::class.java, // kotlin-serialization-core
+            Json::class.java, // kotlin-serialization-json
+            *extraClasses,
         ).map { cls ->
             findCodeSource(cls) ?: throw UnsupportedOperationException("Failed to find $cls jar location")
         }.also {

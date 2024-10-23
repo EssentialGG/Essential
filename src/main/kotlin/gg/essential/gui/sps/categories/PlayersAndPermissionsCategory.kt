@@ -19,7 +19,7 @@ import gg.essential.elementa.state.State
 import gg.essential.gui.EssentialPalette
 import gg.essential.gui.common.IconButton
 import gg.essential.gui.common.Spacer
-import gg.essential.gui.common.WeakState
+import gg.essential.gui.elementa.state.v2.onChange
 import gg.essential.gui.sps.InviteFriendsModal
 import gg.essential.gui.sps.options.SettingInformation
 import gg.essential.gui.sps.options.SpsOption
@@ -28,6 +28,7 @@ import gg.essential.gui.util.hoveredState
 import gg.essential.network.connectionmanager.sps.SPSSessionSource
 import gg.essential.util.GuiUtil
 import gg.essential.vigilance.utils.onLeftClick
+import gg.essential.gui.elementa.state.v2.State as StateV2
 
 class PlayersAndPermissionsCategory(
     private val cheatsEnabled: State<Boolean>,
@@ -37,7 +38,7 @@ class PlayersAndPermissionsCategory(
 ) {
 
     // Stored to keep a strong reference so the garbage collector doesn't delete our state listeners
-    private val stateListeners = mutableListOf<WeakState<Boolean>>()
+    private val stateListeners = mutableListOf<StateV2<Boolean>>()
 
     init {
         populate()
@@ -55,7 +56,7 @@ class PlayersAndPermissionsCategory(
                         // Host
                         uuid == UUIDUtil.getClientUUID() -> 0
                         // Online
-                        spsManager.getOnlineState(uuid).get() -> 1
+                        spsManager.getOnlineState(uuid).getUntracked() -> 1
                         // Invited
                         else -> 2
                     }
@@ -82,8 +83,8 @@ class PlayersAndPermissionsCategory(
             stateListeners.add(spsManager.getOnlineState(it))
         }
 
-        stateListeners.forEach { weakState ->
-            weakState.onSetValue { sort() }
+        stateListeners.forEach { state ->
+            state.onChange(this) { sort() }
         }
 
         sort()

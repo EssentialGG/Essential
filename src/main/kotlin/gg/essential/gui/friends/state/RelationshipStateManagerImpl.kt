@@ -19,6 +19,8 @@ import gg.essential.gui.notification.iconAndMarkdownBody
 import gg.essential.network.connectionmanager.relationship.FriendRequestState
 import gg.essential.network.connectionmanager.relationship.RelationshipManager
 import gg.essential.network.connectionmanager.relationship.RelationshipResponse
+import gg.essential.network.connectionmanager.relationship.displayToast
+import gg.essential.network.connectionmanager.relationship.message
 import gg.essential.util.*
 import java.time.Instant
 import java.util.*

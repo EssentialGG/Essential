@@ -211,7 +211,12 @@ class EquippedCosmeticsManager(
             //#else
             if (gameSettings.modelParts.contains(part) != enabled) {
             //#endif
+                //#if MC>=12102
+                //$$ gameSettings.setPlayerModelPart(part, enabled)
+                //$$ gameSettings.sendClientSettings()
+                //#else
                 gameSettings.setModelPartEnabled(part, enabled)
+                //#endif
             }
         }
     }

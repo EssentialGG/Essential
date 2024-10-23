@@ -20,13 +20,13 @@ import gg.essential.compat.PlasmoVoiceCompat;
 import gg.essential.connectionmanager.common.packet.telemetry.ClientTelemetryPacket;
 import gg.essential.connectionmanager.common.packet.upnp.*;
 import gg.essential.data.SPSData;
-import gg.essential.elementa.state.BasicState;
-import gg.essential.elementa.state.State;
 import gg.essential.event.network.server.ServerLeaveEvent;
 import gg.essential.event.sps.PlayerJoinSessionEvent;
 import gg.essential.event.sps.PlayerLeaveSessionEvent;
 import gg.essential.event.sps.SPSStartEvent;
-import gg.essential.gui.common.WeakState;
+import gg.essential.gui.elementa.state.v2.MutableState;
+import gg.essential.gui.elementa.state.v2.State;
+import gg.essential.gui.elementa.state.v2.StateKt;
 import gg.essential.gui.friends.state.IStatusManager;
 import gg.essential.gui.multiplayer.EssentialMultiplayerGui;
 import gg.essential.mixins.transformers.server.integrated.LanConnectionsAccessor;
@@ -126,7 +126,7 @@ public class SPSManager extends StateCallbackManager<IStatusManager> implements 
     private String serverStatusResponse;
 
     private final Set<UUID> oppedPlayers = new HashSet<>();
-    private final Map<UUID, State<Boolean>> onlinePlayerStates = new HashMap<>();
+    private final Map<UUID, MutableState<Boolean>> onlinePlayerStates = new HashMap<>();
 
     private boolean shareResourcePack = false;
 
@@ -290,7 +290,7 @@ public class SPSManager extends StateCallbackManager<IStatusManager> implements 
 
         // Only revoke invites for users that aren't already in the session, otherwise they'd get kicked
         Set<UUID> offlineUsers = users.stream()
-            .filter(uuid -> getInvitedUsers().contains(uuid) && !getOnlineState(uuid).get())
+            .filter(uuid -> getInvitedUsers().contains(uuid) && !getOnlineState(uuid).getUntracked())
             .collect(Collectors.toSet());
         // No need to refresh the whitelist and persist settings when revoking since we'll immediately reinvite the users
         revokeInvites(offlineUsers);
@@ -421,6 +421,7 @@ public class SPSManager extends StateCallbackManager<IStatusManager> implements 
     }
 
     public synchronized void closeLocalSession() {
+
         IntegratedServer server = Minecraft.getMinecraft().getIntegratedServer();
         UPnPSession oldSession = this.localSession;
         if (oldSession != null) {
@@ -647,7 +648,11 @@ public class SPSManager extends StateCallbackManager<IStatusManager> implements 
                 //#if MC<=11202
                 immutableGameRules.forEach(gameRules::setOrCreateGameRule);
                 //#else
+                //#if MC>=12102
+                //$$ integratedServer.getGameRules().accept(new GameRules.Visitor() {
+                //#else
                 //$$ GameRules.visitAll(new GameRules.IRuleEntryVisitor() {
+                //#endif
                 //$$     @Override
                 //$$     public <T extends GameRules.RuleValue<T>> void visit(GameRules.RuleKey<T> key, GameRules.RuleType<T> type) {
                 //$$         GameRules.IRuleEntryVisitor.super.visit(key, type);
@@ -746,24 +751,24 @@ public class SPSManager extends StateCallbackManager<IStatusManager> implements 
 
     /**
      * @param uuid UUID player to get the online state of
-     * @return a weak state with value of whether the specified player is online or not
+     * @return a state with value of whether the specified player is online or not
      */
-    public WeakState<Boolean> getOnlineState(UUID uuid) {
+    public State<Boolean> getOnlineState(UUID uuid) {
         if (uuid.equals(UUIDUtil.getClientUUID())) {
-            return new WeakState<>(new BasicState<>(true));
+            return StateKt.stateOf(true);
         }
-        return new WeakState<>(onlinePlayerStates.computeIfAbsent(uuid, k -> new BasicState<>(false)));
+        return onlinePlayerStates.computeIfAbsent(uuid, k -> StateKt.mutableStateOf(false));
     }
 
     @Subscribe
     public void onPlayerJoinSession(PlayerJoinSessionEvent event) {
-        onlinePlayerStates.computeIfAbsent(event.getProfile().getId(), k -> new BasicState<>(true)).set(true);
-        maxConcurrentGuests = (int) Math.max(maxConcurrentGuests, onlinePlayerStates.values().stream().filter(State::get).count());
+        onlinePlayerStates.computeIfAbsent(event.getProfile().getId(), k -> StateKt.mutableStateOf(true)).set(true);
+        maxConcurrentGuests = (int) Math.max(maxConcurrentGuests, onlinePlayerStates.values().stream().filter(State::getUntracked).count());
     }
 
     @Subscribe
     public void onPlayerLeaveSession(PlayerLeaveSessionEvent event) {
-        final State<Boolean> onlineState = onlinePlayerStates.remove(event.getProfile().getId());
+        final MutableState<Boolean> onlineState = onlinePlayerStates.remove(event.getProfile().getId());
         if (onlineState != null) {
             onlineState.set(false);
         }

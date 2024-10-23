@@ -33,6 +33,9 @@ public abstract class MixinServerData implements ServerDataExt {
     private String pingRegion;
 
     @Unique
+    private Long pingOverride;
+
+    @Unique
     private boolean skipModCompatCheck;
 
     @Unique
@@ -57,6 +60,16 @@ public abstract class MixinServerData implements ServerDataExt {
     @Override
     public void setEssential$pingRegion(@Nullable String pingRegion) {
         this.pingRegion = pingRegion;
+    }
+
+    @Override
+    public @Nullable Long getEssential$pingOverride() {
+        return this.pingOverride;
+    }
+
+    @Override
+    public void setEssential$pingOverride(@Nullable Long pingOverride) {
+        this.pingOverride = pingOverride;
     }
 
     @Override
@@ -86,6 +99,7 @@ public abstract class MixinServerData implements ServerDataExt {
         MixinServerData fromExt = (MixinServerData) (Object) from;
         this.isTrusted = fromExt.isTrusted;
         this.pingRegion = fromExt.pingRegion;
+        this.pingOverride = fromExt.pingOverride;
         this.skipModCompatCheck = fromExt.skipModCompatCheck;
         this.shareWithFriends = fromExt.shareWithFriends;
     }

@@ -23,6 +23,7 @@ import gg.essential.gui.notification.iconAndMarkdownBody
 import gg.essential.network.connectionmanager.relationship.FriendRequestState
 import gg.essential.network.connectionmanager.relationship.RelationshipErrorResponse
 import gg.essential.network.connectionmanager.relationship.RelationshipResponse
+import gg.essential.network.connectionmanager.relationship.message
 import gg.essential.util.GuiUtil
 import gg.essential.util.colored
 import gg.essential.util.thenAcceptOnMainThread

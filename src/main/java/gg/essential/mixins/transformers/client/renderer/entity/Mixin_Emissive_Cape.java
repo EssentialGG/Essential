@@ -28,6 +28,12 @@ import org.spongepowered.asm.mixin.injection.At;
 
 import static gg.essential.util.UIdentifierKt.toMC;
 
+//#if MC>=12102
+//$$ import gg.essential.mixins.impl.client.model.PlayerEntityRenderStateExt;
+//$$ import net.minecraft.client.render.entity.model.BipedEntityModel;
+//$$ import net.minecraft.client.render.entity.state.PlayerEntityRenderState;
+//#endif
+
 //#if MC>=11600
 //$$ import com.mojang.blaze3d.matrix.MatrixStack;
 //$$ import com.mojang.blaze3d.vertex.IVertexBuilder;
@@ -38,7 +44,10 @@ import static gg.essential.util.UIdentifierKt.toMC;
 @Mixin(LayerCape.class)
 public abstract class Mixin_Emissive_Cape {
 
-    //#if MC>=11600
+    //#if MC>=12102
+    //$$ private static final String RENDER_LAYER = "render(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;ILnet/minecraft/client/render/entity/state/PlayerEntityRenderState;FF)V";
+    //$$ private static final String RENDER_CAPE = "Lnet/minecraft/client/render/entity/model/BipedEntityModel;render(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumer;II)V";
+    //#elseif MC>=11600
     //$$ private static final String RENDER_LAYER = "render(Lcom/mojang/blaze3d/matrix/MatrixStack;Lnet/minecraft/client/renderer/IRenderTypeBuffer;ILnet/minecraft/client/entity/player/AbstractClientPlayerEntity;FFFFFF)V";
     //$$ private static final String RENDER_CAPE = "Lnet/minecraft/client/renderer/entity/model/PlayerModel;renderCape(Lcom/mojang/blaze3d/matrix/MatrixStack;Lcom/mojang/blaze3d/vertex/IVertexBuilder;II)V";
     //#else
@@ -48,7 +57,11 @@ public abstract class Mixin_Emissive_Cape {
 
     @WrapOperation(method = RENDER_LAYER, at = @At(value = "INVOKE", target = RENDER_CAPE))
     private void renderWithEmissiveLayer(
+        //#if MC>=12102
+        //$$ BipedEntityModel model,
+        //#else
         ModelPlayer model,
+        //#endif
         //#if MC>=11400
         //$$ MatrixStack matrixStack,
         //$$ IVertexBuilder vertexConsumer,
@@ -61,7 +74,11 @@ public abstract class Mixin_Emissive_Cape {
         //#if MC>=11400
         //$$ @Local(argsOnly = true) IRenderTypeBuffer buffer,
         //#endif
+        //#if MC>=12102
+        //$$ @Local(argsOnly = true) PlayerEntityRenderState state
+        //#else
         @Local(argsOnly = true) AbstractClientPlayer player
+        //#endif
     ) {
         // Regular cape
         original.call(
@@ -77,7 +94,11 @@ public abstract class Mixin_Emissive_Cape {
         );
 
         // Emissive layer
+        //#if MC>=12102
+        //$$ AbstractClientPlayerExt playerExt = (AbstractClientPlayerExt) ((PlayerEntityRenderStateExt) state).essential$getEntity();
+        //#else
         AbstractClientPlayerExt playerExt = (AbstractClientPlayerExt) player;
+        //#endif
         UIdentifier emissiveTexture = playerExt.getEmissiveCapeTexture();
         if (emissiveTexture == null) {
             return;

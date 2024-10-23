@@ -36,6 +36,7 @@ import gg.essential.gui.overlay.ModalManager
 import gg.essential.gui.sendCheckmarkNotification
 import gg.essential.gui.skin.preprocessSkinImage
 import gg.essential.gui.wardrobe.Item
+import gg.essential.gui.wardrobe.ItemId
 import gg.essential.gui.wardrobe.WardrobeState
 import gg.essential.gui.wardrobe.components.openWardrobeWithHighlight
 import gg.essential.handlers.GameProfileManager
@@ -157,7 +158,7 @@ class SkinModal private constructor(
             Essential.getInstance().connectionManager.skinsManager.addSkin(name, updatedSkin, selectSkin).whenComplete { skin, throwable ->
                 if (skin != null) {
                     sendCheckmarkNotification("Skin has been added.") {
-                        openWardrobeWithHighlight(skin)
+                        openWardrobeWithHighlight(ItemId.SkinItem(skin.id))
                     }
                 } else {
                     Essential.logger.warn("Error adding skin!", throwable)
@@ -170,10 +171,10 @@ class SkinModal private constructor(
             val skinsManager = Essential.getInstance().connectionManager.skinsManager
             // Because the update packets are separate, we have to do each one separately
             if (skin.name != name) {
-                skinsManager.renameSkin(skin, name)
+                skinsManager.renameSkin(skin.id, name)
             }
             if (skin.skin.model != model) {
-                skinsManager.setSkinModel(skin, model)
+                skinsManager.setSkinModel(skin.id, model)
             }
         }
 

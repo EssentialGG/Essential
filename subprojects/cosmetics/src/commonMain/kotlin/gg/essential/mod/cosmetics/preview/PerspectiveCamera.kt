@@ -61,7 +61,7 @@ data class PerspectiveCamera(val camera: Vec3, val target: Vec3, val fov: Float)
                 CosmeticSlot.ICON -> Vector3(34.6, 50.5, -40) to Vector3(0, 30, 0)
                 CosmeticSlot.TOP -> Vector3(34.7, 36.2, -39.5) to Vector3(2.6, 17.0, -2.5)
                 CosmeticSlot.ACCESSORY -> Vector3(34.7, 36.2, -39.5) to Vector3(2.6, 17.0, -2.5)
-                CosmeticSlot.FULL_BODY -> Vector3(73.3, 20.7, -81.3) to Vector3(3.7, 18.2, -2.8)
+                CosmeticSlot.FULL_BODY, CosmeticSlot.PET -> Vector3(73.3, 20.7, -81.3) to Vector3(3.7, 18.2, -2.8)
 
                 // These have a camera config but no cosmetics yet
                 // CosmeticSlot.RIDEABLE -> Vector3(73.3, 20.7, -81.3) to Vector3(3.7, 19.2, -2.8),

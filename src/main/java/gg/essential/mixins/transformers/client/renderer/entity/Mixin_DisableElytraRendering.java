@@ -11,6 +11,7 @@
  */
 package gg.essential.mixins.transformers.client.renderer.entity;
 
+import com.llamalad7.mixinextras.sugar.Local;
 import gg.essential.mixins.impl.client.renderer.entity.ArmorRenderingUtil;
 import net.minecraft.client.renderer.entity.layers.LayerElytra;
 import net.minecraft.entity.EntityLivingBase;
@@ -20,12 +21,34 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+//#if MC>=12102
+//$$ import gg.essential.mixins.impl.client.model.PlayerEntityRenderStateExt;
+//$$ import net.minecraft.client.render.entity.state.BipedEntityRenderState;
+//#endif
+
 @Mixin(value = LayerElytra.class)
 public class Mixin_DisableElytraRendering {
 
-    @Inject(method = "doRenderLayer", at = @At(value = "HEAD"), cancellable = true)
-    private void essential$disableElytraRendering(EntityLivingBase entitylivingbaseIn, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch, float scale, CallbackInfo info) {
-        if (ArmorRenderingUtil.shouldDisableArmor(entitylivingbaseIn, EntityEquipmentSlot.CHEST.getIndex())) {
+    //#if MC>=11600
+    //$$ private static final String RENDER_LAYER = "render";
+    //#else
+    private static final String RENDER_LAYER = "doRenderLayer";
+    //#endif
+
+    @Inject(method = RENDER_LAYER, at = @At(value = "HEAD"), cancellable = true)
+    private void essential$disableElytraRendering(
+        CallbackInfo info,
+        //#if MC>=12102
+        //$$ @Local(argsOnly = true) BipedEntityRenderState state
+        //#else
+        @Local(argsOnly = true) EntityLivingBase entity
+        //#endif
+    ) {
+        //#if MC>=12102
+        //$$ if (!(state instanceof PlayerEntityRenderStateExt)) return;
+        //$$ LivingEntity entity = ((PlayerEntityRenderStateExt) state).essential$getEntity();
+        //#endif
+        if (ArmorRenderingUtil.shouldDisableArmor(entity, EntityEquipmentSlot.CHEST.getIndex())) {
             info.cancel();
         }
     }

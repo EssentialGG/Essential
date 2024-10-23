@@ -185,18 +185,18 @@ class EmoteWheelPage(private val state: WardrobeState) : UIContainer() {
             val target = state.draggingOntoEmoteSlot.get()
             if (target != null) {
                 if (target == -1) {
-                    state.emoteWheel.set(index, null)
+                    state.emoteWheelManager.setEmote(index, null)
                 } else {
-                    val sourceEmote = state.emoteWheel.get()[index]
-                    val targetEmote = state.emoteWheel.get()[target]
-                    state.emoteWheel.set(index, targetEmote)
-                    state.emoteWheel.set(target, sourceEmote)
+                    val sourceEmote = state.emoteWheel.getUntracked()[index]
+                    val targetEmote = state.emoteWheel.getUntracked()[target]
+                    state.emoteWheelManager.setEmote(index, targetEmote)
+                    state.emoteWheelManager.setEmote(target, sourceEmote)
                 }
             } else if (mayBeLeftClick) {
-                state.emoteWheel.get()[index]?.let {
+                state.emoteWheel.getUntracked()[index]?.let {
                     USound.playButtonPress()
                 }
-                state.emoteWheel.set(index, null)
+                state.emoteWheelManager.setEmote(index, null)
             }
 
             state.draggingEmoteSlot.set(null)

@@ -30,10 +30,22 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+//#if MC>=12102
+//$$ import gg.essential.mixins.impl.client.model.PlayerEntityRenderStateExt;
+//$$ import gg.essential.mixins.transformers.client.renderer.entity.equipment.EquipmentRendererAccessor;
+//$$ import net.minecraft.client.render.entity.equipment.EquipmentRenderer;
+//$$ import net.minecraft.client.render.entity.state.BipedEntityRenderState;
+//$$ import net.minecraft.item.equipment.EquipmentModel;
+//$$ import net.minecraft.util.Identifier;
+//#endif
+
 @Mixin(LayerElytra.class)
 public abstract class Mixin_ElytraPoseSupplier implements ElytraPoseSupplier {
 
-    //#if MC>=11600
+    //#if MC>=12102
+    //$$ private static final String RENDER_LAYER = "render(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;ILnet/minecraft/client/render/entity/state/BipedEntityRenderState;FF)V";
+    //$$ private static final String MODEL_RENDER = "Lnet/minecraft/client/render/entity/equipment/EquipmentRenderer;render(Lnet/minecraft/item/equipment/EquipmentModel$LayerType;Lnet/minecraft/util/Identifier;Lnet/minecraft/client/model/Model;Lnet/minecraft/item/ItemStack;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;ILnet/minecraft/util/Identifier;)V";
+    //#elseif MC>=11600
     //$$ private static final String RENDER_LAYER = "render(Lcom/mojang/blaze3d/matrix/MatrixStack;Lnet/minecraft/client/renderer/IRenderTypeBuffer;ILnet/minecraft/entity/LivingEntity;FFFFFF)V";
     //#if MC>=12100
     //$$ private static final String MODEL_RENDER = "Lnet/minecraft/client/render/entity/model/ElytraEntityModel;render(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumer;II)V";
@@ -45,6 +57,9 @@ public abstract class Mixin_ElytraPoseSupplier implements ElytraPoseSupplier {
     private static final String MODEL_RENDER = "Lnet/minecraft/client/model/ModelElytra;render(Lnet/minecraft/entity/Entity;FFFFFF)V";
     //#endif
 
+    //#if MC>=12102
+    //$$ @Shadow @Final private EquipmentRenderer equipmentRenderer;
+    //#endif
     @Shadow @Final private ModelElytra modelElytra;
 
     @Unique
@@ -60,9 +75,26 @@ public abstract class Mixin_ElytraPoseSupplier implements ElytraPoseSupplier {
     }
 
     @Inject(method = RENDER_LAYER, at = @At(value = "INVOKE", target = MODEL_RENDER))
+    //#if MC>=12102
+    //$$ private void setRenderedPose(
+    //$$     CallbackInfo ci,
+    //$$     @Local(argsOnly = true) BipedEntityRenderState state,
+    //$$     @Local(ordinal = 1) Identifier modelId
+    //$$ ) {
+    //$$     if (!(state instanceof PlayerEntityRenderStateExt)) return;
+    //$$     AbstractClientPlayerEntity player = ((PlayerEntityRenderStateExt) state).essential$getEntity();
+    //$$
+    //$$     boolean modelHasNoWings = ((EquipmentRendererAccessor) this.equipmentRenderer)
+    //$$         .getEquipmentModelLoader()
+    //$$         .get(modelId)
+    //$$         .getLayers(EquipmentModel.LayerType.WINGS)
+    //$$         .isEmpty();
+    //$$     if (modelHasNoWings) return;
+    //#else
     private void setRenderedPose(CallbackInfo ci, @Local(argsOnly = true) EntityLivingBase entity) {
         if (!(entity instanceof AbstractClientPlayer)) return;
         AbstractClientPlayer player = (AbstractClientPlayer) entity;
+    //#endif
 
         this.leftWingPose = ((ElytraPoseSupplier) this.modelElytra).getLeftWingPose();
         this.rightWingPose = ((ElytraPoseSupplier) this.modelElytra).getRightWingPose();

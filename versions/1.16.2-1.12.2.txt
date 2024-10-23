@@ -29,6 +29,8 @@ net.minecraft.client.renderer.entity.EntityRenderer net.minecraft.client.rendere
 net.minecraft.client.renderer.entity.EntityRenderer renderName() net.minecraft.client.renderer.entity.Render renderLivingLabel()
 net.minecraft.client.renderer.entity.LivingRenderer getEntityModel() net.minecraft.client.renderer.entity.RenderPlayer getMainModel()
 net.minecraft.client.renderer.entity.PlayerRenderer net.minecraft.client.renderer.entity.RenderPlayer
+net.minecraft.client.renderer.entity.layers.BipedArmorLayer net.minecraft.client.renderer.entity.layers.LayerArmorBase
+net.minecraft.client.renderer.entity.layers.BipedArmorLayer func_241739_a_() renderArmorLayer()
 net.minecraft.client.renderer.entity.layers.CapeLayer net.minecraft.client.renderer.entity.layers.LayerCape
 net.minecraft.client.renderer.entity.layers.HeadLayer net.minecraft.client.renderer.entity.layers.LayerCustomHead
 net.minecraft.client.renderer.entity.layers.ParrotVariantLayer net.minecraft.client.renderer.entity.layers.LayerEntityOnShoulder
@@ -36,6 +38,7 @@ net.minecraft.client.renderer.texture.Texture net.minecraft.client.renderer.text
 net.minecraft.client.resources.LegacyResourcePackWrapper net.minecraft.client.resources.LegacyV2Adapter
 net.minecraft.client.resources.LegacyResourcePackWrapper locationMap net.minecraft.client.resources.LegacyV2Adapter pack
 net.minecraft.client.resources.SkinManager$ISkinAvailableCallback net.minecraft.client.resources.SkinManager$SkinAvailableCallback
+net.minecraft.item.UseAction net.minecraft.item.EnumAction
 net.minecraft.nbt.CompoundNBT net.minecraft.nbt.NBTTagCompound
 net.minecraft.nbt.CompoundNBT put() setTag()
 net.minecraft.nbt.ListNBT net.minecraft.nbt.NBTTagList

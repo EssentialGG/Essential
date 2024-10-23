@@ -11,13 +11,15 @@
  */
 package gg.essential.mixins.transformers.item;
 
-//#if MC > 10900
+//#if MC > 10900 && MC<12102
 import net.minecraft.item.ItemElytra;
 //#endif
 import gg.essential.api.cosmetics.RenderCosmetic;
 import org.spongepowered.asm.mixin.Mixin;
 
-//#if MC > 10900
+// Elytra doesn't exist in 1.8
+// ElytraItem class no longer exists in 1.21.2, now handled in PlayerWearableManager.canRenderCosmetic
+//#if MC > 10900 && MC<12102
 @Mixin(ItemElytra.class)
 //#else
 //$$ @Mixin(gg.essential.mixins.DummyTarget.class)

@@ -17,7 +17,6 @@ import gg.essential.gui.notification.Notifications
 import gg.essential.gui.notification.content.ConfirmDenyNotificationActionComponent
 import gg.essential.gui.notification.markdownBody
 import gg.essential.network.connectionmanager.ConnectionManager
-import gg.essential.network.connectionmanager.notices.NoticesManager.NoticeListener
 import gg.essential.notices.NoticeType
 import gg.essential.notices.model.Notice
 import gg.essential.util.UUIDUtil

@@ -123,7 +123,7 @@ class SkinMask(val parts: Map<EnumPart, Mask>) {
                         else -> {
                             val combined = masks.first().mutableCopy()
                             for (i in 1..masks.lastIndex) {
-                                combined.setOr(masks[i])
+                                combined.setAnd(masks[i])
                             }
                             part to combined
                         }

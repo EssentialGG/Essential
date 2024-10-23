@@ -177,6 +177,8 @@ public class Plugin implements IMixinConfigPlugin {
 
     @Override
     public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
+        IntegrationTestsPlugin.enableInjectionCounting(mixinInfo);
+
         for (EssentialTransformer transformer : transformerMap.get(targetClassName)) {
             transformer.transform(targetClass);
         }
@@ -219,7 +221,7 @@ public class Plugin implements IMixinConfigPlugin {
 
     }
 
-    private static boolean hasClass(String name) {
+    static boolean hasClass(String name) {
         try {
             MixinService.getService().getBytecodeProvider().getClassNode(name);
             return true;

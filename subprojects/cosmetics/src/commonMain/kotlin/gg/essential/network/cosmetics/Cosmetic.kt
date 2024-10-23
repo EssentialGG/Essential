@@ -16,6 +16,7 @@ package gg.essential.network.cosmetics
 import gg.essential.mod.EssentialAsset
 import gg.essential.mod.Model
 import gg.essential.mod.cosmetics.CosmeticAssets
+import gg.essential.mod.cosmetics.CosmeticSlot
 import gg.essential.mod.cosmetics.CosmeticTier
 import gg.essential.mod.cosmetics.CosmeticType
 import gg.essential.mod.cosmetics.SkinLayer
@@ -96,6 +97,9 @@ data class Cosmetic(
 
     val defaultSide: Side?
         get() = property<CosmeticProperty.DefaultSide>()?.data?.side
+
+    val mutuallyExclusiveWith: Set<CosmeticSlot>
+        get() = property<CosmeticProperty.MutuallyExclusive>()?.data?.slots ?: emptySet()
 
     // Added some convenient variants values, especially convenient in Java
     val variants: List<CosmeticProperty.Variants.Variant>?

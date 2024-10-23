@@ -14,11 +14,13 @@ package gg.essential.gui.modals
 import gg.essential.elementa.components.Window
 import gg.essential.elementa.constraints.SiblingConstraint
 import gg.essential.elementa.dsl.pixels
+import gg.essential.elementa.state.BasicState
 import gg.essential.gui.EssentialPalette
 import gg.essential.gui.common.MenuButton
 import gg.essential.gui.common.compactFullEssentialToggle
 import gg.essential.gui.common.modal.ConfirmDenyModal
 import gg.essential.gui.common.modal.configure
+import gg.essential.gui.common.state
 import gg.essential.gui.elementa.state.v2.mutableStateOf
 import gg.essential.gui.elementa.state.v2.toV1
 import gg.essential.gui.layoutdsl.*
@@ -40,6 +42,7 @@ class UpdateAvailableModal(modalManager: ModalManager) : ConfirmDenyModal(modalM
         primaryButtonText = "Update"
         primaryButtonStyle = MenuButton.GREEN
         primaryButtonHoverStyle = MenuButton.LIGHT_GREEN
+        contentTextSpacingState.rebind(BasicState(17f))
 
         if (AutoUpdate.requiresUpdate()) {
             titleTextColor = EssentialPalette.MODAL_WARNING
@@ -47,23 +50,30 @@ class UpdateAvailableModal(modalManager: ModalManager) : ConfirmDenyModal(modalM
 
         val autoUpdate = mutableStateOf(AutoUpdate.autoUpdate.get())
 
-        customContent.layoutAsBox(BasicYModifier { SiblingConstraint(17f) }) {
-            row {
-                spacer(width = 3f)
-                row(Arrangement.spacedBy(6f, FloatPosition.START)) {
-                    text("Auto-updates", Modifier.color(EssentialPalette.TEXT_MID_GRAY).shadow(Color.BLACK))
-                    box(Modifier.childBasedWidth(3f).childBasedHeight(3f).hoverScope()) {
-                        compactFullEssentialToggle(autoUpdate.toV1(this@UpdateAvailableModal))
+        customContent.layoutAsBox(BasicYModifier { SiblingConstraint(15f) }) {
+            column {
+                row(
+                    Modifier.childBasedWidth(3f).onLeftClick {
+                        USound.playButtonPress()
+                        autoUpdate.set { !it }
+                    },
+                    Arrangement.spacedBy(9f),
+                ) {
+                    text("Auto-updates", Modifier.color(EssentialPalette.TEXT_DISABLED).shadow(Color.BLACK))
+                    box(Modifier.childBasedHeight(3f).hoverScope()) {
+                        compactFullEssentialToggle(
+                            autoUpdate.toV1(this@UpdateAvailableModal),
+                            offColor = EssentialPalette.TEXT_DISABLED.state()
+                        )
                         spacer(1f, 1f)
                     }
                 }
-            }.onLeftClick {
-                USound.playButtonPress()
-                autoUpdate.set { !it }
+
+                spacer(height = 14f)
             }
         }
 
-        spacer.setHeight(17.pixels)
+        spacer.setHeight(0.pixels)
 
         AutoUpdate.changelog.whenCompleteAsync({ changelog, _ ->
             changelog?.let { contentText = it }

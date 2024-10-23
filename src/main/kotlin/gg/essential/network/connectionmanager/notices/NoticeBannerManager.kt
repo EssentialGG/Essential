@@ -15,7 +15,6 @@ import gg.essential.elementa.utils.withAlpha
 import gg.essential.gui.EssentialPalette
 import gg.essential.gui.elementa.state.v2.*
 import gg.essential.gui.wardrobe.WardrobeCategory
-import gg.essential.network.connectionmanager.notices.NoticesManager.NoticeListener
 import gg.essential.notices.NoticeType
 import gg.essential.notices.model.Notice
 import java.awt.Color

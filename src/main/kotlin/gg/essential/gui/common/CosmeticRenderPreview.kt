@@ -12,6 +12,7 @@
 package gg.essential.gui.common
 
 import com.mojang.authlib.GameProfile
+import dev.folomeev.kotgl.matrix.vectors.vecUnitY
 import gg.essential.api.profile.wrapped
 import gg.essential.cosmetics.CosmeticId
 import gg.essential.cosmetics.source.ConfigurableCosmeticsSource
@@ -33,6 +34,8 @@ import gg.essential.mod.cosmetics.preview.PerspectiveCamera
 import gg.essential.mod.cosmetics.settings.CosmeticSetting
 import gg.essential.gui.util.onAnimationFrame
 import gg.essential.gui.wardrobe.WardrobeState
+import gg.essential.model.util.Quaternion
+import gg.essential.model.util.rotateBy
 import java.util.*
 
 fun LayoutScope.skinRenderPreview(skin: Item.SkinItem, modifier: Modifier = Modifier) {
@@ -49,11 +52,17 @@ fun LayoutScope.skinRenderPreview(skin: Item.SkinItem, modifier: Modifier = Modi
 }
 
 fun LayoutScope.outfitRenderPreview(state: WardrobeState, outfit: Item.OutfitItem, modifier: Modifier = Modifier) {
-    fullBodyRenderPreview(state, outfit.skin, outfit.cosmetics, outfit.settings, false, modifier)
+    fullBodyRenderPreview(
+        state, outfit.skin, outfit.cosmetics, outfit.settings,
+        showEmotes = false, constantRotation = false, modifier = modifier
+    )
 }
 
 fun LayoutScope.bundleRenderPreview(state: WardrobeState, bundle: Item.Bundle, modifier: Modifier = Modifier) {
-    fullBodyRenderPreview(state, bundle.skin.toMod(), bundle.cosmetics, bundle.settings, true, modifier)
+    fullBodyRenderPreview(
+        state, bundle.skin.toMod(), bundle.cosmetics, bundle.settings,
+        showEmotes = true, constantRotation = bundle.rotateOnPreview, modifier = modifier
+    )
 }
 
 fun LayoutScope.fullBodyRenderPreview(
@@ -62,6 +71,7 @@ fun LayoutScope.fullBodyRenderPreview(
     cosmeticsMap: Map<CosmeticSlot, CosmeticId>,
     settings: Map<CosmeticId, List<CosmeticSetting>>,
     showEmotes: Boolean,
+    constantRotation: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val loading = mutableStateOf(cosmeticsMap.isNotEmpty())
@@ -83,7 +93,6 @@ fun LayoutScope.fullBodyRenderPreview(
             profile = BasicState(profile)
         ).apply {
             setRotations(0f, 0f)
-            perspectiveCamera = PerspectiveCamera.forCosmeticSlot(CosmeticSlot.FULL_BODY)
             cosmeticsSource = ConfigurableCosmeticsSource().apply {
                 val visibleCosmeticIds = if (showEmotes) cosmeticsMap else cosmeticsMap - CosmeticSlot.EMOTE
                 effect(stateScope) {
@@ -91,6 +100,20 @@ fun LayoutScope.fullBodyRenderPreview(
                 }
                 // We want the player preview to be rendered with cosmetics even if the user has globally disabled them.
                 shouldOverrideRenderCosmeticsCheck = true
+            }
+
+            if (constantRotation) {
+                val fullRotationMillis = 10000.0
+                val angleStep = 360.0 / fullRotationMillis
+                onAnimationFrame {
+                    val angle = ((((System.currentTimeMillis() - state.wardrobeOpenTime) * angleStep) % 360.0) * Math.PI / 180.0).toFloat()
+                    val rotation = Quaternion.fromAxisAngle(vecUnitY(), angle)
+                    perspectiveCamera = with(PerspectiveCamera.forCosmeticSlot(CosmeticSlot.FULL_BODY)) {
+                        copy(camera = camera.rotateBy(rotation), target = target.rotateBy(rotation))
+                    }
+                }
+            } else {
+                perspectiveCamera = PerspectiveCamera.forCosmeticSlot(CosmeticSlot.FULL_BODY)
             }
         }(Modifier.then(emulatedUI3DPlayerModifierState))
 

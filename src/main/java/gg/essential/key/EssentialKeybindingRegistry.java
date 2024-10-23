@@ -27,6 +27,7 @@ import gg.essential.gui.screenshot.components.ScreenshotBrowser;
 import gg.essential.gui.wardrobe.Wardrobe;
 import gg.essential.handlers.PauseMenuDisplay;
 import gg.essential.handlers.ZoomHandler;
+import gg.essential.network.connectionmanager.ConnectionManager;
 import gg.essential.network.connectionmanager.cosmetics.AssetLoader;
 import gg.essential.network.connectionmanager.cosmetics.CosmeticsManager;
 import gg.essential.network.connectionmanager.sps.SPSSessionSource;
@@ -156,10 +157,10 @@ public class EssentialKeybindingRegistry {
                 int index = i;
                 new EssentialKeybinding("EMOTE_SLOT_" + (i + 1), CATEGORY, UKeyboard.KEY_NONE).requiresEssentialFull()
                         .withInitialPress(() -> {
-                            Essential essential = Essential.getInstance();
-                            CosmeticsManager cosmeticsManager = essential.getConnectionManager().getCosmeticsManager();
+                            ConnectionManager connectionManager = Essential.getInstance().getConnectionManager();
+                            CosmeticsManager cosmeticsManager = connectionManager.getCosmeticsManager();
 
-                            String emote = cosmeticsManager.getSavedEmotes().get(index);
+                            String emote = connectionManager.getEmoteWheelManager().getSelectedEmoteWheelSlots().getUntracked().get(index);
                             if (emote == null) {
                                 return;
                             }

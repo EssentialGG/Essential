@@ -25,9 +25,16 @@ public class MixinErrorHandler implements IMixinErrorHandler {
 
     @Override
     public ErrorAction onApplyError(String targetClassName, Throwable th, IMixinInfo mixin, ErrorAction defaultAction) {
-        if (MIXIN_CONFIG_NAME.equals(mixin.getConfig().getName()) && defaultAction == ErrorAction.ERROR) {
+        if (MIXIN_CONFIG_NAME.equals(mixin.getConfig().getName())) {
+            // During integration testing, we do want to know about everything
+            if (IntegrationTestsPlugin.ENABLED) {
+                return ErrorAction.ERROR;
+            }
+
             // We don't currently want to crash the game if any of our mixins fail, but we'll still log the error.
-            return ErrorAction.WARN;
+            if (defaultAction == ErrorAction.ERROR) {
+                return ErrorAction.WARN;
+            }
         }
 
         return defaultAction;

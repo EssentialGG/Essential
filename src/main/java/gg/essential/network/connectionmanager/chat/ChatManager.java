@@ -30,6 +30,7 @@ import gg.essential.gui.elementa.state.v2.StateByKt;
 import gg.essential.gui.elementa.state.v2.collections.MutableTrackedList;
 import gg.essential.gui.friends.message.MessageUtils;
 import gg.essential.gui.friends.message.v2.ClientMessage;
+import gg.essential.gui.friends.message.v2.ClientMessageKt;
 import gg.essential.gui.friends.message.v2.MessageRef;
 import gg.essential.gui.friends.state.IMessengerManager;
 import gg.essential.gui.notification.ExtensionsKt;
@@ -733,7 +734,7 @@ public class ChatManager extends StateCallbackManager<IMessengerManager> impleme
 
         Message messageById = getMessageById(ref.getMessageId());
         if (messageById != null) {
-            ref.supplyValue(ClientMessage.Companion.fromNetwork(messageById));
+            ref.supplyValue(ClientMessageKt.infraInstanceToClient(messageById));
             return;
         }
 
@@ -784,7 +785,7 @@ public class ChatManager extends StateCallbackManager<IMessengerManager> impleme
             List<MessageRef> messageRefs = messageRefMap.remove(message.getId());
             if (messageRefs != null) {
                 for (MessageRef messageRef : messageRefs) {
-                    messageRef.supplyValue(ClientMessage.Companion.fromNetwork(message));
+                    messageRef.supplyValue(ClientMessageKt.infraInstanceToClient(message));
                 }
             }
         }

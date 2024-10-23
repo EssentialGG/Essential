@@ -31,6 +31,8 @@ import gg.essential.gui.elementa.state.v2.toListState
 import gg.essential.gui.friends.message.v2.ClientMessage
 import gg.essential.gui.elementa.state.v2.MutableState
 import gg.essential.gui.elementa.state.v2.State
+import gg.essential.gui.friends.message.v2.getInfraInstance
+import gg.essential.gui.friends.message.v2.infraInstanceToClient
 import gg.essential.network.connectionmanager.chat.ChatManager
 import gg.essential.universal.UMinecraft
 import gg.essential.util.*
@@ -79,7 +81,7 @@ class MessengerStateManagerImpl(private val chatManager: ChatManager) : IMesseng
 
     override fun getMessageListState(channelId: Long): ListState<ClientMessage> {
         return observableMessageList.computeIfAbsent(channelId) {
-            val messages = getMessages(channelId)?.map { ClientMessage.fromNetwork(it) }?.toTypedArray()
+            val messages = getMessages(channelId)?.map { infraInstanceToClient(it) }?.toTypedArray()
                 ?: emptyArray()
             val baseMessages = mutableListStateOf(*messages)
             // Filter messages
@@ -271,7 +273,7 @@ class MessengerStateManagerImpl(private val chatManager: ChatManager) : IMesseng
         observableMessageList[channel.id]?.first?.let { messageList ->
             // Prevent duplicates from being added
             val index = messageList.getUntracked().indexOfFirst { it.id == message.id }
-            val newMessage = ClientMessage.fromNetwork(message)
+            val newMessage = infraInstanceToClient(message)
             if (index != -1) {
                 messageList.set(index, newMessage)
             } else {

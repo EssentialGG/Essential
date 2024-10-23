@@ -11,11 +11,15 @@
  */
 package gg.essential.mod.cosmetics
 
+import gg.essential.cosmetics.CosmeticId
 import gg.essential.model.util.Instant
 
 data class EmoteWheelPage(
     val id: String,
     val createdAt: Instant,
-    var isSelected: Boolean,
-    val slots: MutableList<String?>,
-)
+    val slots: List<CosmeticId?>,
+) {
+    companion object {
+        const val SLOTS = 8
+    }
+}

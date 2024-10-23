@@ -58,6 +58,7 @@ import gg.essential.model.util.UMatrixStack
 import gg.essential.model.util.UVertexConsumer
 import gg.essential.model.util.rotateBy
 import gg.essential.model.util.rotateSelfBy
+import java.util.UUID
 import kotlin.math.PI
 import kotlin.math.absoluteValue
 import kotlin.math.sqrt
@@ -245,6 +246,8 @@ class ParticleSystem(
         cameraPos: Vec3,
         cameraRot: Quaternion,
         particleVertexConsumerProvider: VertexConsumerProvider,
+        cameraUuid: UUID,
+        cameraFirstPerson: Boolean,
     ) {
         val cameraFacing = vec3(0f, 0f, -1f).rotateBy(cameraRot)
         for ((renderPass, particles) in billboardRenderPasses.entries.sortedBy { it.key.material.needsSorting }) {
@@ -257,12 +260,12 @@ class ParticleSystem(
                         particle.distance = cameraPos.minus(particle.billboardPosition).dot(billboardNormal)
                     }
                     for (particle in particles.sortedByDescending { it.distance }) {
-                        particle.renderBillboard(matrixStack, vertexConsumer, cameraFacing)
+                        particle.renderBillboard(matrixStack, vertexConsumer, cameraFacing, cameraUuid, cameraFirstPerson)
                     }
                 } else {
                     for (particle in particles) {
                         particle.prepareBillboard(cameraPos, cameraRot)
-                        particle.renderBillboard(matrixStack, vertexConsumer, cameraFacing)
+                        particle.renderBillboard(matrixStack, vertexConsumer, cameraFacing, cameraUuid, cameraFirstPerson)
                     }
                 }
             }
@@ -967,7 +970,18 @@ class ParticleSystem(
          *
          * @throws UnsupportedOperationException if the particle does not have a billboard component
          */
-        fun renderBillboard(matrixStack: UMatrixStack, vertexConsumer: UVertexConsumer, cameraFacing: Vec3) {
+        fun renderBillboard(
+            matrixStack: UMatrixStack,
+            vertexConsumer: UVertexConsumer,
+            cameraFacing: Vec3,
+            cameraUuid: UUID,
+            cameraFirstPerson: Boolean,
+        ) {
+            // Abide by the particle effect visibility component for the current player.
+            if (cameraUuid == emitter.sourceEntity.uuid) {
+                if (!components.particleVisibility.let { if (cameraFirstPerson) it.firstPerson else it.thirdPerson }) return
+            }
+
             val appearance = components.particleAppearanceBillboard ?: throw UnsupportedOperationException()
 
             components.particleInitialization?.perRenderExpression?.eval(molang)

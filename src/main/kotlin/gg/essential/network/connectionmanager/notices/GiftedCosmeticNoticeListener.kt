@@ -12,7 +12,6 @@
 package gg.essential.network.connectionmanager.notices
 
 import gg.essential.gui.wardrobe.components.showGiftReceivedToast
-import gg.essential.network.connectionmanager.notices.NoticesManager.NoticeListener
 import gg.essential.notices.NoticeType
 import gg.essential.notices.model.Notice
 import gg.essential.util.UUIDUtil

@@ -14,11 +14,11 @@ package gg.essential.cosmetics;
 import com.google.common.collect.ImmutableMap;
 import com.mojang.authlib.minecraft.MinecraftProfileTexture;
 import gg.essential.api.cosmetics.RenderCosmetic;
-import gg.essential.config.EssentialConfig;
 import gg.essential.cosmetics.source.CosmeticsSource;
 import gg.essential.event.entity.PlayerTickEvent;
 import gg.essential.gui.common.EmulatedUI3DPlayer;
 import gg.essential.mixins.impl.client.entity.AbstractClientPlayerExt;
+import gg.essential.mixins.impl.client.renderer.entity.ArmorRenderingUtil;
 import gg.essential.mod.Model;
 import gg.essential.mod.cosmetics.CosmeticSlot;
 import gg.essential.mod.cosmetics.CosmeticType;
@@ -190,7 +190,7 @@ public class PlayerWearableManager {
 
         Set<EnumPart> equippedSlots = new HashSet<>();
 
-        int armorSetting = EssentialConfig.INSTANCE.getCosmeticArmorSetting(player);
+        int armorSetting = ArmorRenderingUtil.getCosmeticArmorSetting(player);
         if (armorSetting > 0) {
             return equippedSlots;
         }
@@ -219,10 +219,16 @@ public class PlayerWearableManager {
         //#endif
 
         ItemStack stack = inventory.armorItemInSlot(slot);
+        if (isEmpty(stack)) return true;
+        if (stack.getItem() instanceof RenderCosmetic) return true;
+        //#if MC>=12102
+        //$$ if (stack.getItem() == net.minecraft.item.Items.ELYTRA) return true;
+        //#endif
 
         final boolean[] armorRenderingSuppressed = ((AbstractClientPlayerExt) player).wasArmorRenderingSuppressed();
+        if (armorRenderingSuppressed[slot]) return true;
 
-        return isEmpty(stack) || stack.getItem() instanceof RenderCosmetic || armorRenderingSuppressed[slot];
+        return false;
     }
 
     private boolean isEmpty(ItemStack stack) {

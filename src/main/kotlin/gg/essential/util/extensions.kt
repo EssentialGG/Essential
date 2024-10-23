@@ -49,18 +49,14 @@ import net.minecraft.nbt.NBTTagCompound
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.integrated.IntegratedServer
 import net.minecraft.world.storage.WorldSummary
-import org.apache.logging.log4j.Logger
 import java.awt.Color
 import java.io.File
 import java.io.InputStream
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.time.Duration
-import java.time.Instant
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executor
-import java.util.concurrent.TimeUnit
 import kotlin.io.path.div
 import kotlin.io.path.exists
 import kotlin.io.path.inputStream
@@ -124,14 +120,6 @@ val <T> Lazy<T>.orNull: T? get() = if (isInitialized()) value else null
 fun <T> List<CompletableFuture<T>>.merge(): CompletableFuture<List<T>> =
     CompletableFuture.allOf(*toTypedArray()).thenApply { map { it.join() } }
 
-@JvmOverloads
-fun <T> CompletableFuture<T>.logExceptions(logger: Logger = Essential.logger): CompletableFuture<T> =
-    whenComplete { _, e ->
-        if (e != null) {
-            logger.error("Unhandled error:", e)
-        }
-    }
-
 val MCMinecraft.executor get() = ext.executor
 
 val MinecraftServer.executor
@@ -187,44 +175,6 @@ val globalEssentialDirectory: Path
             }
         }
     }
-
-private val weeksTimeMap = TreeMap(
-    mutableMapOf(
-        TimeUnit.DAYS.toMillis(7) to "w",
-        TimeUnit.DAYS.toMillis(1) to "d",
-        TimeUnit.HOURS.toMillis(1) to "h",
-        TimeUnit.MINUTES.toMillis(1) to "m",
-        TimeUnit.SECONDS.toMillis(1) to "s"
-    )
-)
-
-private val daysTimeMap = TreeMap(
-    mutableMapOf(
-        TimeUnit.DAYS.toMillis(1) to "d",
-        TimeUnit.HOURS.toMillis(1) to "h",
-        TimeUnit.MINUTES.toMillis(1) to "m",
-        TimeUnit.SECONDS.toMillis(1) to "s"
-    )
-)
-
-fun Instant.toCosmeticOptionTime(): String {
-    return Duration.between(Instant.now(), this).toShortString()
-}
-
-fun Duration.toShortString(weeks: Boolean = true, expiredText: String = "Expired"): String {
-    val delta = toMillis()
-    val timeMap = if (weeks) weeksTimeMap else daysTimeMap
-
-    val ceilEntry = timeMap.floorEntry(delta) ?: return expiredText
-    val floorEntry = timeMap.floorEntry(ceilEntry.key - 1)
-    if (ceilEntry === floorEntry || floorEntry == null) {
-        return (delta / ceilEntry.key).toString() + ceilEntry.value
-    }
-    val ceilUnits = delta / ceilEntry.key
-    val floorUnits = (delta - ceilUnits * ceilEntry.key) / floorEntry.key
-
-    return ceilUnits.toString() + ceilEntry.value + " " + floorUnits.toString() + floorEntry.value
-}
 
 fun MCMinecraft.setSession(session: USession) {
     (this as MinecraftExt).setSession(session.toMC())

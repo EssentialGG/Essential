@@ -11,6 +11,7 @@
  */
 package gg.essential.mod.cosmetics.settings
 
+import gg.essential.mod.cosmetics.CosmeticSlot
 import gg.essential.model.Side
 import gg.essential.model.util.Color
 import gg.essential.model.util.ColorAsRgbSerializer
@@ -309,6 +310,23 @@ sealed class CosmeticProperty {
         )
     }
 
+    @SerialName("MUTUALLY_EXCLUSIVE")
+    @Serializable
+    data class MutuallyExclusive(
+        override val id: String?,
+        override val enabled: Boolean,
+        val data: Data
+    ) : CosmeticProperty() {
+
+        @Transient
+        override val type: CosmeticPropertyType = CosmeticPropertyType.MUTUALLY_EXCLUSIVE
+
+        @Serializable
+        data class Data(
+            val slots: Set<CosmeticSlot> = emptySet(),
+        )
+    }
+
     object TheSerializer : FallbackPolymorphicSerializer<CosmeticProperty>(CosmeticProperty::class, "type", "__type", "__unknown__") {
         override val module = SerializersModule {
             polymorphic(CosmeticProperty::class) {
@@ -324,6 +342,7 @@ sealed class CosmeticProperty {
                 subclass(TransitionDelay::class, TransitionDelay.serializer())
                 subclass(Variants::class, Variants.serializer())
                 subclass(DefaultSide::class, DefaultSide.serializer())
+                subclass(MutuallyExclusive::class, MutuallyExclusive.serializer())
             }
         }
     }
