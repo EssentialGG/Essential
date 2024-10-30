@@ -1,8 +1,8 @@
-Title: Server Discovery Update
-Summary: Improved Server List
+Title: Server Discovery
+Summary: Improved server discovery
 
 ## Multiplayer Menu
-- Replaced the "Featured" tab with "Discover"
+- Added "Discover" tab in multiplayer menu to replace "Featured" tab
 
 ## Bug Fixes
 - Fixed crash when exporting in Flashback mod

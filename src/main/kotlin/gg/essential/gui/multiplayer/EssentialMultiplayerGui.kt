@@ -316,6 +316,7 @@ class EssentialMultiplayerGui {
     }
 
     fun onClosed() {
+        if (!EssentialConfig.essentialEnabled) return
         impressionTracker.submit()
     }
 
