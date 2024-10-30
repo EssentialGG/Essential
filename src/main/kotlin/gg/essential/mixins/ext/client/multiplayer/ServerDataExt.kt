@@ -37,6 +37,15 @@ interface ServerDataExt {
 
     /** Whether the server is shared with friends. Refer to [EssentialConfig.sendServerUpdates] if `null`. */
     var `essential$shareWithFriends`: Boolean?
+
+    /**
+     * Whether to show a download icon and prompt the user to download a compatible version when they try to
+     * join the server or not.
+     */
+    var `essential$showDownloadIcon`: Boolean
+
+    /** The recommended Minecraft version for this server. Only guaranteed to be set if [showDownloadIcon] is true */
+    var `essential$recommendedVersion`: String?
 }
 
 val ServerData.ext get() = this as ServerDataExt
@@ -57,3 +66,10 @@ var ServerDataExt.shareWithFriends
     get() = `essential$shareWithFriends`
     set(value) { `essential$shareWithFriends` = value }
 
+var ServerDataExt.showDownloadIcon
+    get() = `essential$showDownloadIcon`
+    set(value) { `essential$showDownloadIcon` = value }
+
+var ServerDataExt.recommendedVersion
+    get() = `essential$recommendedVersion`
+    set(value) { `essential$recommendedVersion` = value }

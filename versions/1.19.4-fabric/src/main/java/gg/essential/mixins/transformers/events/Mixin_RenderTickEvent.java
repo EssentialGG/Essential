@@ -59,7 +59,7 @@ public class Mixin_RenderTickEvent {
     ) {
         UMatrixStack matrixStack = new UMatrixStack();
         //#if MC>=12100
-        //$$ float partialTicksMenu = ((DynamicRenderTickCounterAccessor) counter).essential$getRawTickDelta();
+        //$$ float partialTicksMenu = ((DynamicRenderTickCounterAccessor) UMinecraft.getMinecraft().getRenderTickCounter()).essential$getRawTickDelta();
         //$$ float partialTicksInGame = counter.getTickDelta(false);
         //#else
         float partialTicksMenu = UMinecraft.getMinecraft().getTickDelta();

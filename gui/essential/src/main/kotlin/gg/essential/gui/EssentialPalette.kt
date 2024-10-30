@@ -451,6 +451,12 @@ object EssentialPalette {
 
     val BONUS_COINS_COLOR: Color = Color(0xFDC80A)
 
+    @JvmField
+    val MODAL_TITLE_BLUE: Color = Color(0x0A82FD)
+
+    @JvmField
+    val SERVER_DOWNLOAD_ICON: Color = Color(0x1D6AFF)
+
     /** Gray/gray600 */
     @JvmField
     val CHECKBOX_BACKGROUND: Color = Color(0x323232)

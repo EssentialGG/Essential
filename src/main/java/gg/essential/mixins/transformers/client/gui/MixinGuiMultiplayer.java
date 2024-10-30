@@ -33,6 +33,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
+import org.spongepowered.asm.mixin.injection.Slice;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.List;
@@ -216,8 +217,33 @@ public abstract class MixinGuiMultiplayer extends GuiScreen implements GuiMultip
         essentialGui.draw(matrixStack);
     }
 
-    @Inject(method = "connectToServer", at = @At("HEAD"))
+    @Inject(method = "connectToServer", at = @At("HEAD"), cancellable = true)
     private void essential$onConnectToServer(ServerData server, CallbackInfo ci) {
-        essentialGui.onConnectToServer(server);
+        essentialGui.onConnectToServer(server, ci);
+    }
+
+    @Inject(method = "onGuiClosed", at = @At("HEAD"))
+    private void essential$onGuiClosed(CallbackInfo ci) {
+        essentialGui.onClosed();
+    }
+
+    @Inject(
+        //#if MC>=11600
+        //$$ method = "func_214284_c",
+        //#else
+        method = "confirmClicked",
+        slice = @Slice(
+            from = @At(value = "FIELD", target = "Lnet/minecraft/client/gui/GuiMultiplayer;addingServer:Z"),
+            to = @At(value = "FIELD", target = "Lnet/minecraft/client/gui/GuiMultiplayer;editingServer:Z")
+        ),
+        //#endif
+        at = @At(value = "INVOKE", target = "Lnet/minecraft/client/multiplayer/ServerList;saveServerList()V", shift = At.Shift.AFTER),
+        cancellable = true
+    )
+    private void switchTabOnServerAdded(CallbackInfo ci) {
+        if (EssentialConfig.INSTANCE.getCurrentMultiplayerTab() != 0) {
+            ci.cancel();
+            essentialGui.switchTab(0);
+        }
     }
 }

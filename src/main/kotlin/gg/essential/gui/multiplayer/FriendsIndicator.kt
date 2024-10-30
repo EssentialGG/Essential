@@ -28,7 +28,7 @@ import java.util.concurrent.CompletableFuture
 
 class FriendsIndicator(val server: ServerData) {
     private val connectionManager = Essential.getInstance().connectionManager
-    private val discoveryServer = connectionManager.serverDiscoveryManager.findServerByAddress(server.serverIP)
+    private val discoveryServer = findServerByAddress(server.serverIP)
 
     private val host = connectionManager.spsManager.getHostFromSpsAddress(server.serverIP)
     private val friendsOnServer: SortedMap<UUID, Pair<UIImage, CompletableFuture<String>>> = sortedMapOf(compareBy({ it != host }, { it }))
@@ -47,7 +47,7 @@ class FriendsIndicator(val server: ServerData) {
         return when {
             activity != ActivityType.PLAYING -> false // Not playing
             metadata == server.serverIP -> true // Direct match
-            discoveryServer != null && discoveryServer == connectionManager.serverDiscoveryManager.findServerByAddress(metadata) -> true // Indirect match via discovery server aliases
+            discoveryServer != null && discoveryServer == findServerByAddress(metadata) -> true // Indirect match via discovery server aliases
             else -> false // Likely different server
         }
     }
@@ -132,6 +132,10 @@ class FriendsIndicator(val server: ServerData) {
         }
 
         return tooltip
+    }
+
+    private fun findServerByAddress(address: String): Any? {
+        return connectionManager.knownServersManager.findServerByAddress(address)
     }
 
     private companion object {

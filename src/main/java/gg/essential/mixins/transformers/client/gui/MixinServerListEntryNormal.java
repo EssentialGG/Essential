@@ -11,17 +11,27 @@
  */
 package gg.essential.mixins.transformers.client.gui;
 
+import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
+import com.llamalad7.mixinextras.sugar.Local;
 import gg.essential.Essential;
+import gg.essential.elementa.components.UIImage;
+import gg.essential.gui.EssentialPalette;
+import gg.essential.gui.multiplayer.DividerServerListEntry;
+import gg.essential.gui.multiplayer.EssentialMultiplayerGui;
 import gg.essential.gui.multiplayer.FriendsIndicator;
+import gg.essential.mixins.ext.client.gui.GuiMultiplayerExt;
 import gg.essential.mixins.ext.client.gui.ServerListEntryNormalExt;
+import gg.essential.network.connectionmanager.serverdiscovery.NewServerDiscoveryManager;
 import gg.essential.network.connectionmanager.sps.SPSManager;
 import gg.essential.universal.UMatrixStack;
 import gg.essential.universal.UMinecraft;
 import gg.essential.util.UUIDUtil;
 import net.minecraft.client.gui.GuiMultiplayer;
 import net.minecraft.client.gui.ServerListEntryNormal;
+import net.minecraft.client.gui.ServerSelectionList;
 import net.minecraft.client.multiplayer.ServerData;
 import org.jetbrains.annotations.NotNull;
+import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -29,12 +39,19 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
+import org.spongepowered.asm.mixin.injection.Slice;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Locale;
 import java.util.UUID;
 
 import static gg.essential.mixins.ext.client.multiplayer.ServerDataExtKt.getExt;
+
+//#if MC>=12102
+//$$ import java.util.function.Function;
+//#endif
 
 //#if MC>=12005
 //$$ import net.minecraft.text.Text;
@@ -42,10 +59,12 @@ import static gg.essential.mixins.ext.client.multiplayer.ServerDataExtKt.getExt;
 
 //#if MC>=12000
 //$$ import net.minecraft.client.gui.DrawContext;
+//$$ import net.minecraft.util.Identifier;
 //#endif
 
 //#if MC>=11602
 //$$ import com.mojang.blaze3d.matrix.MatrixStack;
+//$$ import gg.essential.mixins.transformers.client.gui.AbstractListAccessor;
 //$$ import gg.essential.universal.wrappers.message.UTextComponent;
 //$$ import gg.essential.util.HelpersKt;
 //$$ import net.minecraft.util.text.ITextComponent;
@@ -53,6 +72,7 @@ import static gg.essential.mixins.ext.client.multiplayer.ServerDataExtKt.getExt;
 //$$ import net.minecraft.util.text.TranslationTextComponent;
 //$$ import java.util.Arrays;
 //$$ import java.util.Collections;
+//$$ import java.util.List;
 //$$ import java.util.stream.Collectors;
 //$$ import static gg.essential.util.HelpersKt.textLiteral;
 //#else
@@ -62,6 +82,19 @@ import org.spongepowered.asm.mixin.injection.ModifyConstant;
 
 @Mixin(ServerListEntryNormal.class)
 public abstract class MixinServerListEntryNormal implements ServerListEntryNormalExt {
+
+    //#if MC>=12102
+    //$$ private static final String DRAW_TEXTURE = "Lnet/minecraft/client/gui/DrawContext;drawGuiTexture(Ljava/util/function/Function;Lnet/minecraft/util/Identifier;IIII)V";
+    //#elseif MC>=12002
+    //$$ private static final String DRAW_TEXTURE = "Lnet/minecraft/client/gui/DrawContext;drawGuiTexture(Lnet/minecraft/util/Identifier;IIII)V";
+    //#elseif MC>=12000
+    //$$ private static final String DRAW_TEXTURE = "Lnet/minecraft/client/gui/DrawContext;drawTexture(Lnet/minecraft/util/Identifier;IIFFIIII)V";
+    //#elseif MC>=11600
+    //$$ private static final String DRAW_TEXTURE = "Lnet/minecraft/client/gui/AbstractGui;blit(Lcom/mojang/blaze3d/matrix/MatrixStack;IIFFIIII)V";
+    //#else
+    private static final String DRAW_TEXTURE = "Lnet/minecraft/client/gui/Gui;drawModalRectWithCustomSizedTexture(IIFFIIFF)V";
+    //#endif
+
     @Shadow @Final private ServerData server;
     @Shadow @Final private GuiMultiplayer owner;
 
@@ -70,6 +103,20 @@ public abstract class MixinServerListEntryNormal implements ServerListEntryNorma
 
     @Unique
     private int populationOrVersionTextWidth;
+
+    @Unique
+    private UIImage downloadIcon;
+
+    @Unique
+    private NewServerDiscoveryManager.ImpressionConsumer impressionConsumer = null;
+
+    @Unique
+    private boolean trackedImpression = false;
+
+    @Override
+    public void essential$setImpressionConsumer(@NotNull NewServerDiscoveryManager.ImpressionConsumer consumer) {
+        this.impressionConsumer = consumer;
+    }
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void initFriends(CallbackInfo ci) {
@@ -182,5 +229,162 @@ public abstract class MixinServerListEntryNormal implements ServerListEntryNorma
             }
         }
         return str;
+    }
+
+    @WrapWithCondition(method = "drawEntry",at = @At(value = "INVOKE", target = DRAW_TEXTURE, ordinal = 0))
+    private boolean drawDownloadIcon(
+        //#if MC>=12000
+        //$$ DrawContext context,
+        //#if MC>=12102
+        //$$ Function<?, ?> renderLayers,
+        //#endif
+        //$$ Identifier texture,
+        //#elseif MC>=11602
+        //$$ MatrixStack vMatrixStack,
+        //#endif
+        int x,
+        int y,
+        //#if MC<12002
+        float u,
+        float v,
+        //#endif
+        int width,
+        int height
+        //#if MC>=12002
+        //#elseif MC>=11600
+        //$$ , int textureWidth,
+        //$$ int textureHeight
+        //#else
+        , float textureWidth,
+        float textureHeight
+        //#endif
+    ) {
+        //#if MC>=12000
+        //$$ UMatrixStack matrixStack = new UMatrixStack(context.getMatrices());
+        //#elseif MC>=11602
+        //$$ UMatrixStack matrixStack = new UMatrixStack(vMatrixStack);
+        //#else
+        UMatrixStack matrixStack = new UMatrixStack();
+        //#endif
+        if (getExt(this.server).getEssential$showDownloadIcon()) {
+            if (downloadIcon == null) {
+                downloadIcon = EssentialPalette.DOWNLOAD_7X8.create();
+            }
+            downloadIcon.drawImage(matrixStack, x + 2, y + 1, 7, 8, EssentialPalette.BLUE_SHADOW);
+            downloadIcon.drawImage(matrixStack, x + 1, y, 7, 8, EssentialPalette.SERVER_DOWNLOAD_ICON);
+            return false;
+        }
+        return true;
+    }
+
+    @WrapWithCondition(
+        method = "drawEntry",
+        at = @At(
+            value = "INVOKE",
+            //#if MC>=12006
+            //$$ target = "Lnet/minecraft/client/gui/screen/multiplayer/MultiplayerScreen;setTooltip(Lnet/minecraft/text/Text;)V",
+            //$$ ordinal = 0
+            //#elseif MC>=11600
+            //$$ target = "Lnet/minecraft/client/gui/screen/MultiplayerScreen;func_238854_b_(Ljava/util/List;)V",
+            //$$ ordinal = 0
+            //#else
+            target = "Lnet/minecraft/client/gui/GuiMultiplayer;setHoveringText(Ljava/lang/String;)V",
+            ordinal = 1
+            //#endif
+        )
+    )
+    private boolean showCustomTooltip(
+        GuiMultiplayer instance,
+        //#if MC>=12006
+        //$$ Text text,
+        //#elseif MC>=11600
+        //$$ List<ITextComponent> texts,
+        //#else
+        String text,
+        //#endif
+        //#if MC>=11600
+        //$$ @Local(ordinal = 1, argsOnly = true) int y,
+        //$$ @Local(ordinal = 2, argsOnly = true) int x,
+        //#else
+        @Local(ordinal = 1, argsOnly = true) int x,
+        @Local(ordinal = 2, argsOnly = true) int y,
+        //#endif
+        @Local(ordinal = 3, argsOnly = true) int listWidth
+    ) {
+        if (getExt(this.server).getEssential$showDownloadIcon()) {
+            EssentialMultiplayerGui gui = ((GuiMultiplayerExt) instance).essential$getEssentialGui();
+            gui.showTooltipString(x + listWidth - 15 + 1, y, 7, 8, "Download compatible version");
+            return false;
+        }
+        return true;
+    }
+
+    //#if MC>=11600
+    //$$ @Inject(method = "mouseClicked", at = @At(value = "CONSTANT", args = "doubleValue=32.0"), cancellable = true)
+    //$$ private void onMousePressed(CallbackInfoReturnable<Boolean> cir, @Local(ordinal = 2) double relativeX, @Local(ordinal = 3) double relativeY) {
+    //#else
+    @Inject(method = "mousePressed", at = @At("HEAD"), cancellable = true)
+    private void handleMousePressed(int slotIndex, int mouseX, int mouseY, int mouseEvent, int relativeX, int relativeY, CallbackInfoReturnable<Boolean> cir) {
+    //#endif
+        if (getExt(this.server).getEssential$showDownloadIcon()) {
+            int listWidth = ((GuiMultiplayerAccessor) this.owner).getServerListSelector().getListWidth();
+            if (relativeX >= listWidth - 15 && relativeX <= listWidth - 5 && relativeY >= 0 && relativeY <= 8) {
+                ((GuiMultiplayerExt) this.owner).essential$getEssentialGui().showDownloadModal(this.server);
+                cir.setReturnValue(true);
+            }
+        }
+    }
+
+    @ModifyVariable(
+            method = "drawEntry",
+            at = @At(value = "STORE"),
+            slice = @Slice(from = @At(
+                value = "FIELD",
+                //#if MC>=11600
+                //$$ target = "Lnet/minecraft/client/multiplayer/ServerData;populationInfo:Lnet/minecraft/util/text/ITextComponent;",
+                //#else
+                target = "Lnet/minecraft/client/multiplayer/ServerData;populationInfo:Ljava/lang/String;",
+                //#endif
+                opcode = Opcodes.GETFIELD
+            )),
+            ordinal = 0
+    )
+    //#if MC>=11600
+    //$$ private ITextComponent showPopulationInfo(ITextComponent s) {
+    //#else
+    private String showPopulationInfo(String s) {
+    //#endif
+        if (getExt(this.server).getEssential$showDownloadIcon()) {
+            return this.server.populationInfo;
+        }
+        return s;
+    }
+
+    @Inject(method = "drawEntry", at = @At("HEAD"))
+    private void trackImpression(
+        CallbackInfo ci,
+        //#if MC>=11600
+        //$$ @Local(ordinal = 1, argsOnly = true) int y
+        //#else
+        @Local(ordinal = 2, argsOnly = true) int y
+        //#endif
+    ) {
+        if (!this.trackedImpression && this.impressionConsumer != null) {
+            ServerSelectionList list = ((GuiMultiplayerAccessor) this.owner).getServerListSelector();
+            //#if MC>=12004
+            //$$ int top = list.getY();
+            //$$ int bottom = list.getBottom();
+            //#elseif MC>=11600
+            //$$ int top = ((AbstractListAccessor) list).essential$getTop();
+            //$$ int bottom = ((AbstractListAccessor) list).essential$getBottom();
+            //#else
+            int top = list.top;
+            int bottom = list.bottom;
+            //#endif
+            if (y >= top && y + DividerServerListEntry.SERVER_ENTRY_HEIGHT <= bottom) {
+                this.impressionConsumer.accept(this.server.serverIP);
+                this.trackedImpression = true;
+            }
+        }
     }
 }

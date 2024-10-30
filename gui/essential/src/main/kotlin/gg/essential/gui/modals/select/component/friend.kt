@@ -21,7 +21,7 @@ import gg.essential.util.UuidNameLookup
 import java.util.*
 
 fun LayoutScope.playerAvatar(uuid: UUID, modifier: Modifier = Modifier) {
-    val image = CachedAvatarImage.ofUUID(uuid)
+    val image = CachedAvatarImage.create(uuid)
         .effect(ShadowEffect())
 
     image(modifier)

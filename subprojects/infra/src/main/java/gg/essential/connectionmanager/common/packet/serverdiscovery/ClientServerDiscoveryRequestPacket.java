@@ -11,27 +11,7 @@
  */
 package gg.essential.connectionmanager.common.packet.serverdiscovery;
 
-import gg.essential.lib.gson.annotations.SerializedName;
 import gg.essential.connectionmanager.common.packet.Packet;
-import gg.essential.serverdiscovery.model.ServerDiscovery;
-import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
-
-@Deprecated
-public class ServerServerDiscoveryPopulatePacket extends Packet {
-
-    @SerializedName("a")
-    @NotNull
-    private final List<ServerDiscovery> servers;
-
-    public ServerServerDiscoveryPopulatePacket(@NotNull final List<ServerDiscovery> servers) {
-        this.servers = servers;
-    }
-
-    @NotNull
-    public List<ServerDiscovery> getServers() {
-        return this.servers;
-    }
-
+public class ClientServerDiscoveryRequestPacket extends Packet {
 }

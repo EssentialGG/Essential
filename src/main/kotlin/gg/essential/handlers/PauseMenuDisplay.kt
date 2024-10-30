@@ -36,6 +36,7 @@ import gg.essential.gui.common.modal.Modal
 import gg.essential.gui.common.modal.configure
 import gg.essential.gui.elementa.VanillaButtonConstraint.Companion.constrainTo
 import gg.essential.gui.elementa.VanillaButtonGroupConstraint.Companion.constrainTo
+import gg.essential.gui.elementa.state.v2.stateOf
 import gg.essential.gui.layoutdsl.*
 import gg.essential.gui.elementa.state.v2.toV2
 import gg.essential.gui.menu.AccountManager
@@ -57,6 +58,7 @@ import gg.essential.util.GuiUtil
 import gg.essential.util.findButtonByLabel
 import gg.essential.gui.util.onAnimationFrame
 import gg.essential.gui.util.pollingState
+import gg.essential.network.connectionmanager.serverdiscovery.NewServerDiscoveryManager
 import gg.essential.network.connectionmanager.sps.SPSSessionSource
 import gg.essential.util.FirewallUtil
 import gg.essential.util.MinecraftUtils
@@ -66,13 +68,16 @@ import gg.essential.vigilance.utils.onLeftClick
 import me.kbrewster.eventbus.Subscribe
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiIngameMenu
+import net.minecraft.client.gui.GuiMultiplayer
 import net.minecraft.client.gui.GuiScreen
 import net.minecraft.world.storage.WorldSummary
+import java.time.Instant
 import java.util.*
 
 //#if MC>=11600
 //$$ import gg.essential.mixins.transformers.client.gui.GuiScreenAccessor
 //$$ import gg.essential.util.textTranslatable
+//$$ import net.minecraft.client.gui.screen.MultiplayerWarningScreen
 //$$ import net.minecraft.client.gui.widget.Widget
 //#endif
 
@@ -172,6 +177,42 @@ class PauseMenuDisplay {
 
             LeftSideBar(topButton, bottomButton, menuVisible.toV2(), collapsed.toV2(), isCompact.toV2(), menuType, rightContainer, leftContainer, accountManager)
                 .bindParent(leftContainer, menuVisible)
+
+            if (menuType == MenuType.MAIN
+                && Instant.now() < NewServerDiscoveryManager.NEW_TAG_END_DATE
+                && !OnboardingData.seenServerDiscovery.getUntracked()
+            ) {
+                val multiplayerButton = UIContainer().constrainTo(
+                    screen.findButtonByLabel("menu.multiplayer")
+                ) {
+                    x = CenterConstraint()
+                    y = 25.percent + 52.pixels
+                    width = 200.pixels
+                    height = 20.pixels
+                } childOf window
+
+                TextFlag(
+                    stateOf(MenuButton.NOTICE_GREEN),
+                    MenuButton.Alignment.CENTER,
+                    stateOf("NEW")
+                ).constrain {
+                    y = CenterConstraint() boundTo multiplayerButton
+                    x = 3.pixels(alignOpposite = true, alignOutside = true) boundTo multiplayerButton
+                }.onLeftClick {
+                    if (OnboardingData.hasAcceptedTos()) {
+                        EssentialConfig.currentMultiplayerTab = 2
+                    }
+                    //#if MC>=11600
+                    //$$ if (UMinecraft.getMinecraft().gameSettings.skipMultiplayerWarning) {
+                    //$$     GuiUtil.openScreen { MultiplayerScreen(screen) }
+                    //$$ } else {
+                    //$$     GuiUtil.openScreen { MultiplayerWarningScreen(screen) }
+                    //$$ }
+                    //#else
+                    GuiUtil.openScreen { GuiMultiplayer(screen) }
+                    //#endif
+                } childOf window
+            }
         }
 
         EssentialAutoInstalledModal.showModal()

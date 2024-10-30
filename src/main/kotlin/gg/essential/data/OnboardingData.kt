@@ -43,6 +43,8 @@ object OnboardingData : OnboardingData {
         ignoreUnknownKeys = true
     }
 
+    val seenServerDiscovery = state.map { it.seenServerDiscovery }
+
     init {
         when {
             Files.exists(oldGlobalFile) -> {
@@ -115,6 +117,11 @@ object OnboardingData : OnboardingData {
         state.set { it.copy(seenFriendsOption = true) }
     }
 
+    @JvmStatic
+    fun setSeenServerDiscovery() {
+        state.set { it.copy(seenServerDiscovery = true) }
+    }
+
     override fun hasAcceptedEssentialTOS(): Boolean = hasAcceptedTos()
 
     override fun hasDeniedEssentialTOS(): Boolean = hasDeniedTos()
@@ -153,5 +160,7 @@ object OnboardingData : OnboardingData {
         val seenFriendsOption: Boolean = false,
         @SerialName("has_shown_wiki_toast")
         val hasShownWikiToast: Boolean = false,
+        @SerialName("seen_server_discovery")
+        val seenServerDiscovery: Boolean = false,
     )
 }

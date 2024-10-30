@@ -41,6 +41,12 @@ public abstract class MixinServerData implements ServerDataExt {
     @Unique
     private Boolean shareWithFriends;
 
+    @Unique
+    private boolean showDownloadIcon;
+
+    @Unique
+    private String recommendedVersion;
+
     @Override
     public boolean getEssential$isTrusted() {
         return this.isTrusted;
@@ -93,6 +99,26 @@ public abstract class MixinServerData implements ServerDataExt {
         this.shareWithFriends = shareWithFriends;
     }
 
+    @Override
+    public boolean getEssential$showDownloadIcon() {
+        return this.showDownloadIcon;
+    }
+
+    @Override
+    public void setEssential$showDownloadIcon(boolean showDownloadIcon) {
+        this.showDownloadIcon = showDownloadIcon;
+    }
+
+    @Override
+    public @Nullable String getEssential$recommendedVersion() {
+        return this.recommendedVersion;
+    }
+
+    @Override
+    public void setEssential$recommendedVersion(String recommendedVersion) {
+        this.recommendedVersion = recommendedVersion;
+    }
+
     @SuppressWarnings("ConstantConditions")
     @Inject(method = "copyFrom", at = @At("RETURN"))
     private void copyEssentialExt(ServerData from, CallbackInfo ci) {
@@ -102,6 +128,8 @@ public abstract class MixinServerData implements ServerDataExt {
         this.pingOverride = fromExt.pingOverride;
         this.skipModCompatCheck = fromExt.skipModCompatCheck;
         this.shareWithFriends = fromExt.shareWithFriends;
+        this.showDownloadIcon = fromExt.showDownloadIcon;
+        this.recommendedVersion = fromExt.recommendedVersion;
     }
 
     @Inject(method = "getNBTCompound", at = @At("RETURN"))

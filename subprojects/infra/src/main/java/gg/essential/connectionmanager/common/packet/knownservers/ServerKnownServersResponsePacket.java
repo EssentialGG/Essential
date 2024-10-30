@@ -9,29 +9,22 @@
  * commercialize, or otherwise exploit, or create derivative works based
  * upon, this file or any other in this repository, all of which is reserved by Essential.
  */
-package gg.essential.connectionmanager.common.packet.serverdiscovery;
+package gg.essential.connectionmanager.common.packet.knownservers;
 
-import gg.essential.lib.gson.annotations.SerializedName;
+import gg.essential.connectionmanager.common.model.knownserver.KnownServer;
 import gg.essential.connectionmanager.common.packet.Packet;
-import gg.essential.serverdiscovery.model.ServerDiscovery;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-@Deprecated
-public class ServerServerDiscoveryPopulatePacket extends Packet {
+public class ServerKnownServersResponsePacket extends Packet {
+    private final @NotNull List<KnownServer> knownServers;
 
-    @SerializedName("a")
-    @NotNull
-    private final List<ServerDiscovery> servers;
-
-    public ServerServerDiscoveryPopulatePacket(@NotNull final List<ServerDiscovery> servers) {
-        this.servers = servers;
+    public ServerKnownServersResponsePacket(final @NotNull List<KnownServer> knownServers) {
+        this.knownServers = knownServers;
     }
 
-    @NotNull
-    public List<ServerDiscovery> getServers() {
-        return this.servers;
+    public @NotNull List<KnownServer> getKnownServers() {
+        return this.knownServers;
     }
-
 }

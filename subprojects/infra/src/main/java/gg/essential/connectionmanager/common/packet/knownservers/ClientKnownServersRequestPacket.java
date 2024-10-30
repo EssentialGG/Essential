@@ -9,23 +9,9 @@
  * commercialize, or otherwise exploit, or create derivative works based
  * upon, this file or any other in this repository, all of which is reserved by Essential.
  */
-package gg.essential.connectionmanager.common.packet.serverdiscovery;
+package gg.essential.connectionmanager.common.packet.knownservers;
 
-import gg.essential.lib.gson.annotations.SerializedName;
 import gg.essential.connectionmanager.common.packet.Packet;
 
-@Deprecated
-public class ClientServerDiscoveryRequestPopulatePacket extends Packet {
-
-    @SerializedName("a")
-    private final int protocolVersion;
-
-    public ClientServerDiscoveryRequestPopulatePacket(final int protocolVersion) {
-        this.protocolVersion = protocolVersion;
-    }
-
-    public int getProtocolVersion() {
-        return this.protocolVersion;
-    }
-
+public class ClientKnownServersRequestPacket extends Packet {
 }

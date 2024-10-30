@@ -12,11 +12,15 @@
 package gg.essential.mixins.ext.client.gui
 
 import gg.essential.gui.multiplayer.FriendsIndicator
+import gg.essential.network.connectionmanager.serverdiscovery.NewServerDiscoveryManager
 import net.minecraft.client.gui.ServerListEntryNormal
 
 interface ServerListEntryNormalExt {
     fun `essential$getFriends`(): FriendsIndicator
+    fun `essential$setImpressionConsumer`(consumer: NewServerDiscoveryManager.ImpressionConsumer)
 }
 
 val ServerListEntryNormalExt.friends get() = `essential$getFriends`()
+fun ServerListEntryNormalExt.setImpressionConsumer(consumer: NewServerDiscoveryManager.ImpressionConsumer)
+    = `essential$setImpressionConsumer`(consumer)
 val ServerListEntryNormal.ext get() = this as ServerListEntryNormalExt

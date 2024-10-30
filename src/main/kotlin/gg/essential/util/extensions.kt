@@ -19,6 +19,7 @@ import dev.folomeev.kotgl.matrix.matrices.mat3
 import dev.folomeev.kotgl.matrix.matrices.mat4
 import gg.essential.Essential
 import gg.essential.api.gui.EssentialGUI
+import gg.essential.connectionmanager.common.model.knownserver.KnownServer
 import gg.essential.elementa.UIComponent
 import gg.essential.elementa.components.UIContainer
 import gg.essential.elementa.state.State
@@ -104,6 +105,21 @@ fun ServerDiscovery.toServerData(knownServers: Map<String, ServerData> = emptyMa
     knownServers[addresses[0]]
         ?: ServerData(
             getDisplayName("en_us") ?: addresses[0],
+            addresses[0],
+            //#if MC>=12002
+            //$$ ServerInfo.ServerType.OTHER,
+            //#else
+            false,
+            //#endif
+        ).apply {
+            ext.isTrusted = false
+            resourceMode = ServerData.ServerResourceMode.ENABLED
+        }
+
+fun KnownServer.toServerData(knownServers: Map<String, ServerData> = emptyMap()) =
+    knownServers[addresses[0]]
+        ?: ServerData(
+            names["en_us"] ?: addresses[0],
             addresses[0],
             //#if MC>=12002
             //$$ ServerInfo.ServerType.OTHER,

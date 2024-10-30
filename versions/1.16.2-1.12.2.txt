@@ -17,11 +17,18 @@ net.minecraft.client.gui.screen.Screen net.minecraft.client.gui.GuiScreen
 net.minecraft.client.gui.screen.Screen resize() net.minecraft.client.gui.GuiScreen onResize()
 net.minecraft.client.gui.screen.Screen tick() net.minecraft.client.gui.GuiScreen updateScreen()
 net.minecraft.client.gui.screen.Screen render() net.minecraft.client.gui.GuiScreen drawScreen()
+net.minecraft.client.gui.screen.Screen onClose() net.minecraft.client.gui.GuiScreen onGuiClosed()
 net.minecraft.client.gui.widget.list.AbstractList$AbstractListEntry render() net.minecraft.client.gui.GuiListExtended$IGuiListEntry drawEntry()
 net.minecraft.client.gui.widget.Widget active net.minecraft.client.gui.GuiButton enabled
 net.minecraft.client.gui.widget.Widget heightRealms net.minecraft.client.gui.GuiButton height
 net.minecraft.client.gui.widget.Widget isHovered() net.minecraft.client.gui.GuiButton isMouseOver()
 net.minecraft.client.gui.widget.button.Button net.minecraft.client.gui.GuiButton
+net.minecraft.client.gui.widget.list.AbstractList renderList() net.minecraft.client.gui.GuiSlot func_192638_a()
+net.minecraft.client.gui.widget.list.AbstractList getRowWidth() net.minecraft.client.gui.GuiSlot getListWidth()
+net.minecraft.client.gui.widget.list.AbstractList headerHeight net.minecraft.client.gui.GuiSlot headerPadding
+net.minecraft.client.gui.widget.list.AbstractList itemHeight net.minecraft.client.gui.GuiSlot slotHeight
+net.minecraft.client.gui.widget.list.AbstractList getMaxPosition() net.minecraft.client.gui.GuiSlot getContentHeight()
+net.minecraft.client.gui.widget.list.AbstractList getEntryAtPosition() net.minecraft.client.gui.GuiSlot getSlotIndexFromScreenCoords()
 net.minecraft.client.gui.widget.list.AbstractList net.minecraft.client.gui.GuiSlot
 net.minecraft.client.renderer.FirstPersonRenderer net.minecraft.client.renderer.ItemRenderer
 net.minecraft.client.renderer.culling.ClippingHelper net.minecraft.client.renderer.culling.ICamera

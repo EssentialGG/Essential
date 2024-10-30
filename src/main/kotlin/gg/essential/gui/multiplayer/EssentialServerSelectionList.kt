@@ -12,14 +12,21 @@
 package gg.essential.gui.multiplayer
 
 import gg.essential.Essential
+import gg.essential.config.EssentialConfig
 import gg.essential.connectionmanager.common.enums.ActivityType
 import gg.essential.connectionmanager.common.packet.telemetry.ClientTelemetryPacket
 import gg.essential.mixins.ext.client.gui.ext
 import gg.essential.mixins.ext.client.gui.friends
 import gg.essential.mixins.ext.client.multiplayer.ext
 import gg.essential.mixins.ext.client.multiplayer.isTrusted
+import gg.essential.mixins.ext.client.multiplayer.recommendedVersion
+import gg.essential.mixins.ext.client.multiplayer.showDownloadIcon
 import gg.essential.mixins.transformers.client.gui.ServerListEntryNormalAccessor
 import gg.essential.mixins.transformers.client.gui.ServerSelectionListAccessor
+import gg.essential.connectionmanager.common.model.serverdiscovery.Server
+import gg.essential.mixins.ext.client.gui.SelectionListWithDividers
+import gg.essential.mixins.ext.client.gui.essential
+import gg.essential.mixins.ext.client.gui.setImpressionConsumer
 import gg.essential.universal.UMinecraft
 import gg.essential.util.MinecraftUtils
 import gg.essential.util.UUIDUtil
@@ -51,11 +58,13 @@ class EssentialServerSelectionList(
 
     private fun getKnownServers() = (0 until owner.serverList.countServers()).associate {
         val data = owner.serverList.getServerData(it)
-        serverDiscoveryManager.normalizeAddress(data.serverIP) to data
+        connectionManager.knownServersManager.normalizeAddress(data.serverIP) to data
     }
 
     fun isFavorite(serverData: ServerData): Boolean =
-        getKnownServers().containsKey(serverDiscoveryManager.normalizeAddress(serverData.serverIP))
+        getKnownServers().containsKey(
+            connectionManager.knownServersManager.normalizeAddress(serverData.serverIP)
+        )
 
     fun addFavorite(serverData: ServerData) {
         sendFavoriteTelemetryPacket(serverData)
@@ -69,22 +78,10 @@ class EssentialServerSelectionList(
     }
 
     private fun sendFavoriteTelemetryPacket(serverData: ServerData) {
-        val discovery = serverDiscoveryManager.findServerByAddress(serverData.serverIP) ?: return
+        val id = connectionManager.knownServersManager.findServerByAddress(serverData.serverIP)?.id ?: return
         connectionManager.telemetryManager.enqueue(
-            ClientTelemetryPacket("FEATURED_SERVER_FAVORITE", mapOf("server" to discovery.id))
+            ClientTelemetryPacket("FEATURED_SERVER_FAVORITE", mapOf("server" to id))
         )
-    }
-
-    private fun getFeaturedServers(): Collection<Pair<ServerListEntryNormal, MutableList<String>?>> {
-        val knownServers = getKnownServers()
-
-        val entries = mutableListOf<Pair<ServerListEntryNormal, MutableList<String>?>>()
-
-        for (server in serverDiscoveryManager.servers.values) {
-            if (MinecraftUtils.currentProtocolVersion in server.protocolVersions)
-                entries.add(Pair(newEntry(server.toServerData(knownServers)), server.tags))
-        }
-        return entries
     }
 
     fun getFriendsServers(): Collection<ServerData> {
@@ -133,7 +130,7 @@ class EssentialServerSelectionList(
             if (spsManager.isSpsAddress(address)) continue
 
             val server = knownServers[address]
-                ?: serverDiscoveryManager.findServerByAddress(address)?.toServerData(knownServers)
+                ?: connectionManager.knownServersManager.findServerByAddress(address)?.toServerData(knownServers)
                 ?: ServerData("Server", address, mcServerType).apply {
                     ext.isTrusted = false
                     resourceMode = ServerData.ServerResourceMode.PROMPT
@@ -154,15 +151,62 @@ class EssentialServerSelectionList(
         updateList()
     }
 
-    fun loadFeaturedServers() {
+    fun loadFeaturedServers(seed: Long) {
         clearServerList()
 
-        for (featuredServer in getFeaturedServers()) {
-            if (featuredServer.second?.contains("EVENT") == true)
-                serverListInternet.add(0, featuredServer.first)
-            else
-                serverListInternet.add(featuredServer.first)
+        val knownServers = getKnownServers()
+
+        fun Server.toServerData(): ServerData {
+            val supported = MinecraftUtils.currentProtocolVersion in protocolVersions
+            if (supported) {
+                knownServers[addresses[0]]?.let { return it }
+            }
+
+            return ServerData(
+                getDisplayName("en_us") ?: addresses[0],
+                addresses[0],
+                //#if MC>=12002
+                //$$ ServerInfo.ServerType.OTHER,
+                //#else
+                false,
+                //#endif
+            ).apply {
+                ext.isTrusted = false
+                ext.showDownloadIcon = !supported
+                ext.recommendedVersion = recommendedVersion
+                resourceMode = ServerData.ServerResourceMode.ENABLED
+            }
         }
+
+        connectionManager.newServerDiscoveryManager.refreshServers()
+        val servers = connectionManager.newServerDiscoveryManager.servers.getUntracked()
+
+        val random = Random(seed)
+        val featured = servers.featured.shuffled(random)
+        val recommended = servers.recommended.shuffled(random)
+
+        val impressionTracker = owner.ext.essential.impressionTracker
+
+        val dividers = mutableMapOf<Int, DividerServerListEntry>()
+        if (featured.isNotEmpty()) {
+            dividers[0] = DividerServerListEntry(owner, "Featured", true)
+            for (server in featured) {
+                serverListInternet.add(newEntry(server.toServerData())
+                    .also { it.ext.setImpressionConsumer(impressionTracker.featuredConsumer) })
+            }
+        }
+
+        if (recommended.isNotEmpty()) {
+            dividers[serverListInternet.size] = DividerServerListEntry(owner, "Recommended")
+            for (server in recommended) {
+                serverListInternet.add(newEntry(server.toServerData())
+                    .also { it.ext.setImpressionConsumer(impressionTracker.recommendedConsumer) })
+            }
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        (serverSelectionList as SelectionListWithDividers<DividerServerListEntry>).`essential$setDividers`(dividers)
+
         updateList()
     }
 
@@ -178,6 +222,8 @@ class EssentialServerSelectionList(
         //$$ (serverSelectionList as ServerSelectionListAccessor).updateList()
         //#endif
     }
+
+    fun isDiscoverEmpty() = EssentialConfig.currentMultiplayerTab == 2 && serverListInternet.isEmpty()
 
     fun updatePlayerStatus(uuid: UUID) {
         for (entry in serverListInternet) {

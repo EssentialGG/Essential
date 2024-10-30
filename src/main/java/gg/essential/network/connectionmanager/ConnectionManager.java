@@ -31,10 +31,12 @@ import gg.essential.network.connectionmanager.handler.mojang.ServerUuidNameMapPa
 import gg.essential.network.connectionmanager.handler.multiplayer.ServerMultiplayerJoinServerPacketHandler;
 import gg.essential.network.connectionmanager.ice.IIceManager;
 import gg.essential.network.connectionmanager.ice.IceManagerMcImpl;
+import gg.essential.network.connectionmanager.knownservers.KnownServersManager;
 import gg.essential.network.connectionmanager.media.ScreenshotManager;
 import gg.essential.network.connectionmanager.notices.NoticesManager;
 import gg.essential.network.connectionmanager.profile.ProfileManager;
 import gg.essential.network.connectionmanager.relationship.RelationshipManager;
+import gg.essential.network.connectionmanager.serverdiscovery.NewServerDiscoveryManager;
 import gg.essential.network.connectionmanager.serverdiscovery.ServerDiscoveryManager;
 import gg.essential.network.connectionmanager.skins.SkinsManager;
 import gg.essential.network.connectionmanager.social.SocialManager;
@@ -102,6 +104,10 @@ public class ConnectionManager extends ConnectionManagerKt {
     private final OutfitManager outfitManager;
     @NotNull
     private final EmoteWheelManager emoteWheelManager;
+    // @NotNull
+    private /* final */ NewServerDiscoveryManager newServerDiscoveryManager;
+    // @NotNull
+    private /* final */ KnownServersManager knownServersManager;
 
     private boolean modsLoaded = false;
     private boolean modsSent = false;
@@ -207,6 +213,12 @@ public class ConnectionManager extends ConnectionManagerKt {
         // Emote Wheels
         this.managers.add(this.emoteWheelManager = new EmoteWheelManager(this, this.cosmeticsManager));
 
+        this.managers.add(this.knownServersManager = new KnownServersManager(this));
+        this.managers.add(this.newServerDiscoveryManager = new NewServerDiscoveryManager(
+            this,
+            this.knownServersManager,
+            this.telemetryManager::enqueue
+        ));
     }
 
     @NotNull
@@ -287,6 +299,16 @@ public class ConnectionManager extends ConnectionManagerKt {
     @NotNull
     public EmoteWheelManager getEmoteWheelManager() {
         return this.emoteWheelManager;
+    }
+
+    @NotNull
+    public NewServerDiscoveryManager getNewServerDiscoveryManager() {
+        return this.newServerDiscoveryManager;
+    }
+
+    @NotNull
+    public KnownServersManager getKnownServersManager() {
+        return this.knownServersManager;
     }
 
     @Override

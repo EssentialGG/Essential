@@ -9,6 +9,7 @@ net.minecraft.network.datasync.EntityDataManager set() updateObject()
 net.minecraft.client.audio.PositionedSoundRecord getMasterRecord() create()
 net.minecraft.client.audio.Sound net.minecraft.client.audio.SoundPoolEntry
 net.minecraft.client.audio.SoundEventAccessor net.minecraft.client.audio.SoundEventAccessorComposite
+net.minecraft.client.gui.GuiSlot func_192638_a() drawSelectionBox()
 net.minecraft.util.SoundCategory net.minecraft.client.audio.SoundCategory
 net.minecraft.util.SoundCategory HOSTILE MOBS
 net.minecraft.util.SoundCategory NEUTRAL ANIMALS
