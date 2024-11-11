@@ -459,8 +459,6 @@ fun getOrderedPaths(files: Set<String>, rootPath: Path, timeExtractor: (Path) ->
     )
 }
 
-fun String?.ifNullOrEmpty(defaultValue: String) = if (isNullOrEmpty()) defaultValue else this
-
 /**
  * Loads [image] as a [UIImage], calling [whenReady] on the UI thread once it is fully loaded.
  * May be called from any thread.

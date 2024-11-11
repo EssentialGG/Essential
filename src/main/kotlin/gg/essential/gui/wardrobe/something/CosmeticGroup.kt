@@ -63,8 +63,6 @@ class CosmeticGroup(
             }
 
             cosmeticsContainer = cosmeticsGrid(category, sortedCosmetics, wardrobeState)
-
-            spacer(height = 10f)
         }
     }
 

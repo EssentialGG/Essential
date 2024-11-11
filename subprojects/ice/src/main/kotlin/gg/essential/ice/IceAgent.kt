@@ -560,7 +560,13 @@ class IceAgent(
             logger.atTrace()
                 .addKeyValues(pair.local)
                 .addKeyValue("remoteAddress", pair.remote.address)
-                .log("Sending {} bytes of data with checksum {}", bytes.size, checksum)
+                .apply {
+                    if (LOG_DATA_PACKET_CONTENT) {
+                        log("Sending {} bytes of data with checksum {}: {}", bytes.size, checksum, bytes.toBase64String())
+                    } else {
+                        log("Sending {} bytes of data with checksum {}", bytes.size, checksum)
+                    }
+                }
         }
         pair.local.sendUnchecked(DatagramPacket(bytes, pair.remote.address))
     }
@@ -571,7 +577,13 @@ class IceAgent(
             logger.atTrace()
                 .addKeyValues(packet.candidate)
                 .addKeyValue("remoteAddress", packet.source)
-                .log("Received {} bytes of data with checksum {}", packet.data.size, checksum)
+                .apply {
+                    if (LOG_DATA_PACKET_CONTENT) {
+                        log("Received {} bytes of data with checksum {}: {}", packet.data.size, checksum, packet.data.toBase64String())
+                    } else {
+                        log("Received {} bytes of data with checksum {}", packet.data.size, checksum)
+                    }
+                }
         }
         if (!controlling && selectedPair == null) {
             lastReceivedDataPair = validList.find { it.local.base == packet.candidate.base && it.remote.address == packet.source }
@@ -692,6 +704,7 @@ class IceAgent(
 
     companion object {
         private const val MAX_CHECKLIST_SIZE = 100
+        private val LOG_DATA_PACKET_CONTENT = System.getProperty("essential.sps.log_data_packet_content").toBoolean()
         private val RELAY_PENALTY = Integer.getInteger("essential.sps.relay_latency_threshold", 100)
         private val sha256 = MessageDigest.getInstance("SHA-256")
 

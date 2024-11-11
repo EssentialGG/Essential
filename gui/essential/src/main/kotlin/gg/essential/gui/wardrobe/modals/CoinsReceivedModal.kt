@@ -21,8 +21,8 @@ import gg.essential.gui.common.modal.Modal
 import gg.essential.gui.layoutdsl.*
 import gg.essential.gui.overlay.ModalManager
 import gg.essential.gui.wardrobe.components.coinPackImage
-import gg.essential.handlers.EssentialSoundManager.playCoinsSound
 import gg.essential.network.connectionmanager.coins.CoinsManager
+import gg.essential.util.EssentialSounds.playCoinsSound
 
 class CoinsReceivedModal private constructor(
     modalManager: ModalManager,

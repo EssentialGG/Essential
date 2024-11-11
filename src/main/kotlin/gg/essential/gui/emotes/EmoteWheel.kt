@@ -337,6 +337,7 @@ class EmoteWheel : WindowScreen(
         fun equipEmote(emote: BedrockModel) {
             val essential = Essential.getInstance()
             val connectionManager = essential.connectionManager
+            val outfitManager = connectionManager.outfitManager
             val cosmeticManager = connectionManager.cosmeticsManager
 
             connectionManager.telemetryManager.clientActionPerformed(TelemetryManager.Actions.EMOTE_ACTIVATE, emote.cosmetic.id)
@@ -376,7 +377,8 @@ class EmoteWheel : WindowScreen(
                     essential.animationEffectHandler.triggerEvent(UUIDUtil.getClientUUID(), slot, "reset")
                     connectionManager.send(ClientCosmeticAnimationTriggerPacket(slot.toInfra(), "reset"))
                 } else {
-                    cosmeticManager.updateEquippedCosmetic(slot, emote.cosmetic.id)
+                    val outfitId = outfitManager.selectedOutfitId.getUntracked() ?: return@scheduleOnMainThread
+                    outfitManager.updateEquippedCosmetic(outfitId, slot, emote.cosmetic.id)
                 }
 
                 val invocationId = ++latestInvocation

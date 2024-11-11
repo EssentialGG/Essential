@@ -13,6 +13,10 @@ package gg.essential.util
 
 import gg.essential.Essential
 import gg.essential.connectionmanager.common.packet.mod.ClientModsAnnouncePacket
+import gg.essential.connectionmanager.common.packet.partner.PartneredMod
+import gg.essential.gui.elementa.state.v2.State
+import gg.essential.gui.elementa.state.v2.memo
+import gg.essential.gui.elementa.state.v2.mutableStateOf
 import gg.essential.universal.UMinecraft
 import kotlin.io.path.*
 import org.apache.commons.codec.digest.DigestUtils
@@ -49,9 +53,9 @@ import java.util.jar.JarFile
 import java.util.jar.Manifest
 
 object ModLoaderUtil {
-    // TODO: 7/25/21 new infra
+
     @JvmField
-    val PARTNER_MODS =
+    val KNOWN_CLIENT_SIDE_MODS =
         listOf(
             "level_head",
             "skytils",
@@ -93,6 +97,10 @@ object ModLoaderUtil {
             "ChromaHUD"
         )
 
+    private val mutablePartnerMods = mutableStateOf<List<PartneredMod>>(listOf())
+    val partnerMods: State<List<PartneredMod>> = mutablePartnerMods
+    val partnerModIds = memo { partnerMods().map { it.id } }
+
     private val modpackId by lazy {
         val modpackProps = UMinecraft.getMinecraft().mcDataDir.toPath() / "config" / "essential-modpack.properties"
         if (!modpackProps.exists()) { return@lazy null }
@@ -113,6 +121,16 @@ object ModLoaderUtil {
         //#elseif FABRIC
         //$$ return ClientModsAnnouncePacket.Platform.FABRIC
         //#endif
+    }
+
+    @JvmStatic
+    fun populatePartnerMods(list: List<PartneredMod>) {
+        mutablePartnerMods.set(list)
+    }
+
+    fun getLoadedPartnerModIds(): Set<String> {
+        val mods = getMods()
+        return partnerModIds.getUntracked().filter { partnerId -> mods.any { it.id == partnerId } }.toSet()
     }
 
     /**

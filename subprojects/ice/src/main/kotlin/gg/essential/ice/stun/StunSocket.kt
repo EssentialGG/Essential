@@ -12,6 +12,7 @@
 package gg.essential.ice.stun
 
 import gg.essential.ice.DatagramPacket
+import gg.essential.ice.toBase64String
 import gg.essential.ice.toHexString
 import gg.essential.slf4j.withKeyValue
 import kotlinx.coroutines.CompletableDeferred
@@ -38,6 +39,7 @@ import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.NoRouteToHostException
 import java.net.SocketException
+import java.security.MessageDigest
 import kotlin.time.ComparableTimeMark
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
@@ -101,6 +103,15 @@ class StunSocket(
                         continue // don't even bother trying
                     }
                     try {
+                        if (LOG_UDP_PACKET_CONTENT) {
+                            val bytes = packet.data.maybeSliceArray(packet.offset, packet.length)
+                            val checksum = sha256.digest(bytes).toBase64String()
+                            val content = bytes.toBase64String()
+                            logger.atTrace()
+                                .addKeyValue("hostAddress", hostAddress)
+                                .addKeyValue("remoteAddress", packet.socketAddress)
+                                .log("Sending packet of {} bytes with checksum {}: {}", bytes.size, checksum, content)
+                        }
                         socket.send(packet)
                     } catch (e: Exception) {
                         if (e is SocketException && e.message?.startsWith("Network is unreachable:") == true
@@ -136,13 +147,23 @@ class StunSocket(
                     }
                     break
                 }
+                val remoteAddress = InetSocketAddress(buf.address, buf.port)
+                val bytes = buf.data.sliceArray(buf.offset until buf.offset + buf.length)
+                if (LOG_UDP_PACKET_CONTENT) {
+                    val checksum = sha256.digest(bytes).toBase64String()
+                    val content = bytes.toBase64String()
+                    logger.atTrace()
+                        .addKeyValue("hostAddress", hostAddress)
+                        .addKeyValue("remoteAddress", remoteAddress)
+                        .log("Received packet of {} bytes with checksum {}: {}", bytes.size, checksum, content)
+                }
                 packetsToBeSorted.send(
                     ReceivedPacket(
                         this@StunSocket,
                         null,
                         TimeSource.Monotonic.markNow(),
-                        InetSocketAddress(buf.address, buf.port),
-                        buf.data.sliceArray(buf.offset until buf.offset + buf.length),
+                        remoteAddress,
+                        bytes,
                     )
                 )
             }
@@ -561,6 +582,9 @@ class StunSocket(
     }
     
     companion object {
+        private val LOG_UDP_PACKET_CONTENT = System.getProperty("essential.sps.log_udp_packet_content").toBoolean()
+        private val sha256 = MessageDigest.getInstance("SHA-256")
+
         private fun ByteArray.maybeSliceArray(offset: Int, length: Int) =
             if (offset == 0 && length == size) this else sliceArray(offset until offset + length)
     }

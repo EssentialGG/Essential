@@ -12,6 +12,7 @@
 package gg.essential.network
 
 import gg.essential.connectionmanager.common.packet.Packet
+import gg.essential.connectionmanager.common.packet.response.ResponseActionPacket
 import gg.essential.util.ExponentialBackoff
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -44,6 +45,10 @@ class Call(
     fun fireAndForget() {
         @Suppress("DEPRECATION")
         connection.send(packet, null, TimeUnit.MILLISECONDS, timeout.inWholeMilliseconds)
+    }
+
+    suspend fun awaitResponseActionPacket(): Boolean {
+        return await<ResponseActionPacket>()?.isSuccessful == true
     }
 
     suspend inline fun <reified T : Packet> await(): T? {

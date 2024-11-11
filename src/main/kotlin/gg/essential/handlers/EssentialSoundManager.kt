@@ -16,9 +16,15 @@ import dev.folomeev.kotgl.matrix.vectors.mutables.minus
 import dev.folomeev.kotgl.matrix.vectors.sqrDistance
 import dev.folomeev.kotgl.matrix.vectors.vec3
 import dev.folomeev.kotgl.matrix.vectors.vecZero
+import gg.essential.Essential
+import gg.essential.config.EssentialConfig
 import gg.essential.config.LoadsResources
+import gg.essential.gui.elementa.state.v2.Observer
 import gg.essential.gui.elementa.state.v2.State
+import gg.essential.gui.elementa.state.v2.memo
 import gg.essential.gui.elementa.state.v2.stateOf
+import gg.essential.gui.friends.state.RelationshipStateManagerImpl
+import gg.essential.gui.util.toStateV2List
 import gg.essential.mixins.impl.client.audio.ISoundExt
 import gg.essential.mixins.impl.client.audio.SoundSystemExt
 import gg.essential.model.ModelAnimationState
@@ -28,6 +34,7 @@ import gg.essential.model.SoundEffect
 import gg.essential.model.util.Quaternion
 import gg.essential.model.util.rotateSelfBy
 import gg.essential.util.identifier
+import gg.essential.util.USession
 import net.minecraft.client.Minecraft
 import net.minecraft.client.audio.ISound
 import net.minecraft.client.audio.ITickableSound
@@ -48,33 +55,15 @@ import java.util.*
  * Utility for playing custom sounds added to Minecraft by Essential.
  *
  * Sounds must be registered in `assets/essential/sounds.json` before they can be played.
+ *
+ * @see gg.essential.util.EssentialSounds
  */
 object EssentialSoundManager {
-
-    private val screenshot = identifier("essential", "screenshot")
-    private val coinFillUp = identifier("essential", "coin_fill_up")
-    private val purchaseConfirmation = identifier("essential", "purchase_confirmation")
-
-    @LoadsResources("/assets/essential/sounds/screenshot.ogg")
-    fun playScreenshotSound() {
-        playSound(screenshot)
-    }
-
-    @LoadsResources("/assets/essential/sounds/coin_fill_up.ogg")
-    fun playCoinsSound() {
-        playSound(coinFillUp)
-    }
-
-    @LoadsResources("/assets/essential/sounds/purchase_confirmation.ogg")
-    fun playPurchaseConfirmationSound() {
-        playSound(purchaseConfirmation)
-    }
-
     // Note: This method isn't actually what loads the sounds.json but it's the main place we rely on it.
     //       Callers also need to mark their specific ogg as used.
     //       There's no parsing (nor redacting) of the sounds.json file at the moment.
     @LoadsResources("/assets/essential/sounds.json")
-    private fun playSound(resourceLocation: ResourceLocation) {
+    fun playSound(resourceLocation: ResourceLocation) {
         Minecraft.getMinecraft().soundHandler.playSound(PositionedSoundRecord.getMasterRecord(
             //#if MC>=11903
             //$$ SoundEvent.of(resourceLocation),
@@ -111,7 +100,13 @@ object EssentialSoundManager {
         }
 
         val sourceUuid = event.sourceEntity.uuid
-        val finalVolume = volume
+        val finalVolume = if (enforceEmoteSoundSettings && sourceUuid != null) {
+            memo {
+                if (shouldAllowEmoteSound(sourceUuid)) volume() else 0f
+            }
+        } else {
+            volume
+        }
 
         mc.soundHandler.playSound(EssentialSoundInstance(event.effect, event.locator, finalVolume, forceGlobal))
     }
@@ -265,5 +260,22 @@ object EssentialSoundManager {
         }
         return parent?.isRelativeToCamera() ?: false
     }
+
+    // Added as a separate property to avoid it being garbage collected in `friendList`
+    private val relationshipStateImpl by lazy {
+        RelationshipStateManagerImpl(Essential.getInstance().connectionManager.relationshipManager)
+    }
+
+    private val friendList by lazy {
+        relationshipStateImpl.getObservableFriendList().toStateV2List()
+    }
+
+    private fun Observer.shouldAllowEmoteSound(uuid: UUID): Boolean =
+        when (EssentialConfig.allowEmoteSounds()) {
+            EssentialConfig.AllowEmoteSounds.FROM_EVERYONE -> true
+            EssentialConfig.AllowEmoteSounds.FROM_MYSELF_AND_FRIENDS -> uuid == USession.active().uuid || uuid in friendList()
+            EssentialConfig.AllowEmoteSounds.FROM_MYSELF_ONLY -> USession.active().uuid == uuid
+            EssentialConfig.AllowEmoteSounds.FROM_NOBODY -> false
+        }
 
 }

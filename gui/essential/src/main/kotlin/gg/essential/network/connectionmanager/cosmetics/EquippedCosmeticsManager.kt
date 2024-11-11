@@ -20,38 +20,42 @@ import gg.essential.connectionmanager.common.packet.cosmetic.outfit.ServerCosmet
 import gg.essential.cosmetics.EquippedCosmetic
 import gg.essential.elementa.state.v2.ReferenceHolder
 import gg.essential.gui.elementa.state.v2.ReferenceHolderImpl
+import gg.essential.mod.Model
+import gg.essential.mod.Skin
 import gg.essential.mod.cosmetics.CAPE_DISABLED_COSMETIC_ID
 import gg.essential.mod.cosmetics.CosmeticSlot
 import gg.essential.mod.cosmetics.settings.CosmeticSetting
-import gg.essential.network.connectionmanager.ConnectionManager
+import gg.essential.network.CMConnection
 import gg.essential.network.connectionmanager.NetworkedManager
-import gg.essential.network.connectionmanager.handler.PacketHandler
-import gg.essential.network.connectionmanager.handler.cosmetics.ServerCosmeticOutfitSelectedResponsePacketHandler
 import gg.essential.network.connectionmanager.subscription.SubscriptionManager
 import gg.essential.network.cosmetics.Cosmetic
-import gg.essential.network.cosmetics.cape.CapeCosmeticsManager
 import gg.essential.network.cosmetics.toMod
 import gg.essential.network.cosmetics.toModSetting
-import gg.essential.util.UUIDUtil
-import net.minecraft.client.Minecraft
-import net.minecraft.entity.player.EnumPlayerModelParts
+import gg.essential.network.registerPacketHandler
+import gg.essential.util.USession
 import java.util.*
 
 class EquippedCosmeticsManager(
-    private val connectionManager: ConnectionManager,
-    private val capeManager: CapeCosmeticsManager,
+    private val connectionManager: CMConnection,
+    private val subscriptionManager: SubscriptionManager,
+    private val queueOwnMojangCape: (String) -> Unit,
     private val cosmeticsData: CosmeticsData,
-    private val infraCosmeticsData: InfraCosmeticsData
+    private val infraCosmeticsData: InfraCosmeticsData,
+    private val applyPlayerSkin: (UUID, Skin) -> Unit,
+    private val applyCapeModelPartEnabled: (Boolean) -> Unit,
 ) : NetworkedManager, SubscriptionManager.Listener {
     private val refHolder: ReferenceHolder = ReferenceHolderImpl()
-    private val subscriptionManager: SubscriptionManager = connectionManager.subscriptionManager
     private val equippedCosmetics: MutableMap<UUID, Map<CosmeticSlot, String>> = mutableMapOf()
     private val visibleCosmetics: MutableMap<UUID, ImmutableMap<CosmeticSlot, EquippedCosmetic>> = mutableMapOf()
     private val cosmeticSettings: MutableMap<UUID, Map<String, List<CosmeticSetting>>> = mutableMapOf()
     private var ownCosmeticsVisible = true
 
+    private val ownUuid: UUID
+        get() = USession.activeNow().uuid
+
     init {
         subscriptionManager.addListener(this)
+
 
         cosmeticsData.onNewCosmetic(refHolder) { cosmetic: Cosmetic ->
             for ((key, value) in equippedCosmetics) {
@@ -68,22 +72,28 @@ class EquippedCosmeticsManager(
             if (cosmeticsDisabled) {
                 return@onSetValue
             }
-            val capeHash = equippedCosmetics[UUIDUtil.getClientUUID()]?.get(CosmeticSlot.CAPE)
+            val capeHash = equippedCosmetics[ownUuid]?.get(CosmeticSlot.CAPE)
             // Configure MC's cape visibility setting accordingly
-            setModelPartEnabled(EnumPlayerModelParts.CAPE, CAPE_DISABLED_COSMETIC_ID != capeHash)
+            applyCapeModelPartEnabled(CAPE_DISABLED_COSMETIC_ID != capeHash)
         }
 
-        connectionManager.registerPacketHandler(object : PacketHandler<ServerCosmeticsUserEquippedPacket>() {
-            override fun onHandle(connectionManager: ConnectionManager, packet: ServerCosmeticsUserEquippedPacket) {
-                update(packet.uuid, packet.equipped.toMod(), cosmeticSettings[packet.uuid] ?: emptyMap())
+        connectionManager.registerPacketHandler<ServerCosmeticsUserEquippedPacket> { packet ->
+            update(packet.uuid, packet.equipped.toMod(), cosmeticSettings[packet.uuid] ?: emptyMap())
+        }
+        connectionManager.registerPacketHandler<ServerCosmeticPlayerSettingsPacket> { packet ->
+            update(packet.uuid, equippedCosmetics[packet.uuid] ?: emptyMap(), packet.settings.toModSetting())
+        }
+        connectionManager.registerPacketHandler<ServerCosmeticOutfitSelectedResponsePacket> { packet ->
+            val skinTexture = packet.skinTexture
+            if (skinTexture != null && skinTexture.contains(";")) {
+                val (type, hash) = skinTexture.split(";")
+                applyPlayerSkin(packet.uuid, Skin(hash, if (type == "1") Model.ALEX else Model.STEVE))
             }
-        })
-        connectionManager.registerPacketHandler(object : PacketHandler<ServerCosmeticPlayerSettingsPacket>() {
-            override fun onHandle(connectionManager: ConnectionManager, packet: ServerCosmeticPlayerSettingsPacket) {
-                update(packet.uuid, equippedCosmetics[packet.uuid] ?: emptyMap(), packet.settings.toModSetting())
-            }
-        })
-        connectionManager.registerPacketHandler(ServerCosmeticOutfitSelectedResponsePacket::class.java, ServerCosmeticOutfitSelectedResponsePacketHandler())
+
+            val equippedCosmetics = packet.equippedCosmetics ?: emptyMap()
+            val cosmeticSettings = packet.cosmeticSettings ?: emptyMap()
+            update(packet.uuid, equippedCosmetics.toMod(), cosmeticSettings.toModSetting())
+        }
     }
 
     fun getOwnCosmeticsVisible(): Boolean {
@@ -93,7 +103,7 @@ class EquippedCosmeticsManager(
     fun setOwnCosmeticsVisible(state: Boolean) {
         ownCosmeticsVisible = state
 
-        updateVisibleCosmetics(UUIDUtil.getClientUUID())
+        updateVisibleCosmetics(ownUuid)
 
         // Ensure config value matches current visibility
         if (EssentialConfig.ownCosmeticsHidden == state) {
@@ -102,7 +112,7 @@ class EquippedCosmeticsManager(
     }
 
     fun getEquippedCosmetics(): Map<CosmeticSlot, String> {
-        return getEquippedCosmetics(UUIDUtil.getClientUUID()) ?: emptyMap()
+        return getEquippedCosmetics(ownUuid) ?: emptyMap()
     }
 
     fun getEquippedCosmetics(playerId: UUID): Map<CosmeticSlot, String>? {
@@ -122,17 +132,17 @@ class EquippedCosmeticsManager(
 
             updateVisibleCosmetics(playerId)
 
-            if (playerId == UUIDUtil.getClientUUID()) {
+            if (playerId == ownUuid) {
                 val capeHash = equippedCosmetics[CosmeticSlot.CAPE]
                 val capeDisabled = CAPE_DISABLED_COSMETIC_ID == capeHash
                 if (!EssentialConfig.disableCosmetics) {
                     // Configure MC's cape visibility setting accordingly
-                    setModelPartEnabled(EnumPlayerModelParts.CAPE, !capeDisabled)
+                    applyCapeModelPartEnabled(!capeDisabled)
                 }
 
                 // And queue the cape to be updated at Mojang
                 if (!capeDisabled && capeHash != null) {
-                    capeManager.queueCape(capeHash)
+                    queueOwnMojangCape(capeHash)
                 }
             }
         }
@@ -150,7 +160,7 @@ class EquippedCosmeticsManager(
         val cosmeticIds = equippedCosmetics[playerId] ?: return ImmutableMap.of()
         val settings = cosmeticSettings[playerId] ?: emptyMap()
 
-        val cosmeticsHidden = !ownCosmeticsVisible && playerId == UUIDUtil.getClientUUID()
+        val cosmeticsHidden = !ownCosmeticsVisible && playerId == ownUuid
 
         fun isVisible(slot: CosmeticSlot): Boolean {
             if (slot == CosmeticSlot.ICON) {
@@ -191,7 +201,8 @@ class EquippedCosmeticsManager(
 
     override fun onSubscriptionAdded(uuids: Set<UUID>) {
         for (uuid in uuids) {
-            connectionManager.send(ClientCosmeticOutfitSelectedRequestPacket(uuid))
+            connectionManager.call(ClientCosmeticOutfitSelectedRequestPacket(uuid))
+                .fireAndForget()
         }
     }
 
@@ -200,24 +211,6 @@ class EquippedCosmeticsManager(
             equippedCosmetics.remove(uuid)
             visibleCosmetics.remove(uuid)
             cosmeticSettings.remove(uuid)
-        }
-    }
-
-    companion object {
-        private fun setModelPartEnabled(part: EnumPlayerModelParts, enabled: Boolean) {
-            val gameSettings = Minecraft.getMinecraft().gameSettings
-            //#if MC>=11700
-            //$$ if (gameSettings.isPlayerModelPartEnabled(part) != enabled) {
-            //#else
-            if (gameSettings.modelParts.contains(part) != enabled) {
-            //#endif
-                //#if MC>=12102
-                //$$ gameSettings.setPlayerModelPart(part, enabled)
-                //$$ gameSettings.sendClientSettings()
-                //#else
-                gameSettings.setModelPartEnabled(part, enabled)
-                //#endif
-            }
         }
     }
 }

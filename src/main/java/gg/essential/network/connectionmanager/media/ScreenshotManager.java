@@ -46,7 +46,6 @@ import gg.essential.gui.screenshot.handler.ScreenshotChecksumManager;
 import gg.essential.gui.screenshot.handler.ScreenshotMetadataManager;
 import gg.essential.gui.screenshot.image.ForkedImageClipboard;
 import gg.essential.gui.screenshot.providers.FileCachedWindowedImageProvider;
-import gg.essential.handlers.EssentialSoundManager;
 import gg.essential.handlers.io.DirectoryWatcher;
 import gg.essential.handlers.io.FileSystemEvent;
 import gg.essential.handlers.screenshot.ClientScreenshotMetadata;
@@ -63,6 +62,7 @@ import gg.essential.network.connectionmanager.NetworkedManager;
 import gg.essential.network.connectionmanager.chat.ChatManager;
 import gg.essential.network.connectionmanager.handler.screenshot.ServerScreenshotListPacketHandler;
 import gg.essential.universal.UDesktop;
+import gg.essential.util.EssentialSounds;
 import gg.essential.util.ExtensionsKt;
 import gg.essential.util.GuiUtil;
 import gg.essential.util.HelpersKt;
@@ -836,7 +836,7 @@ public class ScreenshotManager implements NetworkedManager {
         Minecraft mc = Minecraft.getMinecraft();
 
         if (EssentialConfig.INSTANCE.getScreenshotSounds()) {
-            EssentialSoundManager.INSTANCE.playScreenshotSound();
+            EssentialSounds.INSTANCE.playScreenshotSound();
         }
 
         //#if MC<=11202

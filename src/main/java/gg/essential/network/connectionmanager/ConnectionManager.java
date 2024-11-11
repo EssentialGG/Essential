@@ -11,12 +11,19 @@
  */
 package gg.essential.network.connectionmanager;
 
+import gg.essential.Essential;
 import gg.essential.connectionmanager.common.packet.Packet;
 import gg.essential.connectionmanager.common.packet.connection.*;
+import gg.essential.connectionmanager.common.packet.partner.ServerPartneredModsPopulatePacket;
 import gg.essential.connectionmanager.common.packet.multiplayer.ServerMultiplayerJoinServerPacket;
 import gg.essential.connectionmanager.common.packet.relationships.ServerUuidNameMapPacket;
+import gg.essential.elementa.state.v2.ReferenceHolder;
 import gg.essential.event.client.PostInitializationEvent;
+import gg.essential.gui.elementa.state.v2.ReferenceHolderImpl;
 import gg.essential.gui.elementa.state.v2.State;
+import gg.essential.handlers.GameProfileManager;
+import gg.essential.mod.Model;
+import gg.essential.mod.Skin;
 import gg.essential.network.client.MinecraftHook;
 import gg.essential.network.connectionmanager.chat.ChatManager;
 import gg.essential.network.connectionmanager.coins.CoinsManager;
@@ -44,8 +51,10 @@ import gg.essential.network.connectionmanager.sps.SPSManager;
 import gg.essential.network.connectionmanager.subscription.SubscriptionManager;
 import gg.essential.network.connectionmanager.telemetry.TelemetryManager;
 import gg.essential.sps.McIntegratedServerManager;
+import gg.essential.universal.UMinecraft;
 import gg.essential.util.ModLoaderUtil;
 import gg.essential.util.Multithreading;
+import gg.essential.util.UUIDUtil;
 import gg.essential.util.lwjgl3.Lwjgl3Loader;
 import kotlin.Unit;
 import kotlin.collections.MapsKt;
@@ -61,6 +70,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import static gg.essential.gui.elementa.state.v2.StateKt.effect;
 import static gg.essential.gui.elementa.state.v2.combinators.StateKt.map;
 import static kotlinx.coroutines.ExceptionsKt.CancellationException;
 
@@ -68,6 +78,8 @@ public class ConnectionManager extends ConnectionManagerKt {
 
     @NotNull
     final PacketHandlers packetHandlers = new PacketHandlers();
+    @NotNull
+    private final ReferenceHolder refHolder = new ReferenceHolderImpl();
     @NotNull
     private final MinecraftHook minecraftHook;
     @NotNull
@@ -145,6 +157,12 @@ public class ConnectionManager extends ConnectionManagerKt {
         // Mojang API
         this.registerPacketHandler(ServerUuidNameMapPacket.class, new ServerUuidNameMapPacketHandler());
 
+        // Mod Partners
+        this.registerPacketHandler(ServerPartneredModsPopulatePacket.class, packet -> {
+            ModLoaderUtil.populatePartnerMods(packet.getMods());
+            return Unit.INSTANCE;
+        });
+
         // Notices
         this.managers.add((this.noticesManager = new NoticesManager(this)));
 
@@ -207,11 +225,27 @@ public class ConnectionManager extends ConnectionManagerKt {
         this.managers.add(this.skinsManager = new SkinsManager(this));
 
         // Outfits
-        this.outfitManager = new OutfitManager(this, this.cosmeticsManager, map(this.skinsManager.getSkins(), map -> MapsKt.mapValues(map, it -> it.getValue().getSkin())));
+        this.outfitManager = new OutfitManager(
+            this,
+            this.cosmeticsManager.getCosmeticsData(),
+            this.cosmeticsManager.getUnlockedCosmetics(),
+            this.cosmeticsManager.getEquippedCosmeticsManager(),
+            map(this.skinsManager.getSkins(), map -> MapsKt.mapValues(map, it -> it.getValue().getSkin()))
+        );
         this.managers.add(this.outfitManager);
+        effect(refHolder, observer -> {
+            Skin skin = this.outfitManager.getEquippedSkin().get(observer);
+            if (skin == null) return Unit.INSTANCE;
+            Model model = skin.getModel();
+            String hash = skin.getHash();
+            String url = String.format(Locale.ROOT, GameProfileManager.SKIN_URL, hash);
+            Essential.getInstance().getGameProfileManager().updatePlayerSkin(UUIDUtil.getClientUUID(), hash, model.getType());
+            Essential.getInstance().getSkinManager().changeSkin(UMinecraft.getMinecraft().getSession().getToken(), model, url);
+            return Unit.INSTANCE;
+        });
 
         // Emote Wheels
-        this.managers.add(this.emoteWheelManager = new EmoteWheelManager(this, this.cosmeticsManager));
+        this.managers.add(this.emoteWheelManager = new EmoteWheelManager(this, this.cosmeticsManager.getUnlockedCosmetics()));
 
         this.managers.add(this.knownServersManager = new KnownServersManager(this));
         this.managers.add(this.newServerDiscoveryManager = new NewServerDiscoveryManager(
@@ -392,6 +426,7 @@ public class ConnectionManager extends ConnectionManagerKt {
      * @deprecated Use {@link #call(Packet)} builder instead.
      */
     @Deprecated
+    @Override
     public void send(
         @NotNull final Packet packet, @Nullable final Consumer<Optional<Packet>> responseCallback
     ) {

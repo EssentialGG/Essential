@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class ClientSideModUtil {
-    private static final Set<String> knownClientSideMods = ImmutableSet.<String>builder().addAll(ModLoaderUtil.PARTNER_MODS).build();
+    private static final Set<String> knownClientSideMods = ImmutableSet.<String>builder().addAll(ModLoaderUtil.KNOWN_CLIENT_SIDE_MODS).build();
     private static final MethodHandle getDescriptorHandle;
 
     static {

@@ -153,9 +153,9 @@ class SkinModal private constructor(
 
     companion object {
 
-        fun add(modalManager: ModalManager, skin: Skin, selectSkin: Boolean = false, initialName: String) = SkinModal(modalManager, skin, "Add Skin", initialName) { name, model ->
+        fun add(modalManager: ModalManager, skin: Skin, initialName: String) = SkinModal(modalManager, skin, "Add Skin", initialName) { name, model ->
             val updatedSkin = skin.copy(model = model)
-            Essential.getInstance().connectionManager.skinsManager.addSkin(name, updatedSkin, selectSkin).whenComplete { skin, throwable ->
+            Essential.getInstance().connectionManager.skinsManager.addSkin(name, updatedSkin).whenComplete { skin, throwable ->
                 if (skin != null) {
                     sendCheckmarkNotification("Skin has been added.") {
                         openWardrobeWithHighlight(ItemId.SkinItem(skin.id))
@@ -212,7 +212,7 @@ class SkinModal private constructor(
             mojangSkinManager.changeSkin(getMinecraft().session.token, oldActiveSkin.model, oldActiveSkin.url)
             mojangSkinManager.flushChanges(false)
 
-            Essential.getInstance().connectionManager.skinsManager.addSkin(name, skin, false).whenComplete { skinItem, throwable ->
+            Essential.getInstance().connectionManager.skinsManager.addSkin(name, skin).whenComplete { skinItem, throwable ->
                 if (skinItem != null) {
                     sendCheckmarkNotification("Skin has been added.")
                 } else {

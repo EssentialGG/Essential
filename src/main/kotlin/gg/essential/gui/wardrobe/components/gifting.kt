@@ -47,13 +47,13 @@ import gg.essential.gui.wardrobe.WardrobeCategory
 import gg.essential.gui.wardrobe.WardrobeState
 import gg.essential.gui.wardrobe.giftCosmeticOrEmote
 import gg.essential.gui.wardrobe.modals.CoinsPurchaseModal
-import gg.essential.handlers.EssentialSoundManager
 import gg.essential.network.connectionmanager.coins.CoinsManager
 import gg.essential.network.cosmetics.Cosmetic
 import gg.essential.universal.ChatColor
 import gg.essential.universal.UMinecraft
 import gg.essential.universal.USound
 import gg.essential.util.CachedAvatarImage
+import gg.essential.util.EssentialSounds
 import gg.essential.util.GuiUtil
 import gg.essential.util.UUIDUtil
 import gg.essential.util.executor
@@ -61,7 +61,7 @@ import gg.essential.vigilance.utils.onLeftClick
 import java.util.UUID
 
 fun openGiftModal(item: Item.CosmeticOrEmote, state: WardrobeState) {
-    val requiredCoinsSpent = state.cosmeticsManager.wardrobeSettings.giftingCoinSpendRequirement.get()
+    val requiredCoinsSpent = state.settings.giftingCoinSpendRequirement.get()
     val coinsSpent = state.coinsSpent.get()
     if (coinsSpent < requiredCoinsSpent) {
         GuiUtil.pushModal { manager -> 
@@ -230,7 +230,7 @@ private fun giftItemToFriends(item: Item.CosmeticOrEmote, uuids: Set<UUID>, stat
                     return@giftCosmeticOrEmote
                 }
                 modal.replaceWith(null)
-                EssentialSoundManager.playPurchaseConfirmationSound()
+                EssentialSounds.playPurchaseConfirmationSound()
                 showGiftSentToast(item.cosmetic, username)
                 connectionManager.chatManager.sendGiftEmbed(uuid, item.cosmetic.id)
             }

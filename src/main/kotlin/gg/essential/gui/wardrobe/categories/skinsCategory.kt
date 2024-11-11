@@ -32,5 +32,7 @@ fun LayoutScope.skinsCategory(wardrobeState: WardrobeState, modifier: Modifier =
         if_(skins.map { it.isEmpty() }) {
             noItemsFound()
         }
+
+        spacer(height = 10f)
     }
 }

@@ -13,7 +13,6 @@ package gg.essential.gui.wardrobe
 
 import com.google.common.collect.ImmutableList
 import com.google.common.collect.ImmutableMap
-import gg.essential.Essential
 import gg.essential.cosmetics.CosmeticBundleId
 import gg.essential.cosmetics.CosmeticCategoryId
 import gg.essential.cosmetics.CosmeticId
@@ -23,7 +22,6 @@ import gg.essential.cosmetics.FeaturedPageCollectionId
 import gg.essential.cosmetics.diagnose
 import gg.essential.cosmetics.events.AnimationEventType
 import gg.essential.elementa.UIComponent
-import gg.essential.elementa.events.UIClickEvent
 import gg.essential.gui.common.onSetValueAndNow
 import gg.essential.gui.elementa.state.v2.ListState
 import gg.essential.gui.elementa.state.v2.MutableState
@@ -41,22 +39,11 @@ import gg.essential.gui.elementa.state.v2.onChange
 import gg.essential.gui.elementa.state.v2.set
 import gg.essential.gui.elementa.state.v2.setAll
 import gg.essential.gui.elementa.state.v2.stateBy
-import gg.essential.gui.elementa.state.v2.stateOf
 import gg.essential.gui.elementa.state.v2.toListState
 import gg.essential.gui.elementa.state.v2.zipWithEachElement
+import gg.essential.gui.state.Sale
 import gg.essential.gui.util.layoutSafePollingState
 import gg.essential.gui.wardrobe.Item.Companion.toItem
-import gg.essential.gui.wardrobe.components.handleBundleLeftClick
-import gg.essential.gui.wardrobe.components.handleBundleRightClick
-import gg.essential.gui.wardrobe.components.handleCosmeticOrEmoteLeftClick
-import gg.essential.gui.wardrobe.components.handleCosmeticOrEmoteRightClick
-import gg.essential.gui.wardrobe.components.handleOutfitLeftClick
-import gg.essential.gui.wardrobe.components.displayOutfitOptions
-import gg.essential.gui.wardrobe.components.handleSkinLeftClick
-import gg.essential.gui.wardrobe.components.handleSkinRightClick
-import gg.essential.gui.wardrobe.components.hasBundleOptionsButton
-import gg.essential.gui.wardrobe.components.hasCosmeticOrEmoteOptionsButton
-import gg.essential.handlers.EssentialSoundManager
 import gg.essential.mod.cosmetics.CosmeticCategory
 import gg.essential.mod.cosmetics.CosmeticSlot
 import gg.essential.mod.cosmetics.featured.FeaturedPageCollection
@@ -64,30 +51,44 @@ import gg.essential.mod.cosmetics.settings.CosmeticSetting
 import gg.essential.model.Side
 import gg.essential.network.connectionmanager.coins.CoinsManager
 import gg.essential.network.connectionmanager.cosmetics.AssetLoader
-import gg.essential.network.connectionmanager.cosmetics.CosmeticsManager
 import gg.essential.network.connectionmanager.skins.SkinsManager
 import gg.essential.network.cosmetics.Cosmetic
-import gg.essential.util.Multithreading
 import gg.essential.gui.util.pollingStateV2
 import gg.essential.mod.cosmetics.featured.FeaturedItem
 import gg.essential.mod.cosmetics.settings.CosmeticSettings
 import gg.essential.mod.cosmetics.settings.setting
 import gg.essential.network.connectionmanager.cosmetics.EmoteWheelManager
+import gg.essential.network.connectionmanager.cosmetics.ICosmeticsManager
+import gg.essential.network.connectionmanager.cosmetics.ModelLoader
+import gg.essential.network.connectionmanager.cosmetics.OutfitManager
+import gg.essential.network.connectionmanager.cosmetics.WardrobeSettings
 import gg.essential.universal.UResolution
-import java.util.concurrent.TimeUnit
+import gg.essential.util.Client
+import gg.essential.util.EssentialSounds
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import org.slf4j.LoggerFactory
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 class WardrobeState(
     initialCategory: WardrobeCategory?,
     val screenOpen: State<Boolean>,
     component: UIComponent,
-    val cosmeticsManager: CosmeticsManager,
+    val cosmeticsManager: ICosmeticsManager,
+    val modelLoader: ModelLoader,
+    val settings: WardrobeSettings,
+    val outfitManager: OutfitManager,
     val skinsManager: SkinsManager,
     val emoteWheelManager: EmoteWheelManager,
     val coinsManager: CoinsManager,
+    val saleState: ListState<Sale>,
     private val guiScale: State<Int>,
 ) {
-    val outfitManager = Essential.getInstance().connectionManager.outfitManager
-
     val diagnosticsEnabled = cosmeticsManager.localCosmeticsData != null
 
     val inEmoteWheel = mutableStateOf(false)
@@ -104,6 +105,8 @@ class WardrobeState(
     val unlockedCosmetics = mutableStateOf(cosmeticsManager.unlockedCosmetics.get()).apply {
         cosmeticsManager.unlockedCosmetics.onSetValue(component) { this.set(it) }
     }
+
+    val cosmeticsData = cosmeticsManager.cosmeticsData
 
     val rawTypes = cosmeticsManager.cosmeticsData.types
 
@@ -124,7 +127,7 @@ class WardrobeState(
 
     val cosmetics = if (diagnosticsEnabled) {
         val cosmeticsWithDiagnostics = availableCosmetics.mapEach { cosmetic ->
-            val diagnosticsState = diagnose(cosmeticsManager.modelLoader, cosmetic)
+            val diagnosticsState = diagnose(modelLoader, cosmetic)
             memo {
                 val diagnostics = diagnosticsState()
                 when {
@@ -246,10 +249,6 @@ class WardrobeState(
     }
 
     val visibleCosmetics = visibleCosmeticItems.mapEach { it.cosmetic }
-
-    val saleState = Essential.getInstance().connectionManager.noticesManager.saleNoticeManager.saleState.map {
-        it.filter { it.discountPercent > 0 } // Sales with 0% discount are used to display on the main menu and should be ignored here
-    }.toListState()
 
     /**
      * When set, the main view is scrolled to have the item, with the same itemId,
@@ -477,6 +476,11 @@ class WardrobeState(
         }.toMap())
     }
 
+    fun getTotalCost(items: ListState<Item>): State<Int> {
+        val costs = items.map { it.toSet().toList() }.toListState().mapEach { it.getCost(this) }
+        return stateBy { costs().sumOf { it() ?: 0 } }
+    }
+
     // Local cosmetics editing
 
     val editingMenuOpen = mutableStateOf(false)
@@ -598,63 +602,40 @@ class WardrobeState(
         }
     }
 
-    fun hasOptionsButton(item: Item): State<Boolean> {
-        return when (item) {
-            is Item.CosmeticOrEmote -> {
-                hasCosmeticOrEmoteOptionsButton(item, this)
-            }
-            is Item.Bundle -> {
-                hasBundleOptionsButton(item, this)
-            }
-            else -> stateOf(true)
-        }
-    }
-
-    fun handleItemLeftClick(item: Item, category: WardrobeCategory, event: UIClickEvent) {
-        when (item) {
-            is Item.Bundle -> handleBundleLeftClick(item, category, this)
-            is Item.CosmeticOrEmote -> handleCosmeticOrEmoteLeftClick(item, category, this)
-            is Item.OutfitItem -> handleOutfitLeftClick(item, this, event)
-            is Item.SkinItem -> handleSkinLeftClick(item, this)
-        }
-    }
-
-    fun handleItemRightClick(item: Item, category: WardrobeCategory, event: UIClickEvent) {
-        when (item) {
-            is Item.Bundle -> handleBundleRightClick(item, this, event)
-            is Item.CosmeticOrEmote -> handleCosmeticOrEmoteRightClick(item, category, this, event)
-            is Item.OutfitItem -> displayOutfitOptions(item, this, event)
-            is Item.SkinItem -> handleSkinRightClick(item, this, event)
-        }
-    }
-
+    @OptIn(DelicateCoroutinesApi::class) // FIXME should use screen scope or something like that
     fun triggerPurchaseAnimation() {
         if (purchaseAnimationState.get()) {
             return
         }
         val purchaseEmote = rawCosmetics.get().find { it.id == purchaseConfirmationEmoteId }
         if (purchaseEmote == null) {
-            Essential.logger.warn("Unable to find purchase confirmation animation.")
+            LOGGER.warn("Unable to find purchase confirmation animation.")
             return
         }
         // Find out animation time for purchase confirmation emote
-        val bedrockModel = cosmeticsManager.modelLoader.getModel(
+        val bedrockModel = modelLoader.getModel(
             purchaseEmote, purchaseEmote.defaultVariantName, AssetLoader.Priority.Blocking
         ).join()
-        val emoteTime = ((bedrockModel.animationEvents
+        val emoteTime = bedrockModel.animationEvents
             .filter { it.type == AnimationEventType.EMOTE }
             .maxOfOrNull { it.getTotalTime(bedrockModel) }
-            ?: 0f) * 1000).toLong()
+            ?.toDouble()?.seconds
+            ?: Duration.ZERO
 
         // Delay purchase sound to go with the animation (animation is delayed by 0.3s)
-        Multithreading.scheduleOnMainThread({
-            EssentialSoundManager.playPurchaseConfirmationSound()
-        }, 300, TimeUnit.MILLISECONDS)
+        GlobalScope.launch(Dispatchers.Client) {
+            delay(300.milliseconds)
+            EssentialSounds.playPurchaseConfirmationSound()
+        }
 
-        purchaseAnimationState.set(true)
-        Multithreading.scheduleOnMainThread({
-            purchaseAnimationState.set(false)
-        }, emoteTime, TimeUnit.MILLISECONDS)
+        GlobalScope.launch(Dispatchers.Client) {
+            purchaseAnimationState.set(true)
+            try {
+                delay(emoteTime)
+            } finally {
+                purchaseAnimationState.set(false)
+            }
+        }
     }
 
     private fun getWardrobeGridColumnCount(): Int {
@@ -707,6 +688,8 @@ class WardrobeState(
     data class CosmeticWithSortInfo(val cosmetic: Cosmetic, val owned: Boolean, val price: Int?, val collection: CosmeticCategory?)
 
     companion object {
+        private val LOGGER = LoggerFactory.getLogger(WardrobeState::class.java)
+
         private val sortByOrderInCollection: Comparator<CosmeticWithSortInfo> =
             compareBy { it.cosmetic.categories[it.collection?.id] ?: 0 }
         private val sortBySortWeight: Comparator<CosmeticWithSortInfo> =

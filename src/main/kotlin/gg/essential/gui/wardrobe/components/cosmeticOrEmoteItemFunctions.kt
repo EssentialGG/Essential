@@ -35,12 +35,12 @@ import gg.essential.gui.wardrobe.modals.CoinsPurchaseModal
 import gg.essential.gui.wardrobe.openPurchaseItemModal
 import gg.essential.gui.wardrobe.purchaseAndCreateOutfitForBundle
 import gg.essential.gui.wardrobe.purchaseCosmeticOrEmote
-import gg.essential.handlers.EssentialSoundManager
 import gg.essential.mod.cosmetics.CosmeticSlot
 import gg.essential.mod.cosmetics.settings.CosmeticProperty
 import gg.essential.mod.cosmetics.settings.CosmeticSetting
 import gg.essential.universal.UDesktop
 import gg.essential.universal.USound
+import gg.essential.util.EssentialSounds
 import gg.essential.util.GuiUtil
 import gg.essential.util.executor
 import net.minecraft.client.Minecraft
@@ -50,6 +50,8 @@ fun handleCosmeticOrEmoteLeftClick(item: Item.CosmeticOrEmote, category: Wardrob
     USound.playButtonPress()
 
     val cosmetic = item.cosmetic
+    val outfitManager = wardrobeState.outfitManager
+    val selectedOutfitId = outfitManager.selectedOutfitId.getUntracked() ?: return
     val cosmeticsManager = wardrobeState.cosmeticsManager
     val slot = item.cosmetic.type.slot
     val isOwned = cosmeticsManager.unlockedCosmetics.get().contains(cosmetic.id)
@@ -109,11 +111,11 @@ fun handleCosmeticOrEmoteLeftClick(item: Item.CosmeticOrEmote, category: Wardrob
     if (wardrobeState.equippedCosmeticsState.get()[slot] == cosmetic.id) {
         if ((!startedInEmoteWheel && !bundleWasSelected && !emoteWasSelected)) {
             // Only unequip the cosmetic if the emote wheel preview was not open when the cosmetic was clicked and a bundle was not selected
-            cosmeticsManager.updateEquippedCosmetic(slot, null)
+            outfitManager.updateEquippedCosmetic(selectedOutfitId, slot, null)
             wardrobeState.selectedItem.set(null)
         }
     } else {
-        cosmeticsManager.updateEquippedCosmetic(slot, cosmetic.id)
+        outfitManager.updateEquippedCosmetic(selectedOutfitId, slot, cosmetic.id)
         updateSettingsToOverriddenIfNotSet(item, wardrobeState)
 
         if (!isOwned) {
@@ -132,8 +134,9 @@ fun handleCosmeticOrEmoteLeftClick(item: Item.CosmeticOrEmote, category: Wardrob
 private fun updateSettingsToOverriddenIfNotSet(item: Item.CosmeticOrEmote, wardrobeState: WardrobeState) {
     // If we select an item with overridden settings, we override the player's settings too, if they don't have them already set
     // Used by the featured page, since it initially show the item with overridden settings, so those should apply those when first selected
-    if (item.settingsOverride != null) {
-        for (setting in item.settingsOverride) {
+    val settingsOverride = item.settingsOverride
+    if (settingsOverride != null) {
+        for (setting in settingsOverride) {
             when {
                 setting is CosmeticSetting.Variant -> {
                     if (wardrobeState.getVariant(item).get() == null) wardrobeState.setVariant(item, setting.data.variant)
@@ -210,7 +213,7 @@ private fun getBundleRightClickOptions(item: Item.Bundle, wardrobeState: Wardrob
     fun purchaseOrClaim() {
         wardrobeState.purchaseAndCreateOutfitForBundle(item, false) { success ->
             if (success) {
-                EssentialSoundManager.playPurchaseConfirmationSound()
+                EssentialSounds.playPurchaseConfirmationSound()
             } else {
                 Notifications.push("Purchase failed", "Please try again later or contact our support.") {
                     type = NotificationType.ERROR
@@ -295,7 +298,7 @@ private fun getRightClickOptions(item: Item.CosmeticOrEmote, wardrobeState: Ward
                     wardrobeState.openPurchaseItemModal(item) {
                         wardrobeState.purchaseCosmeticOrEmote(item) { success ->
                             if (success) {
-                                EssentialSoundManager.playPurchaseConfirmationSound()
+                                EssentialSounds.playPurchaseConfirmationSound()
                             } else {
                                 Notifications.push("Purchase failed", "Please try again later or contact our support.") {
                                     type = NotificationType.ERROR
@@ -379,7 +382,7 @@ fun claimFreeItemNow(item: Item.CosmeticOrEmote, wardrobeState: WardrobeState) {
             Notifications.error("Error", "Failed to claim item.")
         } else {
             sendUnlockedToast(cosmetic.id, wardrobeState.selectedPreviewingEquippedSettings.map { it[item.id] ?: listOf() })
-            EssentialSoundManager.playPurchaseConfirmationSound()
+            EssentialSounds.playPurchaseConfirmationSound()
         }
     }, Minecraft.getMinecraft().executor)
 }

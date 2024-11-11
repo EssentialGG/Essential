@@ -27,9 +27,13 @@ import java.util.HashSet;
  */
 public class WrappedLoggingFactory extends InternalLoggerFactory {
 
-    private static final HashSet<String> NOOP_LOGGERS = new HashSet<>(Arrays.asList(
-        "io.netty.incubator.codec.quic.Quiche" // Overly verbose debug logging
-    ));
+    private static final HashSet<String> NOOP_LOGGERS;
+    static {
+        String property = System.getProperty("essential.sps.quic.NOOP_LOGGERS");
+        NOOP_LOGGERS = new HashSet<>(property != null ? Arrays.asList(property.split(",")) : Arrays.asList(
+            "io.netty.incubator.codec.quic.Quiche" // Overly verbose debug logging
+        ));
+    }
 
     private static final MethodHandle mhNewInstance;
     static {

@@ -58,6 +58,8 @@ interface GuiEssentialPlatform {
 
     fun uImageIntoReleasedDynamicTexture(uImage: UImage): ReleasedDynamicTexture
 
+    fun playSound(identifier: UIdentifier)
+
     fun registerCosmeticTexture(name: String, texture: ReleasedDynamicTexture): UIdentifier
 
     fun dismissModalOnScreenChange(modal: Modal, dismiss: () -> Unit)

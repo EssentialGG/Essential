@@ -69,8 +69,9 @@ import java.util.stream.Collectors;
 import static gg.essential.gui.elementa.state.v2.combinators.StateKt.map;
 import static gg.essential.gui.notification.HelpersKt.sendTosNotification;
 import static gg.essential.network.connectionmanager.cosmetics.ConnectionManagerKt.*;
+import static gg.essential.network.connectionmanager.cosmetics.CosmeticsManagerKt.onNewCosmetic;
 
-public class CosmeticsManager implements NetworkedManager {
+public class CosmeticsManager implements NetworkedManager, ICosmeticsManager {
 
     public static final long LOAD_TIMEOUT_SECONDS = 60;
 
@@ -139,7 +140,24 @@ public class CosmeticsManager implements NetworkedManager {
             this.cosmeticsDataWithChanges = null;
         }
 
-        this.equippedCosmeticsManager = new EquippedCosmeticsManager(this.connectionManager, this.capeManager, this.cosmeticsData, this.infraCosmeticsData);
+        this.equippedCosmeticsManager = new EquippedCosmeticsManager(
+            this.connectionManager,
+            this.connectionManager.getSubscriptionManager(),
+            (hash) -> {
+                this.capeManager.queueCape(hash);
+                return Unit.INSTANCE;
+            },
+            this.cosmeticsData,
+            this.infraCosmeticsData,
+            (uuid, skin) -> {
+                Essential.getInstance().getGameProfileManager().updatePlayerSkin(uuid, skin.getHash(), skin.getModel().getType());
+                return Unit.INSTANCE;
+            },
+            (enabled) -> {
+                EquippedCosmeticsManagerMcKt.setCapeModelPartEnabled(enabled);
+                return Unit.INSTANCE;
+            }
+        );
 
         onNewCosmetic(this.cosmeticsData, refHolder, cosmetic -> {
             primeCache(modelLoader, assetLoader, cosmetic);
@@ -227,21 +245,6 @@ public class CosmeticsManager implements NetworkedManager {
         return this.equippedCosmeticsManager.getEquippedCosmetics();
     }
 
-    public void updateEquippedCosmetic(@NotNull CosmeticSlot slot, @Nullable String cosmeticId) {
-        CosmeticOutfit selectedOutfit = this.connectionManager.getOutfitManager().getSelectedOutfit();
-        if (selectedOutfit != null) {
-            updateEquippedCosmetic(selectedOutfit.getId(), slot, cosmeticId);
-        }
-    }
-
-    public void updateEquippedCosmetic(@NotNull CosmeticOutfit outfit, @NotNull CosmeticSlot slot, @Nullable String cosmeticId) {
-        updateEquippedCosmetic(outfit.getId(), slot, cosmeticId);
-    }
-
-    public void updateEquippedCosmetic(String outfitId, @NotNull CosmeticSlot slot, @Nullable String cosmeticId) {
-        this.connectionManager.getOutfitManager().updateEquippedCosmetic(outfitId, slot, cosmeticId);
-    }
-
     @NotNull
     public ImmutableMap<CosmeticSlot, EquippedCosmetic> getVisibleCosmetics(UUID playerId) {
         return this.equippedCosmeticsManager.getVisibleCosmetics(playerId);
@@ -256,7 +259,12 @@ public class CosmeticsManager implements NetworkedManager {
         return assetLoader.getAssetBytes(asset, priority);
     }
 
-    public void clearUnlockedCosmetics(boolean allowAutoUnlockIfSideloading) {
+    @Override
+    public void clearUnlockedCosmetics() {
+        clearUnlockedCosmetics(false);
+    }
+
+    private void clearUnlockedCosmetics(boolean allowAutoUnlockIfSideloading) {
         unlockedCosmeticsData.set(set -> new HashMap<>());
 
         // If we're side-loading, auto-unlock all cosmetics

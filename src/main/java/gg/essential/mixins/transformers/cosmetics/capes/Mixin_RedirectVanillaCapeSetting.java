@@ -13,9 +13,10 @@ package gg.essential.mixins.transformers.cosmetics.capes;
 
 import gg.essential.Essential;
 import gg.essential.config.EssentialConfig;
+import gg.essential.mod.cosmetics.CosmeticOutfit;
 import gg.essential.mod.cosmetics.CosmeticSlot;
 import gg.essential.network.connectionmanager.ConnectionManager;
-import gg.essential.network.connectionmanager.cosmetics.CosmeticsManager;
+import gg.essential.network.connectionmanager.cosmetics.OutfitManager;
 import net.minecraft.client.settings.GameSettings;
 import net.minecraft.entity.player.EnumPlayerModelParts;
 import org.spongepowered.asm.mixin.Mixin;
@@ -51,9 +52,13 @@ public class Mixin_RedirectVanillaCapeSetting {
             return;
         }
 
-        CosmeticsManager manager = connectionManager.getCosmeticsManager();
+        OutfitManager manager = connectionManager.getOutfitManager();
+        CosmeticOutfit outfit = manager.getSelectedOutfit();
+        if (outfit == null) {
+            return;
+        }
 
-        boolean isEnabled = !CAPE_DISABLED_COSMETIC_ID.equals(manager.getEquippedCosmetics().get(CosmeticSlot.CAPE));
+        boolean isEnabled = !CAPE_DISABLED_COSMETIC_ID.equals(outfit.getEquippedCosmetics().get(CosmeticSlot.CAPE));
         //#if MC>=11700
         //$$ if (isEnabled == shouldBeEnabled) {
         //$$     return; // correct as is, just pass through the call (this is likely CosmeticsManager calling)
@@ -67,10 +72,10 @@ public class Mixin_RedirectVanillaCapeSetting {
 
         if (shouldBeEnabled) {
             // They currently have the Cape Disabled cosmetic equipped, un-equip it
-            manager.updateEquippedCosmetic(CosmeticSlot.CAPE, null);
+            manager.updateEquippedCosmetic(outfit.getId(), CosmeticSlot.CAPE, null);
         } else {
             // They currently have capes enabled but don't want them, equip the Cape Disabled cosmetics
-            manager.updateEquippedCosmetic(CosmeticSlot.CAPE, CAPE_DISABLED_COSMETIC_ID);
+            manager.updateEquippedCosmetic(outfit.getId(), CosmeticSlot.CAPE, CAPE_DISABLED_COSMETIC_ID);
         }
     }
 }

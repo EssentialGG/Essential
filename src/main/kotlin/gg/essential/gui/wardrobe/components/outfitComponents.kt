@@ -27,7 +27,7 @@ import gg.essential.vigilance.utils.onLeftClick
 fun LayoutScope.outfitAddButton(state: WardrobeState, modifier: Modifier = Modifier) {
     val adding = mutableStateOf(false)
     val limitState = stateBy {
-        state.outfitItems().size >= state.cosmeticsManager.wardrobeSettings.outfitsLimit()
+        state.outfitItems().size >= state.settings.outfitsLimit()
     }
     val buttonModifierState = limitState.map { atLimit ->
         if (atLimit) {

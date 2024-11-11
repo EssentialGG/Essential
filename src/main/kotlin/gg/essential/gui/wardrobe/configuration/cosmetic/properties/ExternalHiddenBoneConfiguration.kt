@@ -160,7 +160,7 @@ class ExternalHiddenBoneConfiguration(
         targetCosmetic: Cosmetic,
     ) : CancelableInputModal(modalManager, "Bone name", "") {
 
-        private val model = state.cosmeticsManager.modelLoader.getModel(targetCosmetic, targetCosmetic.defaultVariantName, AssetLoader.Priority.Blocking).get()
+        private val model = state.modelLoader.getModel(targetCosmetic, targetCosmetic.defaultVariantName, AssetLoader.Priority.Blocking).get()
 
         init {
 

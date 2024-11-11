@@ -15,6 +15,7 @@ import com.mojang.authlib.GameProfile
 import gg.essential.api.gui.NotificationType
 import gg.essential.api.gui.Slot
 import gg.essential.api.profile.wrapped
+import gg.essential.config.EssentialConfig
 import gg.essential.cosmetics.CosmeticId
 import gg.essential.cosmetics.source.ConfigurableCosmeticsSource
 import gg.essential.elementa.UIComponent
@@ -208,6 +209,12 @@ fun LayoutScope.previewWindowTitleBar(state: WardrobeState, modifier: Modifier) 
             if_(!emoteSelected and !bundleSelected and !state.inEmoteWheel and regularContent) {
                 outfitAddButton(state)
             }
+            if_(emoteSelected and !state.editingMenuOpen and !state.inEmoteWheel) {
+                titleBarButton(Modifier.color(EssentialPalette.GRAY_BUTTON).hoverColor(EssentialPalette.GRAY_BUTTON_HOVER).hoverScope()) {
+                    icon({ if (EssentialConfig.playEmoteSoundsInWardrobe()) EssentialPalette.UNMUTE_10X7 else EssentialPalette.MUTE_10X7 },
+                        Modifier.color(EssentialPalette.TEXT).hoverColor(EssentialPalette.TEXT_HIGHLIGHT))
+                }.onLeftClick { click -> handleClick(click) { EssentialConfig.playEmoteSoundsInWardrobe.set { !it } } }
+            }
         }
     }
 }
@@ -229,7 +236,7 @@ fun LayoutScope.previewWindow(state: WardrobeState, modifier: Modifier, bottomDi
     val colorOptions = state.editingCosmetic.map { it?.cosmetic?.property<CosmeticProperty.Variants>()?.data?.variants }
     val sides = state.editingCosmetic.map { editing ->
         editing?.let { item ->
-            state.cosmeticsManager.modelLoader.getModel(item.cosmetic, item.cosmetic.defaultVariantName, AssetLoader.Priority.Blocking)
+            state.modelLoader.getModel(item.cosmetic, item.cosmetic.defaultVariantName, AssetLoader.Priority.Blocking)
                 .join().sideOptions.takeUnless { it.isEmpty() }
         }
     }
@@ -315,7 +322,9 @@ fun LayoutScope.previewWindow(state: WardrobeState, modifier: Modifier, bottomDi
         if_(previewing) {
             val purchaseBannerModifier = BasicYModifier { (SiblingConstraint(38f) boundTo purchaseBannerPosition).coerceAtMost(0.pixels(true) boundTo bottomDivider) }
                 .whenTrue(purchaseBannerLocked, Modifier.fillWidth()).whenTrue(previewTooNarrow, Modifier.alignVertical(Alignment.End))
-            purchaseBanner(state, purchaseBannerModifier.width(purchaseBannerWidth).height(purchaseBannerHeight)).apply {
+            box(purchaseBannerModifier.color(EssentialPalette.COMPONENT_BACKGROUND)) {
+                purchaseBannerContent(state, Modifier.width(purchaseBannerWidth).height(purchaseBannerHeight))
+            }.apply {
                 layoutSafePollingState(false) { bottomDivider.getTop() <= getBottom() }.onSetValue(this) {
                     // The banner's only at the bottom when the preview's too short, but always at the bottom when the preview's too narrow
                     // which would cause previewTooShort to always be true, so we need to check for that
@@ -357,12 +366,10 @@ private fun LayoutScope.playerPreviewInner(state: WardrobeState, modifier: Modif
         }
     }
 
-    val sounds = stateOf(false)
-
     val player = EmulatedUI3DPlayer(
         profile = profile.toV1(stateScope),
         sounds = stateOf(true),
-        soundsVolume = sounds.map { if (it) 1f else 0f },
+        soundsVolume = EssentialConfig.playEmoteSoundsInWardrobe.map { if (it) 1f else 0f },
     ).apply {
         val settings = memo {
             state.selectedBundle()?.settings ?: state.selectedPreviewingEquippedSettings()
@@ -411,7 +418,8 @@ private fun LayoutScope.playerPreviewInner(state: WardrobeState, modifier: Modif
 
             USound.playButtonPress()
             if (UKeyboard.isShiftKeyDown()) {
-                state.cosmeticsManager.updateEquippedCosmetic(
+                state.outfitManager.updateEquippedCosmetic(
+                    state.outfitManager.selectedOutfitId.getUntracked() ?: return@onLeftClick,
                     hoveredCosmetic.type.slot,
                     if (hoveredCosmetic.type.slot == CosmeticSlot.CAPE) CAPE_DISABLED_COSMETIC_ID else null,
                 )
@@ -420,7 +428,7 @@ private fun LayoutScope.playerPreviewInner(state: WardrobeState, modifier: Modif
 
             val editable = hoveredCosmetic.property<CosmeticProperty.Variants>() != null
                 || hoveredCosmetic.property<CosmeticProperty.PositionRange>() != null
-                || state.cosmeticsManager.modelLoader.getModel(
+                || state.modelLoader.getModel(
                 hoveredCosmetic,
                 hoveredCosmetic.defaultVariantName,
                 AssetLoader.Priority.Blocking,
@@ -463,11 +471,11 @@ private fun LayoutScope.playerPreviewInner(state: WardrobeState, modifier: Modif
     return player
 }
 
-private fun LayoutScope.purchaseBanner(state: WardrobeState, modifier: Modifier): UIComponent {
-    return purchaseBannerOld(state, modifier)
+private fun LayoutScope.purchaseBannerContent(state: WardrobeState, modifier: Modifier): UIComponent {
+    return purchaseBannerContentOld(state, modifier)
 }
 
-private fun LayoutScope.purchaseBannerOld(state: WardrobeState, modifier: Modifier): UIComponent {
+private fun LayoutScope.purchaseBannerContentOld(state: WardrobeState, modifier: Modifier): UIComponent {
 
     fun purchaseCallback(success: Boolean) {
         if (success) {
@@ -486,7 +494,7 @@ private fun LayoutScope.purchaseBannerOld(state: WardrobeState, modifier: Modifi
     val cost = state.currentCategoryTotalCost
     val buttonModifier = Modifier.width(94f).height(23f).color(EssentialPalette.BLUE_BUTTON).shadow(EssentialPalette.BLACK)
 
-    return row(modifier.color(EssentialPalette.COMPONENT_BACKGROUND)) {
+    return row(modifier) {
         spacer(width = 4f)
         box(Modifier.fillRemainingWidth()) {
             row(Arrangement.spacedBy(5f)) {

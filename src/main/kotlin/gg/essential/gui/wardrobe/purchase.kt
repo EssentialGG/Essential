@@ -25,11 +25,7 @@ import gg.essential.elementa.dsl.pixels
 import gg.essential.gui.EssentialPalette
 import gg.essential.gui.common.fullBodyRenderPreview
 import gg.essential.gui.common.sendNewCosmeticUnlockToast
-import gg.essential.gui.elementa.state.v2.ListState
-import gg.essential.gui.elementa.state.v2.State
 import gg.essential.gui.elementa.state.v2.combinators.map
-import gg.essential.gui.elementa.state.v2.mapEach
-import gg.essential.gui.elementa.state.v2.stateBy
 import gg.essential.gui.elementa.state.v2.stateOf
 import gg.essential.gui.elementa.state.v2.toListState
 import gg.essential.gui.layoutdsl.layout
@@ -47,11 +43,6 @@ fun WardrobeState.hasEnoughCoins(item: Item): Boolean {
 
 fun WardrobeState.hasEnoughCoins(items: Set<Item>): Boolean {
     return getTotalCost(stateOf(items.toList()).toListState()).get() <= coins.get()
-}
-
-fun WardrobeState.getTotalCost(items: ListState<Item>): State<Int> {
-    val costs = items.map { it.toSet().toList() }.toListState().mapEach { it.getCost(this@getTotalCost) }
-    return stateBy { costs().sumOf { it() ?: 0 } }
 }
 
 fun WardrobeState.purchaseCosmeticOrEmote(item: Item.CosmeticOrEmote, callback: (success: Boolean) -> Unit) {
@@ -76,16 +67,14 @@ fun WardrobeState.purchaseAndCreateOutfitForBundle(
         return
     }
 
-    val wardrobeSettings = cosmeticsManager.wardrobeSettings
-
-    if (outfitManager.outfits.get().size >= wardrobeSettings.outfitsLimit.get()) {
+    if (outfitManager.outfits.get().size >= settings.outfitsLimit.get()) {
         Notifications.error(
             "Your outfit library is full!",
             "Delete an outfit to make space for purchasing this bundle."
         )
     }
 
-    if (skinsManager.skins.get().size >= wardrobeSettings.skinsLimit.get()) {
+    if (skinsManager.skins.get().size >= settings.skinsLimit.get()) {
         Notifications.error(
             "Your skin library is full!",
             "Delete a skin to make space for purchasing this bundle."
@@ -255,7 +244,7 @@ private fun sendPurchaseBundlePacket(item: Item.Bundle, callback: (success: Bool
 }
 
 private fun WardrobeState.createOutfitForBundle(item: Item.Bundle, changeSelectedOutfit: Boolean = true, callback: (success: Boolean) -> Unit) {
-    skinsManager.addSkin(item.skin.name ?: skinsManager.getNextIncrementalSkinName(), item.skin.toMod(), selectSkin = false)
+    skinsManager.addSkin(item.skin.name ?: skinsManager.getNextIncrementalSkinName(), item.skin.toMod())
         .whenComplete { skin, _ ->
             if (skin == null) {
                 callback(false)

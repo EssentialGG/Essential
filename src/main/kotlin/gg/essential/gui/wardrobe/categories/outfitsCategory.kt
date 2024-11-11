@@ -32,5 +32,7 @@ fun LayoutScope.outfitsCategory(wardrobeState: WardrobeState, modifier: Modifier
         if_(outfits.map { it.isEmpty() }) {
             noItemsFound()
         }
+
+        spacer(height = 10f)
     }
 }

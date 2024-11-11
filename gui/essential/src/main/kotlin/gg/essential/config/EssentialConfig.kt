@@ -179,6 +179,14 @@ object EssentialConfig : Vigilant2(), GuiEssentialPlatform.Config {
     val disableEmotesState = property("Emotes.General.Disable Emotes", false)
     var disableEmotes by disableEmotesState
 
+    enum class AllowEmoteSounds(val label: String) {
+        FROM_EVERYONE("From everyone"),
+        FROM_MYSELF_AND_FRIENDS("From myself & friends"),
+        FROM_MYSELF_ONLY("From myself only"),
+        FROM_NOBODY("From nobody")
+    }
+    val allowEmoteSounds = property("Emotes.General.Allow emote sounds", AllowEmoteSounds.FROM_EVERYONE)
+
     val essentialScreenshotsState = property("Quality of Life.Screenshots.Essential Screenshots", true)
     var essentialScreenshots: Boolean
         get() = essentialEnabled && essentialScreenshotsState.get()
@@ -249,6 +257,8 @@ object EssentialConfig : Vigilant2(), GuiEssentialPlatform.Config {
 
     enum class PreviouslyLaunchedWithContainer { Unknown, Yes, No  }
     val previouslyLaunchedWithContainer = property("Hidden.previously_launched_with_container", PreviouslyLaunchedWithContainer.Unknown)
+
+    val playEmoteSoundsInWardrobe = property("Hidden.play_emote_sounds_in_wardrobe", true)
 
     override val migrations = listOf(
         Migration { config ->
@@ -376,6 +386,12 @@ object EssentialConfig : Vigilant2(), GuiEssentialPlatform.Config {
                 switch(!disableEmotesState) {
                     name = "Show emotes"
                     description = "Show emote animations on yourself and other players."
+                }
+
+                selector(allowEmoteSounds) {
+                    name = "Allow emote sounds"
+                    description = "Select who you can hear emote sounds from."
+                    options = AllowEmoteSounds.entries.map { it.label }
                 }
 
                 switch(thirdPersonEmotesState) {

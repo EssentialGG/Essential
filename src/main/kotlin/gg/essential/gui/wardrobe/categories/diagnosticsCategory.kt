@@ -39,6 +39,8 @@ fun LayoutScope.diagnosticsCategory(wardrobeState: WardrobeState, modifier: Modi
         if_({ byType.all { it.value().isEmpty() } && loading().isEmpty() }) {
             noItemsFound()
         }
+
+        spacer(height = 10f)
     }
 }
 

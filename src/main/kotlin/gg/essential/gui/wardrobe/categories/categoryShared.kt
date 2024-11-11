@@ -28,7 +28,5 @@ fun LayoutScope.cosmeticGroup(name: String, items: ListState<out Item>, wardrobe
         }
 
         cosmeticsGrid(WardrobeCategory.Outfits, items, wardrobeState)
-
-        spacer(height = 10f)
     }
 }

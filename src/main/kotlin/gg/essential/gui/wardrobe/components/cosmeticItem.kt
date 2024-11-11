@@ -25,6 +25,7 @@ import gg.essential.elementa.dsl.pixels
 import gg.essential.elementa.dsl.plus
 import gg.essential.elementa.dsl.provideDelegate
 import gg.essential.elementa.events.UIClickEvent
+import gg.essential.elementa.font.DefaultFonts
 import gg.essential.elementa.utils.withAlpha
 import gg.essential.gui.EssentialPalette
 import gg.essential.gui.common.CosmeticPreview
@@ -46,7 +47,6 @@ import gg.essential.gui.elementa.state.v2.combinators.zip
 import gg.essential.gui.elementa.state.v2.filter
 import gg.essential.gui.elementa.state.v2.memo
 import gg.essential.gui.elementa.state.v2.mutableStateOf
-import gg.essential.gui.elementa.state.v2.set
 import gg.essential.gui.elementa.state.v2.stateBy
 import gg.essential.gui.elementa.state.v2.stateOf
 import gg.essential.gui.elementa.state.v2.toV1
@@ -54,11 +54,6 @@ import gg.essential.gui.elementa.state.v2.toV2
 import gg.essential.gui.image.ImageFactory
 import gg.essential.gui.layoutdsl.*
 import gg.essential.gui.util.Tag
-import gg.essential.gui.wardrobe.EmoteWheelPage
-import gg.essential.gui.wardrobe.Item
-import gg.essential.gui.wardrobe.WardrobeCategory
-import gg.essential.gui.wardrobe.WardrobeContainer
-import gg.essential.gui.wardrobe.WardrobeState
 import gg.essential.mod.cosmetics.CosmeticSlot
 import gg.essential.mod.cosmetics.settings.CosmeticProperty
 import gg.essential.mod.cosmetics.settings.CosmeticSetting
@@ -77,6 +72,7 @@ import gg.essential.gui.util.isInComponentTree
 import gg.essential.gui.util.onAnimationFrame
 import gg.essential.util.onRightClick
 import gg.essential.gui.util.pollingState
+import gg.essential.gui.wardrobe.*
 import gg.essential.mod.cosmetics.database.LOCAL_PATH
 import gg.essential.mod.cosmetics.settings.setting
 import gg.essential.network.cosmetics.Cosmetic.Diagnostic
@@ -152,13 +148,9 @@ fun LayoutScope.cosmeticItem(item: Item, category: WardrobeCategory, state: Ward
     }
 
     val sizeModifier: Modifier = if (item is Item.Bundle) {
-        // Height = 198 Main + 2 Padding + 14 Text
-        // Width = 190 Main + 2 Padding
-        Modifier.height(214f).width(192f)
+        Modifier.itemSize(2, 2)
     } else {
-        // Height = 90 Main + 2 Padding + 14 Text
-        // Width = 90 Main + 2 Padding
-        Modifier.height(108f).width(92f)
+        Modifier.itemSize(1, 1)
     }
 
     val outlineColor = stateBy {
@@ -183,7 +175,7 @@ fun LayoutScope.cosmeticItem(item: Item, category: WardrobeCategory, state: Ward
 
     val hasSideOption = mutableStateOf(false).apply {
         if (item is Item.CosmeticOrEmote) {
-            state.cosmeticsManager.modelLoader.getModel(item.cosmetic, item.cosmetic.defaultVariantName, AssetLoader.Priority.High).thenAcceptOnMainThread {
+            state.modelLoader.getModel(item.cosmetic, item.cosmetic.defaultVariantName, AssetLoader.Priority.High).thenAcceptOnMainThread {
                 set(it.isContainsSideOption)
             }
         }
@@ -207,8 +199,8 @@ fun LayoutScope.cosmeticItem(item: Item, category: WardrobeCategory, state: Ward
 
     box(sizeModifier.tag(CosmeticItemTag(item)).hoverScope().then(modifier)) {
         column(Modifier.fillParent()) {
-            box(Modifier.fillRemainingHeight().fillWidth().color(outlineColor).then(highlightModifier)) {
-                box(Modifier.fillParent(padding = 1f).color(EssentialPalette.GUI_BACKGROUND)) {
+            box(Modifier.fillRemainingHeight().fillWidth().outline(outlineColor, stateOf(1f)).then(highlightModifier)) {
+                box(Modifier.fillParent().color(EssentialPalette.GUI_BACKGROUND)) {
                     box(Modifier.fillRemainingHeight().fillWidth().alignVertical(Alignment.Start).then(background)) {
                         lazyBox {
                             when (item) {
@@ -269,21 +261,21 @@ fun LayoutScope.cosmeticItem(item: Item, category: WardrobeCategory, state: Ward
                 }
             }
 
-            box(Modifier.fillWidth().height(14f)) {
-                box(Modifier.fillHeight().fillWidth(padding = 2f)) {
+            box(Modifier.fillWidth().height(cosmeticTextHeight)) {
+                box(Modifier.height(DefaultFonts.VANILLA_FONT_RENDERER.run { getBaseLineHeight() + getBelowLineHeight() }).fillWidth(padding = 2f).alignVertical(Alignment.End)) {
                     text(
                         item.name,
                         truncateIfTooSmall = true,
                         modifier = Modifier.color(EssentialPalette.TEXT).alignHorizontal(Alignment.Start),
                     )
-                }
-                if_(containerDontUseThisUnlessYouReallyHaveTo.hoverScope()) {
-                    options(item, category, state)
+                    if_(containerDontUseThisUnlessYouReallyHaveTo.hoverScope()) {
+                        options(item, category, state)
+                    }
                 }
             }
         }
     }.onRightClick {
-        state.handleItemRightClick(item, category, it)
+        handleItemRightClick(item, category, state, it)
     }.apply {
         // This has been copied from EmoteWheelPage, if something is changed here, you should probably change it there too.
         if (item is Item.CosmeticOrEmote && item.cosmetic.type.slot == CosmeticSlot.EMOTE) {
@@ -409,7 +401,7 @@ fun LayoutScope.cosmeticItem(item: Item, category: WardrobeCategory, state: Ward
             }
         } else {
             onLeftClick {
-                state.handleItemLeftClick(item, category, it)
+                handleItemLeftClick(item, category, state, it)
             }
         }
     }
@@ -872,7 +864,7 @@ private fun LayoutScope.colorBar(item: Item, category: WardrobeCategory, wardrob
 }
 
 private fun LayoutScope.options(item: Item, category: WardrobeCategory, wardrobeState: WardrobeState) {
-    if_(wardrobeState.hasOptionsButton(item)) {
+    if_(hasOptionsButton(item, wardrobeState)) {
         row(Modifier.fillHeight().alignHorizontal(Alignment.End)) {
             GradientComponent(
                 EssentialPalette.GUI_BACKGROUND.withAlpha(0),
@@ -886,9 +878,49 @@ private fun LayoutScope.options(item: Item, category: WardrobeCategory, wardrobe
             Modifier.fillHeight().width(15f).alignHorizontal(Alignment.End).hoverScope(),
             Modifier.color(EssentialPalette.TEXT).hoverTooltip("Options").hoverColor(EssentialPalette.TEXT_HIGHLIGHT).shadow(),
             onLeftClick = {
-                wardrobeState.handleItemRightClick(item, category, it)
+                handleItemRightClick(item, category, wardrobeState, it)
                 it.stopPropagation()
             }
         )
     }
 }
+
+private fun hasOptionsButton(item: Item, wardrobeState: WardrobeState): State<Boolean> {
+    return when (item) {
+        is Item.CosmeticOrEmote -> {
+            hasCosmeticOrEmoteOptionsButton(item, wardrobeState)
+        }
+        is Item.Bundle -> {
+            hasBundleOptionsButton(item, wardrobeState)
+        }
+        else -> stateOf(true)
+    }
+}
+
+private fun handleItemLeftClick(item: Item, category: WardrobeCategory, wardrobeState: WardrobeState, event: UIClickEvent) {
+    when (item) {
+        is Item.Bundle -> handleBundleLeftClick(item, category, wardrobeState)
+        is Item.CosmeticOrEmote -> handleCosmeticOrEmoteLeftClick(item, category, wardrobeState)
+        is Item.OutfitItem -> handleOutfitLeftClick(item, wardrobeState, event)
+        is Item.SkinItem -> handleSkinLeftClick(item, wardrobeState)
+    }
+}
+
+private fun handleItemRightClick(item: Item, category: WardrobeCategory, wardrobeState: WardrobeState, event: UIClickEvent) {
+    when (item) {
+        is Item.Bundle -> handleBundleRightClick(item, wardrobeState, event)
+        is Item.CosmeticOrEmote -> handleCosmeticOrEmoteRightClick(item, category, wardrobeState, event)
+        is Item.OutfitItem -> displayOutfitOptions(item, wardrobeState, event)
+        is Item.SkinItem -> handleSkinRightClick(item, wardrobeState, event)
+    }
+}
+
+const val cosmeticWidth = 90f
+// 8px for text, 3px for spacing
+const val cosmeticTextHeight = 11f
+const val cosmeticXSpacing = 10f
+const val cosmeticYSpacing = 7f
+
+fun Modifier.itemSize(width: Int, height: Int) =
+    width(cosmeticWidth * width + (width - 1) * cosmeticXSpacing)
+        .height((cosmeticWidth + cosmeticTextHeight) * height + (height - 1) * cosmeticYSpacing)

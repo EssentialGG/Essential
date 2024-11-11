@@ -101,7 +101,7 @@ class CoinsPurchaseModal(
             val bundleState = memo {
                 val missingCoins = coinsNeededState()
                 if (originalBundle.isExchangeBundle && missingCoins > 0) {
-                    val minimumBundleSize = state.cosmeticsManager.wardrobeSettings.youNeedMinimumAmount()
+                    val minimumBundleSize = state.settings.youNeedMinimumAmount()
                     originalBundle.getBundleForNumberOfCoins(max(minimumBundleSize, missingCoins))
                 } else originalBundle
             }
@@ -172,7 +172,7 @@ class CoinsPurchaseModal(
                     */
                 }.onLeftClick {
                     USound.playButtonPress()
-                    coinsManager.purchaseBundle(bundle) { uri ->
+                    coinsManager.purchaseBundle(bundle, ModLoaderUtil.getLoadedPartnerModIds()) { uri ->
                         close()
                         openInBrowser(uri)
                     }

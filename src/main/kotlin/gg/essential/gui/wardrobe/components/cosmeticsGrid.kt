@@ -16,8 +16,6 @@ import gg.essential.elementa.dsl.pixels
 import gg.essential.gui.elementa.state.v2.ListState
 import gg.essential.gui.layoutdsl.*
 import gg.essential.gui.wardrobe.Item
-import gg.essential.gui.wardrobe.Wardrobe.Companion.cosmeticSpacing
-import gg.essential.gui.wardrobe.Wardrobe.Companion.cosmeticWidth
 import gg.essential.gui.wardrobe.WardrobeCategory
 import gg.essential.gui.wardrobe.WardrobeState
 
@@ -27,9 +25,9 @@ fun LayoutScope.cosmeticsGrid(
     wardrobeState: WardrobeState,
     modifier: Modifier = Modifier,
 ): UIComponent {
-    return flowContainer(modifier.fillWidth(), { cosmeticSpacing.pixels }, { 7.pixels }) {
+    return flowContainer(modifier.fillWidth(), { cosmeticXSpacing.pixels }, { cosmeticYSpacing.pixels }) {
         forEach(cosmetics, cache = true) { cosmetic ->
-            cosmeticItem(cosmetic, category, wardrobeState, Modifier.width(cosmeticWidth))
+            cosmeticItem(cosmetic, category, wardrobeState, Modifier)
         }
     }
 }

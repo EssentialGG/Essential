@@ -11,7 +11,6 @@
  */
 package gg.essential.network.connectionmanager.coins
 
-import gg.essential.Essential
 import gg.essential.config.EssentialConfig
 import gg.essential.connectionmanager.common.packet.checkout.ClientCheckoutClaimCoinsPacket
 import gg.essential.connectionmanager.common.packet.checkout.ClientCheckoutCoinBundlePacket
@@ -33,22 +32,26 @@ import gg.essential.gui.elementa.state.v2.stateBy
 import gg.essential.gui.notification.Notifications
 import gg.essential.gui.notification.sendCheckoutFailedNotification
 import gg.essential.gui.wardrobe.modals.CoinsReceivedModal
-import gg.essential.network.connectionmanager.ConnectionManager
+import gg.essential.network.CMConnection
 import gg.essential.network.connectionmanager.NetworkedManager
-import gg.essential.network.connectionmanager.handler.checkout.ServerCheckoutPartnerCodeDataPacketHandler
-import gg.essential.network.connectionmanager.handler.coins.ServerCoinsBalancePacketHandler
 import gg.essential.network.cosmetics.toMod
+import gg.essential.network.registerPacketHandler
 import gg.essential.util.*
+import gg.essential.util.GuiEssentialPlatform.Companion.platform
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import org.slf4j.LoggerFactory
 import java.net.URI
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.*
-import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.milliseconds
 
-class CoinsManager(val connectionManager: ConnectionManager) : NetworkedManager {
+class CoinsManager(val connectionManager: CMConnection) : NetworkedManager {
 
     private val referenceHolder = ReferenceHolderImpl()
-    private var currentCodeValidationTaskId = 0
+    private var currentCodeValidationJob: Job? = null
     private var isClaimingCoins = false
 
     // Actual data
@@ -88,8 +91,12 @@ class CoinsManager(val connectionManager: ConnectionManager) : NetworkedManager 
     }
 
     init {
-        connectionManager.registerPacketHandler(ServerCoinsBalancePacket::class.java, ServerCoinsBalancePacketHandler())
-        connectionManager.registerPacketHandler(ServerCheckoutPartnerCodeDataPacket::class.java, ServerCheckoutPartnerCodeDataPacketHandler())
+        connectionManager.registerPacketHandler<ServerCoinsBalancePacket> { packet ->
+            onBalanceUpdate(packet.coins, packet.coinsSpent, packet.topUpAmount)
+        }
+        connectionManager.registerPacketHandler<ServerCheckoutPartnerCodeDataPacket> { packet ->
+            onCreatorCodeData(packet.partnerCode, packet.partnerName, packet.isPersist)
+        }
 
         currency.onSetValue(referenceHolder) { refreshPricing(it) }
         // We only really verify the configured code, the non-persistent one is already infra provided
@@ -110,7 +117,7 @@ class CoinsManager(val connectionManager: ConnectionManager) : NetworkedManager 
         mutableCoinsSpent.set(0)
     }
 
-    fun purchaseBundle(bundle: CoinBundle, callback: (URI) -> Unit) {
+    fun purchaseBundle(bundle: CoinBundle, loadedPartnerIds: Set<String>, callback: (URI) -> Unit) {
         // If we are already waiting for a response, prevent spamming
         if (purchaseRequestInProgress) return
         purchaseRequestInProgress = true
@@ -118,9 +125,9 @@ class CoinsManager(val connectionManager: ConnectionManager) : NetworkedManager 
         val creatorCode = if (creatorCodeValid.get() == true) creatorCode.get() else null
 
         val packet = if (bundle.isSpecificAmount) {
-            ClientCheckoutDynamicCoinBundlePacket(bundle.numberOfCoins, bundle.currency, creatorCode)
+            ClientCheckoutDynamicCoinBundlePacket(bundle.numberOfCoins, bundle.currency, creatorCode, loadedPartnerIds)
         } else {
-            ClientCheckoutCoinBundlePacket(bundle.id, bundle.currency, creatorCode)
+            ClientCheckoutCoinBundlePacket(bundle.id, bundle.currency, creatorCode, loadedPartnerIds)
         }
         connectionManager.send(packet) { maybeResponse ->
             purchaseRequestInProgress = false
@@ -140,25 +147,21 @@ class CoinsManager(val connectionManager: ConnectionManager) : NetworkedManager 
 
     fun refreshPricing() = refreshPricing(currency.get())
 
-    private fun refreshCoins(retryDelay: Long = 1) {
-        connectionManager.send(ClientCoinsBalancePacket()) { maybeResponse ->
-            val responsePacket = maybeResponse.orElse(null)
+    private fun refreshCoins() {
+        connectionManager.connectionScope.launch {
+            connectionManager.call(ClientCoinsBalancePacket())
+                .exponentialBackoff()
+                .await<ServerCoinsBalancePacket>()
             // Updating the balance is done by the packet handler
-            if (responsePacket !is ServerCoinsBalancePacket) {
-                Multithreading.scheduleOnMainThread({ refreshCoins(retryDelay * 2) }, retryDelay, TimeUnit.SECONDS)
-            }
         }
     }
 
-    private fun refreshCurrencies(retryDelay: Long = 1) {
-        connectionManager.send(ClientCurrencyOptionsPacket()) { maybeResponse ->
-            val responsePacket = maybeResponse.orElse(null)
-            if (responsePacket is ServerCurrencyOptionsPacket) {
-                mutableCurrencies.setAll(responsePacket.currencies)
-            } else {
-                // Retry after double previous retry time
-                Multithreading.scheduleOnMainThread({ refreshCurrencies(retryDelay * 2) }, retryDelay, TimeUnit.SECONDS)
-            }
+    private fun refreshCurrencies() {
+        connectionManager.connectionScope.launch {
+            val response = connectionManager.call(ClientCurrencyOptionsPacket())
+                .exponentialBackoff()
+                .await<ServerCurrencyOptionsPacket>()
+            mutableCurrencies.setAll(response.currencies)
         }
     }
 
@@ -166,14 +169,12 @@ class CoinsManager(val connectionManager: ConnectionManager) : NetworkedManager 
         if (!connectionManager.isOpen) return // Return if connection is not open (since we use states from config, this can get triggered very early)
         if (code.isNullOrEmpty() || (!force && checkedCreatorCodes.get().contains(code))) return
 
-        val taskId = ++currentCodeValidationTaskId
+        currentCodeValidationJob?.cancel()
         if (debounce) {
-            Multithreading.scheduleOnMainThread({
-                if (taskId != currentCodeValidationTaskId) {
-                    return@scheduleOnMainThread
-                }
+            currentCodeValidationJob = connectionManager.connectionScope.launch {
+                delay(500.milliseconds)
                 validateCode(code, false, force)
-            }, 500, TimeUnit.MILLISECONDS)
+            }
             return
         }
 
@@ -202,17 +203,18 @@ class CoinsManager(val connectionManager: ConnectionManager) : NetworkedManager 
         }
     }
 
-    fun onBalanceUpdate(coins: Int, coinsSpent: Int, topUpAmount: Int?) {
+    private fun onBalanceUpdate(coins: Int, coinsSpent: Int, topUpAmount: Int?) {
         // Split behaviour if the packet was sent as a result of a successful coins purchase
         // If we are currently claiming coins, we might receive a top-up packet before we get the claim confirmation, so we handle all balance updates during claiming as claim top-ups.
         if (topUpAmount != null) {
             // If we aren't in the middle of a claim
             if (!isClaimingCoins) {
-                GuiUtil.pushModal { manager -> 
+                val manager = platform.createModalManager()
+                manager.queueModal(
                     // Make the modal first as it disables coins animations
                     CoinsReceivedModal.fromPurchase(manager, this, topUpAmount)
                         .apply { mutableCoins.set(coins) }
-                }
+                )
             } else {
                 // Otherwise, this is a claim top-up packet, so we finish the claiming process
                 isClaimingCoins = false
@@ -224,7 +226,7 @@ class CoinsManager(val connectionManager: ConnectionManager) : NetworkedManager 
         mutableCoinsSpent.set(coinsSpent)
     }
 
-    fun onCreatorCodeData(code: String, name: String, persist: Boolean) {
+    private fun onCreatorCodeData(code: String, name: String, persist: Boolean) {
         checkedCreatorCodes.set { it + Pair(code, name) }
         if (persist) {
             // This write is redundant if the user requested this validation, but since it's the same value anyway it doesn't matter
@@ -249,12 +251,13 @@ class CoinsManager(val connectionManager: ConnectionManager) : NetworkedManager 
 
                 // The modal will also unfreeze coins when it's dismissed
                 // Alongside this response, infra sends down a top-up balance packet too, it's handler will set isClaimingCoins back to false
-                GuiUtil.pushModal { CoinsReceivedModal.fromCoinClaim(it, this, packet.coinsClaimed) }
+                val manager = platform.createModalManager()
+                manager.queueModal(CoinsReceivedModal.fromCoinClaim(manager, this, packet.coinsClaimed))
 
                 return@send // Return if successful
             } else if (packet !is ResponseActionPacket || packet.errorMessage == null) {
                 // Invalid packet or missing errorMessage means infra error
-                Essential.debug.error("ClientCheckoutClaimCoinsPacket gave invalid response!")
+                LOGGER.error("ClientCheckoutClaimCoinsPacket gave invalid response!")
             }
             areCoinsVisuallyFrozen.set(false) // Unfreeze if unsuccessful
             isClaimingCoins = false
@@ -262,6 +265,7 @@ class CoinsManager(val connectionManager: ConnectionManager) : NetworkedManager 
     }
 
     companion object {
+        private  val LOGGER = LoggerFactory.getLogger(CoinsManager::class.java)
         val COIN_FORMAT = DecimalFormat("#,###", DecimalFormatSymbols(Locale.US))
     }
 

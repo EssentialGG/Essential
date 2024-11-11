@@ -11,7 +11,6 @@
  */
 package gg.essential.network.connectionmanager.cosmetics
 
-import gg.essential.Essential
 import gg.essential.connectionmanager.common.packet.cosmetic.outfit.ClientCosmeticOutfitCreatePacket
 import gg.essential.connectionmanager.common.packet.cosmetic.outfit.ClientCosmeticOutfitCosmeticSettingsUpdatePacket
 import gg.essential.connectionmanager.common.packet.cosmetic.outfit.ClientCosmeticOutfitDeletePacket
@@ -21,6 +20,7 @@ import gg.essential.connectionmanager.common.packet.cosmetic.outfit.ClientCosmet
 import gg.essential.connectionmanager.common.packet.cosmetic.outfit.ClientCosmeticOutfitSelectPacket
 import gg.essential.connectionmanager.common.packet.cosmetic.outfit.ClientCosmeticOutfitSkinUpdatePacket
 import gg.essential.connectionmanager.common.packet.cosmetic.outfit.ServerCosmeticOutfitPopulatePacket
+import gg.essential.cosmetics.CosmeticId
 import gg.essential.cosmetics.SkinId
 import gg.essential.gui.elementa.state.v2.MutableState
 import gg.essential.gui.elementa.state.v2.ReferenceHolderImpl
@@ -34,29 +34,32 @@ import gg.essential.gui.elementa.state.v2.onChange
 import gg.essential.gui.elementa.state.v2.remove
 import gg.essential.gui.elementa.state.v2.stateBy
 import gg.essential.gui.elementa.state.v2.toListState
-import gg.essential.gui.notification.Notifications
-import gg.essential.handlers.GameProfileManager
 import gg.essential.mod.Skin
 import gg.essential.mod.cosmetics.CosmeticOutfit
 import gg.essential.mod.cosmetics.CosmeticSlot
 import gg.essential.mod.cosmetics.OutfitSkin
 import gg.essential.mod.cosmetics.settings.CosmeticSetting
-import gg.essential.network.connectionmanager.ConnectionManager
+import gg.essential.network.CMConnection
 import gg.essential.network.connectionmanager.NetworkedManager
-import gg.essential.network.connectionmanager.handler.cosmetics.ServerCosmeticOutfitPopulatePacketHandler
 import gg.essential.network.connectionmanager.queue.PacketQueue
 import gg.essential.network.connectionmanager.queue.SequentialPacketQueue
 import gg.essential.network.cosmetics.toInfra
-import gg.essential.universal.UMinecraft
-import gg.essential.util.Multithreading
-import gg.essential.util.UUIDUtil
+import gg.essential.network.cosmetics.toMod
+import gg.essential.network.registerPacketHandler
+import gg.essential.util.USession
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import org.slf4j.LoggerFactory
 import java.time.Instant
-import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.seconds
 
 class OutfitManager(
-    val connectionManager: ConnectionManager,
-    val cosmeticsManager: CosmeticsManager,
+    val connectionManager: CMConnection,
+    val cosmeticsData: CosmeticsData,
+    val unlockedCosmetics: State<Set<CosmeticId>>,
+    val equippedCosmeticsManager: EquippedCosmeticsManager,
     val skins: State<Map<SkinId, Skin>>
 ) : NetworkedManager {
 
@@ -78,21 +81,21 @@ class OutfitManager(
 
     private val equippedOwnedCosmetics = stateBy {
         val selected = selectedOutfitId()
-        val unlockedCosmetics = cosmeticsManager.unlockedCosmetics()
+        val unlockedCosmetics = unlockedCosmetics()
         outfits().find { it.id == selected }?.equippedCosmetics?.filter { it.value in unlockedCosmetics } ?: mapOf()
     }
     private val equippedOwnedCosmeticsSettings = stateBy {
         val selected = selectedOutfitId()
-        val unlockedCosmetics = cosmeticsManager.unlockedCosmetics()
+        val unlockedCosmetics = unlockedCosmetics()
         val outfit = outfits().find { it.id == selected }
         outfit?.cosmeticSettings?.filter { it.key in unlockedCosmetics && it.key in outfit.equippedCosmetics.values } ?: mapOf()
     }
-    private val equippedSkin = stateBy {
+    val equippedSkin = stateBy {
         val selected = selectedOutfitId()
         outfits().find { it.id == selected }?.skin?.skin
     }
 
-    private var currentFlushOutfitTaskId = 0
+    private var flushSelectedOutfitJob: Job? = null
 
     private val packetQueue: PacketQueue = SequentialPacketQueue.Builder(connectionManager)
         .onTimeoutRetransmit()
@@ -100,16 +103,18 @@ class OutfitManager(
     private val referenceHolder = ReferenceHolderImpl()
 
     init {
-        connectionManager.registerPacketHandler(
-            ServerCosmeticOutfitPopulatePacket::class.java, ServerCosmeticOutfitPopulatePacketHandler()
-        )
-        Essential.EVENT_BUS.register(this)
+        connectionManager.registerPacketHandler<ServerCosmeticOutfitPopulatePacket> { packet ->
+            val outfits = packet.outfits.toMod()
+            mutableOutfits.set { list ->
+                list.removeAll(list.filter { o -> outfits.any { it.id == o.id } }).addAll(outfits)
+            }
+            val selectedOutfitId = packet.outfits.find { it.isSelected }?.id
+            setSelectedOutfit(selectedOutfitId)
+            sentOutfitId = selectedOutfitId
+        }
 
         equippedOwnedCosmetics.zip(equippedOwnedCosmeticsSettings).onChange(referenceHolder) { (cosmetics, settings) ->
-            cosmeticsManager.equippedCosmeticsManager.update(UUIDUtil.getClientUUID(), cosmetics, settings)
-        }
-        equippedSkin.onSetValue(referenceHolder) { skin ->
-            applyOutfitSkin(skin ?: return@onSetValue, true)
+            equippedCosmeticsManager.update(USession.activeNow().uuid, cosmetics, settings)
         }
     }
 
@@ -135,7 +140,7 @@ class OutfitManager(
         }
         val outfit = getOutfit(id)
         if (outfit == null) {
-            Essential.logger.error("Unable to select outfit $id as it doesn't exist")
+            LOGGER.error("Unable to select outfit $id as it doesn't exist")
             return
         }
         setSelectedOutfit(outfit)
@@ -154,17 +159,6 @@ class OutfitManager(
         flushSelectedOutfit(true)
     }
 
-    fun populateOutfits(outfits: List<CosmeticOutfit>) {
-        mutableOutfits.set { list ->
-            list.removeAll(list.filter { o -> outfits.any { it.id == o.id } }).addAll(outfits)
-        }
-    }
-
-    fun populateSelection(selectedOutfitId: String?) {
-        setSelectedOutfit(selectedOutfitId)
-        sentOutfitId = selectedOutfitId
-    }
-
     fun addOutfit(
         name: String = createNewOutfitName(),
         skinId: String = getSelectedOutfit()?.skinId ?: "",
@@ -173,33 +167,35 @@ class OutfitManager(
         callback: (outfit: CosmeticOutfit?) -> Unit,
     ) {
         if (skinId == "") {
-            Essential.logger.error("Unable to get skin id for outfit creation.")
+            LOGGER.error("Unable to get skin id for outfit creation.")
             callback(null)
             return
         }
+        // Remove any assigned emote
+        val finalEquippedCosmetics = equippedCosmetics - CosmeticSlot.EMOTE
         this.connectionManager.send(
             ClientCosmeticOutfitCreatePacket(
                 name,
                 skinId,
-                equippedCosmetics.mapKeys { it.key.toInfra() },
+                finalEquippedCosmetics.mapKeys { it.key.toInfra() },
                 cosmeticSettings.mapValues { it.value.map { it.toInfra() } }
             ),
             { responsePacket ->
                 if (!responsePacket.isPresent) {
-                    Essential.debug.error("ClientCosmeticOutfitCreatePacket did not give a response")
+                    LOGGER.error("ClientCosmeticOutfitCreatePacket did not give a response")
                     callback(null)
                     return@send
                 }
                 val response = responsePacket.get()
                 if (response !is ServerCosmeticOutfitPopulatePacket) {
-                    Essential.debug.error("ClientCosmeticOutfitCreatePacket did not give a successful response")
+                    LOGGER.error("ClientCosmeticOutfitCreatePacket did not give a successful response")
                     callback(null)
                     return@send
                 }
 
                 val infraOutfits = response.outfits
                 if (infraOutfits.isEmpty()) {
-                    Essential.debug.error("ClientCosmeticOutfitCreatePacket gave an empty list")
+                    LOGGER.error("ClientCosmeticOutfitCreatePacket gave an empty list")
                     callback(null)
                     return@send
                 }
@@ -213,7 +209,7 @@ class OutfitManager(
     fun renameOutfit(id: String, name: String) {
         val outfit = getOutfit(id)
         if (outfit == null) {
-            Essential.logger.error("Unable to rename outfit $id as it doesn't exist")
+            LOGGER.error("Unable to rename outfit $id as it doesn't exist")
             return
         }
         editOutfit(outfit.copy(name = name))
@@ -223,13 +219,13 @@ class OutfitManager(
     fun deleteOutfit(id: String) {
         val outfit = getOutfit(id)
         if (outfit == null) {
-            Essential.logger.error("Unable to delete outfit $id as it doesn't exist")
+            LOGGER.error("Unable to delete outfit $id as it doesn't exist")
             return
         }
         if (outfit.id == selectedOutfitId.get()) {
             val toBeSelected = outfits.get().firstOrNull { it.id != outfit.id }
             if (toBeSelected == null) {
-                Notifications.push("Error deleting outfit", "You must have one or more outfits.")
+                LOGGER.error("Unable to delete outfit $id as it is the only one remaining")
                 return
             }
             setSelectedOutfit(toBeSelected)
@@ -251,7 +247,7 @@ class OutfitManager(
     fun updateOutfitCosmeticSettings(outfitId: String, cosmeticId: String, settings: List<CosmeticSetting>) {
         val outfit = getOutfit(outfitId)
         if (outfit == null) {
-            Essential.logger.error("Unable to update cosmetic settings for $outfitId")
+            LOGGER.error("Unable to update cosmetic settings for $outfitId")
             return
         }
 
@@ -272,22 +268,22 @@ class OutfitManager(
     fun updateEquippedCosmetic(outfitId: String, slot: CosmeticSlot, cosmeticId: String?) {
         val outfit = getOutfit(outfitId)
         if (outfit == null) {
-            Essential.logger.error("Unable to update equipped cosmetic for $outfitId")
+            LOGGER.error("Unable to update equipped cosmetic for $outfitId")
             return
         }
 
         val equippedCosmetics = outfit.equippedCosmetics.toMutableMap()
         if (cosmeticId != null) {
             // All slots that the equipped cosmetic is mutually exclusive with
-            for (mutuallyExclusiveSlot in cosmeticsManager.getCosmetic(cosmeticId)?.mutuallyExclusiveWith ?: emptySet()) {
+            for (mutuallyExclusiveSlot in cosmeticsData.getCosmetic(cosmeticId)?.mutuallyExclusiveWith ?: emptySet()) {
                 if (equippedCosmetics.containsKey(mutuallyExclusiveSlot)) {
                     equippedCosmetics.remove(mutuallyExclusiveSlot)
                     packetQueue.enqueue(ClientCosmeticOutfitEquippedCosmeticsUpdatePacket(outfit.id, mutuallyExclusiveSlot.toInfra(), null))
                 }
             }
             // All other slots with an equipped cosmetic that is mutually exclusive with the newly equipped slot
-            for ((equippedSlot, equippedCosmeticId) in equippedCosmetics.entries) {
-                if (cosmeticsManager.getCosmetic(equippedCosmeticId)?.mutuallyExclusiveWith?.contains(slot) == true) {
+            for ((equippedSlot, equippedCosmeticId) in equippedCosmetics.entries.toSet()) {
+                if (cosmeticsData.getCosmetic(equippedCosmeticId)?.mutuallyExclusiveWith?.contains(slot) == true) {
                     equippedCosmetics.remove(equippedSlot)
                     packetQueue.enqueue(ClientCosmeticOutfitEquippedCosmeticsUpdatePacket(outfit.id, equippedSlot.toInfra(), null))
                 }
@@ -332,14 +328,12 @@ class OutfitManager(
     }
 
     fun flushSelectedOutfit(debounce: Boolean) {
-        val taskId = ++currentFlushOutfitTaskId
+        flushSelectedOutfitJob?.cancel()
         if (debounce) {
-            Multithreading.scheduleOnMainThread({
-                if (taskId != currentFlushOutfitTaskId) {
-                    return@scheduleOnMainThread
-                }
+            flushSelectedOutfitJob = connectionManager.connectionScope.launch {
+                delay(3.seconds)
                 flushSelectedOutfit(false)
-            }, 3, TimeUnit.SECONDS)
+            }
             return
         }
         val selectedOutfit = selectedOutfitId.get()
@@ -348,21 +342,6 @@ class OutfitManager(
         }
         sentOutfitId = selectedOutfit
         this.packetQueue.enqueue(ClientCosmeticOutfitSelectPacket(selectedOutfit))
-    }
-
-    private fun applyOutfitSkin(skin: Skin, updateWithMojang: Boolean) {
-        val gameProfileManager = Essential.getInstance().gameProfileManager
-        val skinManager = Essential.getInstance().skinManager
-        val model = skin.model
-        val hash = skin.hash
-        gameProfileManager.updatePlayerSkin(UUIDUtil.getClientUUID(), hash, model.type)
-        if (updateWithMojang) {
-            skinManager.changeSkin(
-                UMinecraft.getMinecraft().session.token,
-                model,
-                String.format(Locale.ROOT, GameProfileManager.SKIN_URL, hash)
-            )
-        }
     }
 
     private fun createNewOutfitName(): String {
@@ -378,4 +357,7 @@ class OutfitManager(
         }
     }
 
+    companion object {
+        private val LOGGER = LoggerFactory.getLogger(OutfitManager::class.java)
+    }
 }

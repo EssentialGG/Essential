@@ -11,7 +11,6 @@
  */
 package gg.essential.network.connectionmanager.skins
 
-import gg.essential.connectionmanager.common.packet.response.ResponseActionPacket
 import gg.essential.connectionmanager.common.packet.skin.ClientSkinCreatePacket
 import gg.essential.connectionmanager.common.packet.skin.ClientSkinDeletePacket
 import gg.essential.connectionmanager.common.packet.skin.ClientSkinUpdateDataPacket
@@ -28,16 +27,21 @@ import gg.essential.gui.notification.Notifications
 import gg.essential.gui.notification.error
 import gg.essential.mod.Model
 import gg.essential.mod.Skin
-import gg.essential.network.connectionmanager.ConnectionManager
+import gg.essential.network.CMConnection
 import gg.essential.network.connectionmanager.NetworkedManager
-import gg.essential.network.connectionmanager.handler.skins.ServerSkinPopulatePacketHandler
+import gg.essential.network.connectionmanager.cosmetics.OutfitManager
 import gg.essential.network.connectionmanager.queue.SequentialPacketQueue
 import gg.essential.network.cosmetics.toInfra
 import gg.essential.network.cosmetics.toMod
-import gg.essential.util.*
+import gg.essential.network.registerPacketHandler
+import gg.essential.util.GuiEssentialPlatform.Companion.platform
+import kotlinx.coroutines.async
+import kotlinx.coroutines.future.asCompletableFuture
+import kotlinx.coroutines.launch
+import java.io.IOException
 import java.util.concurrent.CompletableFuture
 
-class SkinsManager(val connectionManager: ConnectionManager) : NetworkedManager {
+class SkinsManager(private val connectionManager: CMConnection) : NetworkedManager {
 
     private val packetQueue = SequentialPacketQueue.Builder(connectionManager).onTimeoutSkip().create()
 
@@ -54,7 +58,9 @@ class SkinsManager(val connectionManager: ConnectionManager) : NetworkedManager 
     }.toListState()
 
     init {
-        connectionManager.registerPacketHandler(ServerSkinPopulatePacket::class.java, ServerSkinPopulatePacketHandler())
+        connectionManager.registerPacketHandler<ServerSkinPopulatePacket> { packet ->
+            mutableSkins.set { map -> map + packet.skins.associate { it.id to it.toMod() } }
+        }
     }
 
 
@@ -76,46 +82,35 @@ class SkinsManager(val connectionManager: ConnectionManager) : NetworkedManager 
         }
     }
 
-    fun addSkin(name: String, skin: Skin, selectSkin: Boolean = true, favorite: Boolean = false): CompletableFuture<SkinItem> {
-        val future = CompletableFuture<SkinItem>()
-        connectionManager.send(ClientSkinCreatePacket(name, skin.model.toInfra(), skin.hash, favorite)) { maybeResponse ->
-            val response = maybeResponse.orElse(null)
-            if (response is ServerSkinPopulatePacket) {
-                val skinResponse = response.skins
-                if (skinResponse.isEmpty()) {
-                    future.completeExceptionally(IllegalStateException("Received empty reply when creating skin!"))
-                    return@send
-                }
-                // We don't add the skin here, since the packet handler adds it already
-                val skinItem = skinResponse.first().toMod()
-                if (selectSkin) {
-                    selectSkin(skinItem.id)
-                }
-                future.complete(skinItem)
-            } else {
-                future.completeExceptionally(IllegalStateException("Failed to add skin!"))
-            }
-        }
-        return future
+    fun addSkin(name: String, skin: Skin, favorite: Boolean = false): CompletableFuture<SkinItem> {
+        return connectionManager.connectionScope.async {
+            val request = ClientSkinCreatePacket(name, skin.model.toInfra(), skin.hash, favorite)
+            val response = connectionManager.call(request)
+                .await<ServerSkinPopulatePacket>()
+                ?: throw IOException("Got no reply for $request")
+            // We don't add the skin here, since the packet handler adds it already
+            response.skins.first().toMod()
+        }.asCompletableFuture()
     }
 
-    fun openDeleteSkinModal(skinId: SkinId) {
+    fun openDeleteSkinModal(skinId: SkinId, outfitManager: OutfitManager) {
         val skin = skins.getUntracked()[skinId] ?: return
-        if (connectionManager.outfitManager.outfits.get().any { it.skinId == skinId }) {
+        if (outfitManager.outfits.getUntracked().any { it.skinId == skinId }) {
             Notifications.error("Can’t delete skin", "Skin is currently used on one or more outfits.")
             return
         }
-        GuiUtil.pushModal { manager -> 
+        val manager = platform.createModalManager()
+        manager.queueModal(
             DangerConfirmationEssentialModal(manager, "Delete", false)
                 .configure { contentText = "Are you sure you want to delete\n${skin.name}?" }
                 .onPrimaryAction { deleteSkin(skinId) }
-        }
+        )
     }
 
     private fun deleteSkin(skinId: SkinId) {
-        connectionManager.send(ClientSkinDeletePacket(skinId)) { maybeResponse ->
-            val response = maybeResponse.orElse(null)
-            if (response is ResponseActionPacket && response.isSuccessful) {
+        connectionManager.connectionScope.launch {
+            val success = connectionManager.call(ClientSkinDeletePacket(skinId)).awaitResponseActionPacket()
+            if (success) {
                 mutableSkins.set { it - skinId }
             } else {
                 Notifications.push("Error deleting skin", "An unexpected error has occurred. Try again.")
@@ -162,14 +157,6 @@ class SkinsManager(val connectionManager: ConnectionManager) : NetworkedManager 
                 Notifications.push("Error updating skin", "An unexpected error has occurred. Try again.")
             }
         }
-    }
-
-    fun selectSkin(skinId: SkinId) {
-        connectionManager.outfitManager.updateOutfitSkin(skinId, false)
-    }
-
-    fun onSkinPopulate(skins: Map<SkinId, SkinItem>) {
-        mutableSkins.set { map -> map + skins }
     }
 
 }

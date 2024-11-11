@@ -11,32 +11,33 @@
  */
 package gg.essential.network.connectionmanager.cosmetics
 
-import gg.essential.Essential
 import gg.essential.connectionmanager.common.packet.cosmetic.emote.ClientCosmeticEmoteWheelSelectPacket
 import gg.essential.connectionmanager.common.packet.cosmetic.emote.ClientCosmeticEmoteWheelUpdatePacket
 import gg.essential.connectionmanager.common.packet.cosmetic.emote.ServerCosmeticEmoteWheelPopulatePacket
 import gg.essential.cosmetics.CosmeticId
 import gg.essential.cosmetics.model.EmoteWheel
 import gg.essential.gui.elementa.state.v2.MutableState
+import gg.essential.gui.elementa.state.v2.State
 import gg.essential.gui.elementa.state.v2.clear
 import gg.essential.gui.elementa.state.v2.memo
 import gg.essential.gui.elementa.state.v2.mutableListStateOf
 import gg.essential.gui.elementa.state.v2.mutableStateOf
 import gg.essential.gui.elementa.state.v2.setAll
 import gg.essential.mod.cosmetics.EmoteWheelPage
-import gg.essential.network.connectionmanager.ConnectionManager
+import gg.essential.network.CMConnection
 import gg.essential.network.connectionmanager.NetworkedManager
 import gg.essential.network.cosmetics.toMod
 import gg.essential.network.registerPacketHandler
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.slf4j.LoggerFactory
 import java.util.*
 import kotlin.time.Duration.Companion.seconds
 
 class EmoteWheelManager(
-    val connectionManager: ConnectionManager,
-    val cosmeticsManager: CosmeticsManager
+    val connectionManager: CMConnection,
+    val unlockedCosmetics: State<Set<CosmeticId>>,
 ) : NetworkedManager {
 
     private val emoteWheels = mutableListStateOf<EmoteWheelPage>()
@@ -93,7 +94,7 @@ class EmoteWheelManager(
         mutableSelectedEmoteWheelId.set(sentEmoteWheelId)
 
         if (mutableSelectedEmoteWheelId.getUntracked() == null) {
-            Essential.logger.error("No emote wheel was selected, selecting the first one.")
+            LOGGER.error("No emote wheel was selected, selecting the first one.")
             emoteWheels.firstOrNull()?.id()?.let { selectEmoteWheel(it) }
         }
     }
@@ -125,7 +126,7 @@ class EmoteWheelManager(
     fun setEmotes(emotes: List<CosmeticId?>) {
         val selectedEmoteWheel = selectedEmoteWheel.getUntracked() ?: return
         val slots = selectedEmoteWheelSlots.getUntracked().toMutableList()
-        val unlockedCosmetics = cosmeticsManager.unlockedCosmetics.getUntracked()
+        val unlockedCosmetics = unlockedCosmetics.getUntracked()
         for ((i, value) in emotes.withIndex()) {
             if (value != null && !unlockedCosmetics.contains(value)) {
                 continue
@@ -151,4 +152,7 @@ class EmoteWheelManager(
         }
     }
 
+    companion object {
+        private val LOGGER = LoggerFactory.getLogger(EmoteWheelManager::class.java)
+    }
 }

@@ -25,6 +25,7 @@ import gg.essential.gui.common.LoadingIcon
 import gg.essential.gui.common.shadow.ShadowEffect
 import gg.essential.gui.common.shadow.ShadowIcon
 import gg.essential.gui.elementa.state.v2.combinators.map
+import gg.essential.gui.elementa.state.v2.combinators.zip
 import java.awt.Color
 import gg.essential.gui.elementa.state.v2.State as StateV2
 
@@ -38,6 +39,8 @@ fun Modifier.effect(effect: () -> Effect) = this then {
 
 fun Modifier.outline(color: Color, width: Float, drawInsideChildren: Boolean = false) = effect { OutlineEffect(color, width, drawInsideChildren = drawInsideChildren) }
 fun Modifier.outline(color: State<Color>, width: State<Float>, drawInsideChildren: Boolean = false) = effect { OutlineEffect(color, width, drawInsideChildren = drawInsideChildren) }
+// TODO: Implement this properly with statev2
+fun Modifier.outline(color: StateV2<Color>, width: StateV2<Float>, drawInsideChildren: Boolean = false) = then(color.zip(width).map { (color, width) -> outline(color, width, drawInsideChildren) })
 
 fun Modifier.shadow(color: Color? = null) = this then {
     when (this) {

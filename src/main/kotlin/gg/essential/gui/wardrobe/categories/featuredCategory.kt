@@ -14,25 +14,21 @@ package gg.essential.gui.wardrobe.categories
 import gg.essential.elementa.UIComponent
 import gg.essential.elementa.components.ScrollComponent
 import gg.essential.elementa.components.Window
-import gg.essential.elementa.constraints.*
-import gg.essential.elementa.dsl.*
 import gg.essential.gui.elementa.state.v2.effect
 import gg.essential.gui.layoutdsl.*
 import gg.essential.gui.util.findChildrenByTag
 import gg.essential.gui.util.isInComponentTree
 import gg.essential.gui.wardrobe.Item.Companion.toModItem
-import gg.essential.gui.wardrobe.Wardrobe.Companion.cosmeticSpacing
-import gg.essential.gui.wardrobe.Wardrobe.Companion.cosmeticWidth
 import gg.essential.gui.wardrobe.WardrobeCategory
 import gg.essential.gui.wardrobe.WardrobeState
-import gg.essential.gui.wardrobe.components.CosmeticItemTag
-import gg.essential.gui.wardrobe.components.cosmeticItem
+import gg.essential.gui.wardrobe.components.*
 import gg.essential.gui.wardrobe.something.CosmeticGroup
 import gg.essential.mod.cosmetics.featured.FeaturedItem
 import gg.essential.util.scrollToTopOf
 
 fun LayoutScope.featuredCategory(wardrobeState: WardrobeState, scroller: ScrollComponent, modifier: Modifier = Modifier) {
     val layoutState = wardrobeState.featuredPageLayout
+    val cosmeticItemHeight = cosmeticWidth + cosmeticTextHeight
 
     var content: UIComponent? = null
 
@@ -48,13 +44,13 @@ fun LayoutScope.featuredCategory(wardrobeState: WardrobeState, scroller: ScrollC
             return@bind
         }
         val (layoutWidth, layout) = layoutEntry
-        val totalHeight = layout.rows.size * 101f + (layout.rows.size - 1).coerceAtLeast(0) * 7f + 2 * cosmeticSpacing
+        val totalHeight = layout.rows.size * cosmeticItemHeight + (layout.rows.size - 1).coerceAtLeast(0) * cosmeticYSpacing + 2 * cosmeticXSpacing
         // Slots that should be left empty because a bigger item spans over them
         val emptySlots = mutableSetOf<Pair<Int, Int>>()
 
         content = box(Modifier.height(totalHeight).then(modifier)) {
             for ((rowIndex, row) in layout.rows.withIndex()) {
-                val verticalPosition = rowIndex * 101f + rowIndex * 7f + cosmeticSpacing
+                val verticalPosition = rowIndex * cosmeticItemHeight + rowIndex * cosmeticYSpacing + cosmeticXSpacing
                 var itemIndex = 0
                 for (columnIndex in 0 until layoutWidth) {
                     // If we ran out of items in this row, break
@@ -63,7 +59,7 @@ fun LayoutScope.featuredCategory(wardrobeState: WardrobeState, scroller: ScrollC
                     // If the slot should be empty, we skip it
                     if (emptySlots.contains(Pair(rowIndex, columnIndex))) continue
 
-                    val horizontalPosition = columnIndex * cosmeticWidth + columnIndex * cosmeticSpacing
+                    val horizontalPosition = columnIndex * cosmeticWidth + columnIndex * cosmeticXSpacing
                     val featuredItem = row[itemIndex++]
                     val itemWidth = featuredItem.width
                     val itemHeight = featuredItem.height
@@ -87,7 +83,7 @@ fun LayoutScope.featuredCategory(wardrobeState: WardrobeState, scroller: ScrollC
                                     item,
                                     WardrobeCategory.FeaturedRefresh,
                                     wardrobeState,
-                                    Modifier.width(itemWidth * cosmeticWidth + (itemWidth - 1) * cosmeticSpacing).height(itemHeight * 101f + (itemHeight - 1) * 7f)
+                                    Modifier.itemSize(itemWidth, itemHeight)
                                 )
                             }
                         }

@@ -75,7 +75,7 @@ class EmoteWheelPage(private val state: WardrobeState) : UIContainer() {
     private fun LayoutScope.emoteSlot(modifier: Modifier, index: Int) {
         val cartHovered = BasicState(false).map { it }
         val emote = state.emoteWheel.map { it[index] }
-        val cosmetic = emote.map { it?.let { id -> state.cosmeticsManager.getCosmetic(id) } }
+        val cosmetic = emote.map { it?.let { id -> state.cosmeticsData.getCosmetic(id) } }
         val empty = emote.map { it == null }
         val filledButNotOwned = !empty and cosmetic.zip(state.unlockedCosmetics).map { (cosmetic, unlockCosmetics) -> cosmetic?.let { it.id !in unlockCosmetics } ?: false }
         val hovered = mutableStateOf(false)

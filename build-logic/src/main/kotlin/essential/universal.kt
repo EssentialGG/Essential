@@ -63,6 +63,7 @@ fun Project.universalLibs() {
         compileOnly("org.lwjgl:lwjgl-opengl:3.3.1")
         // Depending on 1.8.9 for all of these because that's the oldest version we support
         compileOnly("com.google.code.gson:gson:2.2.4")
+        compileOnly("com.google.guava:guava:17.0")
         compileOnly("commons-codec:commons-codec:1.9")
         compileOnly("org.apache.httpcomponents:httpclient:4.3.3") // TODO ideally switch to one of the libs we bundle
         // These versions are configured in gradle/libs.versions.toml

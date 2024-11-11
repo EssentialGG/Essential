@@ -830,10 +830,10 @@ open class UI3DPlayer(
             val skin = MinecraftRenderBackend.SkinTexture(skinLocation)
 
             val selectedCape = cosmetics[CosmeticSlot.CAPE]?.cosmetic
-            val cape = when {
-                selectedCape?.id == CAPE_DISABLED_COSMETIC_ID -> null
-                selectedCape != null -> wearablesManager.models[selectedCape]?.model?.texture
-                else -> getThirdPartyCape()
+            val (cape, capeEmissive) = when {
+                selectedCape?.id == CAPE_DISABLED_COSMETIC_ID -> Pair(null, null)
+                selectedCape != null -> wearablesManager.models[selectedCape]?.model.let { Pair(it?.texture, it?.emissiveTexture) }
+                else -> Pair(getThirdPartyCape(), null)
             }
 
             poseManager.update(wearablesManager)
@@ -869,7 +869,7 @@ open class UI3DPlayer(
 
             playerModel.render(stack, vertexConsumerProvider, playerModel.model.rootBone, renderMetadata)
             if (cape != null) {
-                renderCape(stack, vertexConsumerProvider, renderMetadata, selectedCape, cape)
+                renderCape(stack, vertexConsumerProvider, renderMetadata, selectedCape, cape, capeEmissive)
             }
 
             wearablesManager.render(stack, vertexConsumerProvider, pose, skin)
@@ -910,15 +910,19 @@ open class UI3DPlayer(
             renderMetadata: RenderMetadata,
             cape: Cosmetic?, // may be null in case of third-party capes
             texture: RenderBackend.Texture,
+            emissiveTexture: RenderBackend.Texture?,
         ) {
             val model = CapeModel.get(texture.height)
-            val capeMetadata = renderMetadata.copy(skin = texture)
+            model.texture = texture
+            model.emissiveTexture = emissiveTexture
             model.rootBone.resetAnimationOffsets(true)
-            model.render(stack, vertexConsumerProvider, model.rootBone, entity, capeMetadata, entity.lifeTime)
+            model.render(stack, vertexConsumerProvider, model.rootBone, entity, renderMetadata, entity.lifeTime)
             renderCapeForHoverOutline(vertexConsumerProvider, cape) {
                 model.rootBone.resetAnimationOffsets(true)
-                model.render(stack, vertexConsumerProvider, model.rootBone, entity, capeMetadata, entity.lifeTime)
+                model.render(stack, vertexConsumerProvider, model.rootBone, entity, renderMetadata, entity.lifeTime)
             }
+            model.texture = null
+            model.emissiveTexture = null
         }
 
         fun animationFrame() {

@@ -34,6 +34,7 @@ import gg.essential.gui.overlay.ModalManagerImpl
 import gg.essential.gui.overlay.OverlayManager
 import gg.essential.gui.overlay.OverlayManagerImpl
 import gg.essential.gui.util.onAnimationFrame
+import gg.essential.handlers.EssentialSoundManager
 import gg.essential.handlers.PauseMenuDisplay
 import gg.essential.model.backend.RenderBackend
 import gg.essential.model.backend.minecraft.MinecraftRenderBackend
@@ -109,6 +110,10 @@ class GuiEssentialPlatformImpl : GuiEssentialPlatform {
 
     override fun uImageIntoReleasedDynamicTexture(uImage: UImage): ReleasedDynamicTexture {
         return ReleasedDynamicTexture(uImage.nativeImage)
+    }
+
+    override fun playSound(identifier: UIdentifier) {
+        EssentialSoundManager.playSound(identifier.toMC())
     }
 
     override fun registerCosmeticTexture(name: String, texture: ReleasedDynamicTexture): UIdentifier {

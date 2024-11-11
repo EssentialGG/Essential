@@ -27,7 +27,7 @@ import gg.essential.util.*
 fun handleSkinLeftClick(skin: Item.SkinItem, wardrobeState: WardrobeState) {
     USound.playButtonPress()
     wardrobeState.selectedItem.set(skin)
-    wardrobeState.skinsManager.selectSkin(skin.id)
+    wardrobeState.outfitManager.updateOutfitSkin(skin.id, false)
 }
 
 fun handleSkinRightClick(skin: Item.SkinItem, wardrobeState: WardrobeState, event: UIClickEvent) {
@@ -50,7 +50,7 @@ fun handleSkinRightClick(skin: Item.SkinItem, wardrobeState: WardrobeState, even
     if (wardrobeState.skinsManager.skins.get().size > 1) {
         options.add(ContextOptionMenu.Divider)
         options.add(ContextOptionMenu.Option("Delete", EssentialPalette.TRASH_9X, hoveredColor = EssentialPalette.TEXT_WARNING) {
-            wardrobeState.skinsManager.openDeleteSkinModal(skin.id)
+            wardrobeState.skinsManager.openDeleteSkinModal(skin.id, wardrobeState.outfitManager)
         })
     }
 

@@ -71,7 +71,7 @@ class ConfigurationMenu(
         }
         divider()
         navButton("Clear all cosm. unlock info") {
-            state.cosmeticsManager.clearUnlockedCosmetics(false)
+            state.cosmeticsManager.clearUnlockedCosmetics()
         }
         navButton("Unlock all cosmetics") {
             state.cosmeticsManager.unlockAllCosmetics()
@@ -96,7 +96,7 @@ class ConfigurationMenu(
 
         spacer(height = 10f)
 
-        forEach(filteredItems.map { list -> list.sortedBy { type.idAndNameMapper(it).second } }.toListState()) {
+        forEach(filteredItems.map { list -> list.sortedWith(type.comparator) }.toListState()) {
             val (id, name) = type.idAndNameMapper(it)
             navButton(name) {
                 editingIdState.set(id)

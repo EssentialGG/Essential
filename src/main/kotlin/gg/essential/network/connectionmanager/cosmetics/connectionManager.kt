@@ -16,27 +16,12 @@ import gg.essential.connectionmanager.common.packet.Packet
 import gg.essential.connectionmanager.common.packet.cosmetic.ClientCosmeticCheckoutPacket
 import gg.essential.connectionmanager.common.packet.cosmetic.ServerCosmeticsUserUnlockedPacket
 import gg.essential.data.VersionData
-import gg.essential.elementa.state.v2.ReferenceHolder
 import gg.essential.gui.common.sendUnlockedToast
-import gg.essential.gui.elementa.state.v2.collections.TrackedList
 import gg.essential.mod.Model
 import gg.essential.mod.cosmetics.settings.CosmeticProperty
 import gg.essential.network.connectionmanager.ConnectionManager
 import gg.essential.network.connectionmanager.handler.PacketHandler
 import gg.essential.network.cosmetics.Cosmetic
-import java.util.function.Consumer
-
-fun CosmeticsData.onNewCosmetic(owner: ReferenceHolder, consumer: Consumer<Cosmetic>) {
-    var oldList = cosmetics.get()
-    cosmetics.onSetValue(owner) { newList ->
-        val changes = newList.getChangesSince(oldList).also { oldList = newList }
-        for (change in changes) {
-            if (change is TrackedList.Add) {
-                consumer.accept(change.element.value)
-            }
-        }
-    }
-}
 
 inline fun <reified T : Packet> ConnectionManager.registerPacketHandler(handler: PacketHandler<T>) =
     registerPacketHandler(T::class.java, handler)

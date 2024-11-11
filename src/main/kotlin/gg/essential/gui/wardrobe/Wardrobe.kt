@@ -38,10 +38,7 @@ import gg.essential.gui.elementa.state.v2.combinators.*
 import gg.essential.gui.elementa.state.v2.stateBy
 import gg.essential.gui.layoutdsl.*
 import gg.essential.gui.util.pollingStateV2
-import gg.essential.gui.wardrobe.components.coinsButton
-import gg.essential.gui.wardrobe.components.previewWindow
-import gg.essential.gui.wardrobe.components.previewWindowTitleBar
-import gg.essential.gui.wardrobe.components.wardrobeSidebar
+import gg.essential.gui.wardrobe.components.*
 import gg.essential.gui.wardrobe.configuration.*
 import gg.essential.gui.wardrobe.configuration.DiagnosticsMenu
 import gg.essential.gui.wardrobe.modals.SkinModal
@@ -76,9 +73,15 @@ class Wardrobe(
         screenOpen,
         window,
         cosmeticsManager,
+        cosmeticsManager.modelLoader,
+        cosmeticsManager.wardrobeSettings,
+        outfitManager,
         skinsManager,
         emoteWheelManager,
         coinsManager,
+        connectionManager.noticesManager.saleNoticeManager.saleState.map {
+            it.filter { it.discountPercent > 0 } // Sales with 0% discount are used to display on the main menu and should be ignored here
+        }.toListState(),
         guiScaleState,
     )
     init {
@@ -304,7 +307,7 @@ class Wardrobe(
 
     private fun LayoutScope.addSkinButton(modifier: Modifier = Modifier) {
         val limitState = stateBy {
-            state.skinItems().size >= state.cosmeticsManager.wardrobeSettings.skinsLimit()
+            state.skinItems().size >= state.settings.skinsLimit()
         }
         val buttonModifier = Modifier.width(69f).height(17f).shadow().hoverScope()
             .whenTrue(
@@ -399,9 +402,9 @@ class Wardrobe(
 
     private fun mainWidthConstraint(): WidthConstraint {
         return basicWidthConstraint {
-            val columnWidth = cosmeticWidth + cosmeticSpacing
+            val columnWidth = cosmeticWidth + cosmeticXSpacing
             val columnCount = state.getColumnCount(state.currentCategory.getUntracked())
-            return@basicWidthConstraint cosmeticSpacing + columnWidth * columnCount.getUntracked().coerceAtLeast(1)
+            return@basicWidthConstraint cosmeticXSpacing + columnWidth * columnCount.getUntracked().coerceAtLeast(1)
         }
     }
 
@@ -440,9 +443,6 @@ class Wardrobe(
 
     companion object {
         private const val sidebarWidth = 90f
-
-        const val cosmeticWidth = 90f
-        const val cosmeticSpacing = 10f
 
         @JvmStatic
         fun getInstance(): Wardrobe? = GuiUtil.openedScreen() as? Wardrobe

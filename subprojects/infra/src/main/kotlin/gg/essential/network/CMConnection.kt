@@ -31,6 +31,8 @@ interface CMConnection {
 
     @Deprecated("Use `call` instead.", ReplaceWith("call(packet).await()"))
     fun send(packet: Packet, callback: Consumer<Optional<Packet>>?, timeoutUnit: TimeUnit?, timeoutValue: Long?)
+    @Deprecated("Use `call` instead.", ReplaceWith("call(packet).await()"))
+    fun send(packet: Packet, callback: Consumer<Optional<Packet>>?) = send(packet, callback, TimeUnit.SECONDS, 10)
 }
 
 inline fun <reified T : Packet> CMConnection.registerPacketHandler(noinline handler: (T) -> Unit) =

@@ -62,7 +62,7 @@ class SkinEmbedImpl(
             }
             USound.playButtonPress()
             GuiUtil.pushModal {
-                SkinModal.add(it, skin, selectSkin = false, initialName = skinsManager.getNextIncrementalSkinName())
+                SkinModal.add(it, skin, initialName = skinsManager.getNextIncrementalSkinName())
             }
         }
 

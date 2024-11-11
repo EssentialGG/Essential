@@ -136,6 +136,7 @@ class CategoryComponent(
                             group(Modifier.fillWidth())
                         }
                     }
+                    spacer(height = 10f)
                 } `else` {
                     noItemsFound()
                 }

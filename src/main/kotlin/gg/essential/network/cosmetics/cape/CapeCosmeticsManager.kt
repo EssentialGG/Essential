@@ -115,7 +115,7 @@ class CapeCosmeticsManager(
                     if (!capesVisible) {
                         val selectedOutfit = outfitManager.getSelectedOutfit()
                         if (selectedOutfit != null) {
-                            cosmeticsManager.updateEquippedCosmetic(selectedOutfit, CosmeticSlot.CAPE, CAPE_DISABLED_COSMETIC_ID)
+                            outfitManager.updateEquippedCosmetic(selectedOutfit.id, CosmeticSlot.CAPE, CAPE_DISABLED_COSMETIC_ID)
                         }
                     }
                 } else {
@@ -124,7 +124,7 @@ class CapeCosmeticsManager(
                     // We can't really guess what they really want it to be set to and have determined that resetting
                     // will likely result in the least amount of confusion/annoyance over all.
                     for (outfit in outfitManager.outfits.get()) {
-                        cosmeticsManager.updateEquippedCosmetic(outfit, CosmeticSlot.CAPE, null)
+                        outfitManager.updateEquippedCosmetic(outfit.id, CosmeticSlot.CAPE, null)
                     }
                 }
             }

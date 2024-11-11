@@ -162,7 +162,14 @@ public abstract class MixinMinecraft implements MinecraftExt {
     }
 
     //#if MC>=11400
-    //$$ @Inject(method = "unloadWorld(Lnet/minecraft/client/gui/screen/Screen;)V", at = @At("HEAD"))
+    //$$ // Note: This is targeted after the cancelTasks call, such that any tasks we schedule from the event
+    //$$ //       won't immediately be cancelled (which could otherwise result in the game locking up, e.g. when
+    //$$ //       scheduling a resource pack reload which will then never finish).
+    //#if MC>=12005
+    //$$ @Inject(method = "disconnect(Lnet/minecraft/client/gui/screen/Screen;Z)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/MinecraftClient;cancelTasks()V", shift = At.Shift.AFTER))
+    //#else
+    //$$ @Inject(method = "unloadWorld(Lnet/minecraft/client/gui/screen/Screen;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;dropTasks()V", shift = At.Shift.AFTER))
+    //#endif
     //$$ private void unloadWorld(CallbackInfo ci) {
     //$$     minecraftHook.disconnect();
     //$$ }

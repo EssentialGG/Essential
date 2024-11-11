@@ -22,6 +22,7 @@ import gg.essential.mod.Model
 import gg.essential.mod.cosmetics.CosmeticBundle
 import gg.essential.mod.cosmetics.CosmeticSlot
 import gg.essential.mod.cosmetics.CosmeticTier
+import gg.essential.model.util.Instant
 import gg.essential.network.connectionmanager.cosmetics.*
 
 class ConfigurationType<I, T> private constructor(
@@ -29,6 +30,7 @@ class ConfigurationType<I, T> private constructor(
     val displaySingular: String = displayPlural.dropLast(1),
     val stateSupplier: (WardrobeState) -> Triple<MutableState<I?>, State<T?>, ListState<T>>,
     val idAndNameMapper: (T) -> Pair<I, String>,
+    val comparator: Comparator<T> = Comparator.comparing { idAndNameMapper(it).second },
     val updateHandler: (CosmeticsDataWithChanges, I, T?) -> Unit,
     val resetHandler: (CosmeticsDataWithChanges, I) -> Unit,
     val createHandler: (ModalManager, CosmeticsDataWithChanges, WardrobeState) -> Modal
@@ -150,6 +152,7 @@ class ConfigurationType<I, T> private constructor(
             displayPlural = "Featured page collections",
             stateSupplier = { Triple(it.currentlyEditingFeaturedPageCollectionId, it.currentlyEditingFeaturedPageCollection, it.rawFeaturedPageCollections) },
             idAndNameMapper = { it.id to it.id },
+            comparator = compareByDescending { it.availability?.after ?: Instant.MAX },
             updateHandler = { data, id, new -> data.updateFeaturedPageCollection(id, new) },
             resetHandler = { data, id -> data.resetFeaturedPageCollection(id) },
             createHandler = { modalManager, cosmeticsDataWithChanges, state ->

@@ -13,6 +13,15 @@ package gg.essential.gui.overlay
 
 enum class LayerPriority {
     /**
+     * Layer which is logically positioned below the currently active screen.
+     *
+     * Note that this does not yet have dedicated input events and will instead use the same events as
+     * [AboveScreenContent] (i.e. it will handle events before the screen and can cancel them). This is not intentional
+     * and will change in the future if someone has an actual need for it.
+     */
+    BelowScreen,
+
+    /**
      * Layer which is logically positioned below most of the content of the currently active screen.
      *
      * Note that this does not yet have dedicated input events and will instead use the same events as

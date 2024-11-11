@@ -44,10 +44,16 @@ public class KeybindUtils {
 
     @Unique
     public static boolean conflicts(KeyBinding key1, KeyBinding key2) {
-        //#if MC >= 11200
-        return key1.conflicts(key2);
+        boolean areBothUnbound;
+        //#if MC >= 11600
+        //$$ areBothUnbound = key1.isInvalid() && key2.isInvalid();
         //#else
-        //$$ return key1.getKeyCode() == key2.getKeyCode();
+        areBothUnbound = key1.getKeyCode() == UKeyboard.KEY_NONE && key2.getKeyCode() == UKeyboard.KEY_NONE;
+        //#endif
+        //#if MC >= 11200
+        return key1.conflicts(key2) && !areBothUnbound;
+        //#else
+        //$$ return key1.getKeyCode() == key2.getKeyCode() && !areBothUnbound;
         //#endif
     }
 
