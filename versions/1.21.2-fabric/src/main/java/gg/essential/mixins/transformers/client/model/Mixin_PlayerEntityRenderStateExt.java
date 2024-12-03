@@ -11,8 +11,8 @@
  */
 package gg.essential.mixins.transformers.client.model;
 
+import gg.essential.cosmetics.CosmeticsRenderState;
 import gg.essential.mixins.impl.client.model.PlayerEntityRenderStateExt;
-import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.render.entity.state.PlayerEntityRenderState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -20,27 +20,10 @@ import org.spongepowered.asm.mixin.Unique;
 @Mixin(PlayerEntityRenderState.class)
 public abstract class Mixin_PlayerEntityRenderStateExt implements PlayerEntityRenderStateExt {
     @Unique
-    private AbstractClientPlayerEntity entity;
-    @Unique
-    private float tickDelta;
+    private final CosmeticsRenderState.Snapshot cosmeticsRenderState = new CosmeticsRenderState.Snapshot();
 
     @Override
-    public AbstractClientPlayerEntity essential$getEntity() {
-        return this.entity;
-    }
-
-    @Override
-    public void essential$setEntity(AbstractClientPlayerEntity entity) {
-        this.entity = entity;
-    }
-
-    @Override
-    public float essential$getTickDelta() {
-        return this.tickDelta;
-    }
-
-    @Override
-    public void essential$setTickDelta(float tickDelta) {
-        this.tickDelta = tickDelta;
+    public CosmeticsRenderState.Snapshot essential$getCosmetics() {
+        return cosmeticsRenderState;
     }
 }

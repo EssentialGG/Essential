@@ -11,13 +11,8 @@
  */
 package gg.essential.mixins.impl.client.model;
 
-import net.minecraft.client.entity.AbstractClientPlayer;
+import gg.essential.cosmetics.CosmeticsRenderState;
 
 public interface PlayerEntityRenderStateExt {
-    // Workaround until we've properly migrated everything to the new system
-    AbstractClientPlayer essential$getEntity();
-    void essential$setEntity(AbstractClientPlayer entity);
-
-    float essential$getTickDelta();
-    void essential$setTickDelta(float tickDelta);
+    CosmeticsRenderState.Snapshot essential$getCosmetics();
 }

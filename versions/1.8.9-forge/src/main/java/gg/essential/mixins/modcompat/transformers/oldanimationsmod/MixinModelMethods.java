@@ -11,7 +11,9 @@
  */
 package gg.essential.mixins.modcompat.transformers.oldanimationsmod;
 
+import gg.essential.cosmetics.CosmeticsRenderState;
 import gg.essential.mixins.impl.client.model.ModelBipedUtil;
+import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.model.ModelBiped;
 import net.minecraft.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
@@ -52,6 +54,8 @@ public class MixinModelMethods {
         Entity entity,
         CallbackInfo ci
     ) {
-        ModelBipedUtil.applyPoseTransform(model, entity);
+        if (!(entity instanceof AbstractClientPlayer)) return;
+        CosmeticsRenderState cState = new CosmeticsRenderState.Live((AbstractClientPlayer) entity);
+        ModelBipedUtil.applyPoseTransform(model, cState);
     }
 }

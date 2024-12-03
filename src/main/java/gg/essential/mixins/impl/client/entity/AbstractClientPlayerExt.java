@@ -12,8 +12,11 @@
 package gg.essential.mixins.impl.client.entity;
 
 import gg.essential.cosmetics.CosmeticsState;
+import gg.essential.cosmetics.EquippedCosmetic;
 import gg.essential.cosmetics.WearablesManager;
-import gg.essential.cosmetics.source.CosmeticsSource;
+import gg.essential.gui.elementa.state.v2.State;
+import gg.essential.mod.cosmetics.CosmeticSlot;
+import gg.essential.model.backend.PlayerPose;
 import gg.essential.model.util.PlayerPoseManager;
 import gg.essential.util.UIdentifier;
 import kotlin.Pair;
@@ -22,11 +25,15 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 public interface AbstractClientPlayerExt {
-    CosmeticsSource getCosmeticsSource();
+    UUID getCosmeticsSourceUuid();
 
-    void setCosmeticsSource(CosmeticsSource source);
+    State<Map<CosmeticSlot, EquippedCosmetic>> getCosmeticsSource();
+
+    void setCosmeticsSource(State<Map<CosmeticSlot, EquippedCosmetic>> source);
 
     @NotNull WearablesManager getWearablesManager();
 
@@ -39,12 +46,6 @@ public interface AbstractClientPlayerExt {
 
     ResourceLocation applyEssentialCosmeticsMask(ResourceLocation skin);
 
-    boolean isSkinOverrodeByServer();
-
-    void assumeArmorRenderingSuppressed();
-
-    void armorRenderingNotSuppressed(int slot);
-
     boolean[] wasArmorRenderingSuppressed();
 
     @NotNull
@@ -54,7 +55,6 @@ public interface AbstractClientPlayerExt {
 
     void setPoseModified(boolean poseModified);
 
-    float getLastCosmeticsUpdateTime();
-
-    void setLastCosmeticsUpdateTime(float time);
+    @Nullable PlayerPose getRenderedPose();
+    void setRenderedPose(PlayerPose pose);
 }

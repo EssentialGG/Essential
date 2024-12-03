@@ -68,6 +68,8 @@ import org.lwjgl.BufferUtils
 //#endif
 
 object MinecraftRenderBackend : RenderBackend {
+    private val registeredTextures = mutableMapOf<ResourceLocation, DynamicTexture>()
+
     override fun createTexture(name: String, width: Int, height: Int): RenderBackend.Texture {
         return DynamicTexture(identifier("essential", name), ReleasedDynamicTexture(width, height))
     }
@@ -77,14 +79,8 @@ object MinecraftRenderBackend : RenderBackend {
 
         texture.texture.deleteGlTexture()
 
-        val textureManager = getMinecraft().textureManager
-        //#if MC>=11700
-        //$$ val registeredTexture = textureManager.getOrDefault(identifier, null) as? ReleasedDynamicTexture
-        //#else
-        val registeredTexture = textureManager.getTexture(identifier) as? ReleasedDynamicTexture
-        //#endif
-        if (registeredTexture == texture.texture) {
-            textureManager.deleteTexture(identifier)
+        if (registeredTextures.remove(identifier, texture)) {
+            getMinecraft().textureManager.deleteTexture(identifier)
         }
     }
 
@@ -123,6 +119,42 @@ object MinecraftRenderBackend : RenderBackend {
 
         if (prevScissor) GL11.glEnable(GL11.GL_SCISSOR_TEST)
     }
+
+    //#if MC>=12104
+    //$$ // As of 1.21.4, MC itself now finally uses the RenderLayer system for its particles, so we'll do the same.
+    //$$ // Our particles have more blending modes though, so we need some custom layers.
+    //$$ private val particleLayers = mutableMapOf<ParticleEffect.RenderPass, RenderLayer>()
+    //$$ private fun getParticleLayer(renderPass: ParticleEffect.RenderPass) = particleLayers.getOrPut(renderPass) {
+    //$$     val texture = (renderPass.texture as MinecraftTexture).identifier
+    //$$     val inner =
+    //$$         if (renderPass.material == Cutout) RenderLayer.getOpaqueParticle(texture)
+    //$$         else RenderLayer.getTranslucentParticle(texture)
+    //$$     // Note: If this is turned into an anonymous class, Kotlin will generate the bridge for the protected
+    //$$     // field in the wrong class (MinecraftRenderBackend), which will then throw an IllegalAccessError.
+    //$$     class ParticleLayer : RenderLayer(
+    //$$         renderPass.material.name.lowercase() + "_particle",
+    //$$         inner.vertexFormat,
+    //$$         inner.drawMode,
+    //$$         inner.expectedBufferSize,
+    //$$         inner.hasCrumbling(),
+    //$$         inner.isTranslucent,
+    //$$         {
+    //$$             inner.startDrawing()
+    //$$             when (renderPass.material) {
+    //$$                 Cutout -> {} // blending is disabled by default
+    //$$                 Add -> BlendState(BlendState.Equation.ADD, BlendState.Param.SRC_ALPHA, BlendState.Param.ONE).activate()
+    //$$                 Blend -> BlendState.NORMAL.activate()
+    //$$             }
+    //$$         },
+    //$$         {
+    //$$             RenderSystem.disableBlend()
+    //$$             RenderSystem.defaultBlendFunc()
+    //$$             inner.endDrawing()
+    //$$         },
+    //$$     )
+    //$$     ParticleLayer()
+    //$$ }
+    //#endif
 
     //#if MC>=12102
     //$$ // MC no longer provides the CULL variant of ENTITY_TRANSLUCENT which we use to render our cosmetics, so we'll
@@ -318,13 +350,9 @@ object MinecraftRenderBackend : RenderBackend {
         override val height: Int = texture.height
 
         override val identifier: ResourceLocation by lazy {
-            val textureManager = getMinecraft().textureManager
-            //#if MC>=11700
-            //$$ (textureManager.getOrDefault(identifier, null) as? ReleasedDynamicTexture)?.clearGlId()
-            //#else
-            (textureManager.getTexture(identifier) as? ReleasedDynamicTexture)?.deleteGlTexture()
-            //#endif
-            textureManager.loadTexture(identifier, texture)
+            registeredTextures[identifier]?.let { deleteTexture(it) }
+            getMinecraft().textureManager.loadTexture(identifier, texture)
+            registeredTextures[identifier] = this
             identifier
         }
     }
@@ -413,7 +441,11 @@ object MinecraftRenderBackend : RenderBackend {
         //#endif
     }
 
+    //#if MC>=12104
+    //$$ class ParticleVertexConsumerProvider(val provider: net.minecraft.client.render.VertexConsumerProvider) : ParticleSystem.VertexConsumerProvider {
+    //#else
     class ParticleVertexConsumerProvider : ParticleSystem.VertexConsumerProvider {
+    //#endif
         override fun provide(renderPass: ParticleEffect.RenderPass, block: (CVertexConsumer) -> Unit) {
             val texture = renderPass.texture
             require(texture is MinecraftTexture)
@@ -438,6 +470,11 @@ object MinecraftRenderBackend : RenderBackend {
                 }
                 override fun endVertex() = apply { inner.endVertex() }
             }
+
+            //#if MC>=12104
+            //$$ val buffer = provider.getBuffer(getParticleLayer(renderPass))
+            //$$ block(VertexConsumerAdapter(UVertexConsumer.of(buffer)))
+            //#else
             //#if MC<11700
             val prevAlphaTest = GL11.glGetBoolean(GL11.GL_ALPHA_TEST)
             val prevAlphaTestFunc = GL11.glGetInteger(GL11.GL_ALPHA_TEST_FUNC)
@@ -474,6 +511,7 @@ object MinecraftRenderBackend : RenderBackend {
                 if (!prevAlphaTest) GlStateManager.disableAlpha()
                 GlStateManager.alphaFunc(prevAlphaTestFunc, prevAlphaTestRef)
             }
+            //#endif
             //#endif
         }
     }

@@ -12,30 +12,10 @@
 package gg.essential.mixins.impl.client.renderer.entity;
 
 import gg.essential.config.EssentialConfig;
-import gg.essential.cosmetics.EssentialModelRenderer;
-import gg.essential.mixins.impl.client.entity.AbstractClientPlayerExt;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityLivingBase;
 
 public class ArmorRenderingUtil {
-    /**
-     * If rendering armor should be disabled based on the user's Essential settings and if cosmetics are conflicting with armor.
-     * @param entity The entity which the armor and cosmetics are being rendered on
-     * @param slotIndex The slot which armor is being rendered
-     * @return true if cosmetics are conflicting with armor in the current slot, false if armor is okay to be rendered
-     */
-    public static boolean shouldDisableArmor(EntityLivingBase entity, int slotIndex) {
-        if (entity instanceof AbstractClientPlayerExt) {
-            AbstractClientPlayerExt playerExt = (AbstractClientPlayerExt) entity;
-
-            int armorHidingSetting = getCosmeticArmorSetting(entity);
-            return armorHidingSetting == 1 && playerExt.getCosmeticsState().getPartsEquipped().contains(slotIndex) && !EssentialModelRenderer.suppressCosmeticRendering;
-        }
-
-        return false;
-    }
-
     public static int getCosmeticArmorSetting(Entity entity) {
         if (entity instanceof EntityPlayerSP) {
             return EssentialConfig.INSTANCE.getCosmeticArmorSettingSelf();

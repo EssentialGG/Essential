@@ -19,13 +19,12 @@ import net.minecraft.client.renderer.GlStateManager
 import net.minecraft.client.resources.IResourceManager
 import org.lwjgl.opengl.GL11
 import org.lwjgl.opengl.GL12
-import net.minecraft.util.ResourceLocation
 import java.nio.IntBuffer
 
 //#if MC<=11202
 import net.minecraft.client.renderer.texture.AbstractTexture
 //#else
-//$$ import net.minecraft.client.renderer.texture.SimpleTexture
+//$$ import net.minecraft.client.renderer.texture.Texture
 //#endif
 
 //#if MC>=11600
@@ -35,11 +34,11 @@ import net.minecraft.client.renderer.texture.AbstractTexture
 /**
  * Uploads the contents of a PixelBuffer to OpenGL
  */
-class PixelBufferTexture(image: PixelBuffer, resourceLocation: ResourceLocation) :
+class PixelBufferTexture(image: PixelBuffer) :
 //#if MC<=11202
     AbstractTexture() {
     //#else
-    //$$ SimpleTexture(resourceLocation) {
+    //$$ Texture() {
     //#endif
 
     // Whether this texture's underlying image had an error during loading
@@ -95,9 +94,11 @@ class PixelBufferTexture(image: PixelBuffer, resourceLocation: ResourceLocation)
         }
     }
 
+    //#if MC<12104
     //Impl handled by constructor to avoid retaining complete image
     override fun loadTexture(resourceManager: IResourceManager) {
     }
+    //#endif
 
 
 }

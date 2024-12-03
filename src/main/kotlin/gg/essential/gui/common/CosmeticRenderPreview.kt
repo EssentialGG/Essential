@@ -15,12 +15,13 @@ import com.mojang.authlib.GameProfile
 import dev.folomeev.kotgl.matrix.vectors.vecUnitY
 import gg.essential.api.profile.wrapped
 import gg.essential.cosmetics.CosmeticId
-import gg.essential.cosmetics.source.ConfigurableCosmeticsSource
 import gg.essential.elementa.effects.ScissorEffect
 import gg.essential.elementa.state.BasicState
 import gg.essential.gui.elementa.state.v2.combinators.map
 import gg.essential.gui.elementa.state.v2.effect
+import gg.essential.gui.elementa.state.v2.memo
 import gg.essential.gui.elementa.state.v2.mutableStateOf
+import gg.essential.gui.elementa.state.v2.stateOf
 import gg.essential.gui.layoutdsl.LayoutScope
 import gg.essential.gui.layoutdsl.Modifier
 import gg.essential.gui.layoutdsl.box
@@ -47,7 +48,7 @@ fun LayoutScope.skinRenderPreview(skin: Item.SkinItem, modifier: Modifier = Modi
     ).apply {
         setRotations(0f, 0f)
         perspectiveCamera = PerspectiveCamera.forCosmeticSlot(CosmeticSlot.FULL_BODY)
-        cosmeticsSource = ConfigurableCosmeticsSource()
+        cosmeticsSource = stateOf(emptyMap())
     }(Modifier.fillParent().effect { ScissorEffect() }.then(modifier))
 }
 
@@ -93,14 +94,8 @@ fun LayoutScope.fullBodyRenderPreview(
             profile = BasicState(profile)
         ).apply {
             setRotations(0f, 0f)
-            cosmeticsSource = ConfigurableCosmeticsSource().apply {
-                val visibleCosmeticIds = if (showEmotes) cosmeticsMap else cosmeticsMap - CosmeticSlot.EMOTE
-                effect(stateScope) {
-                    cosmetics = with(state) { resolveCosmeticIds(visibleCosmeticIds, settings) }
-                }
-                // We want the player preview to be rendered with cosmetics even if the user has globally disabled them.
-                shouldOverrideRenderCosmeticsCheck = true
-            }
+            val visibleCosmeticIds = if (showEmotes) cosmeticsMap else cosmeticsMap - CosmeticSlot.EMOTE
+            cosmeticsSource = memo { with(state) { resolveCosmeticIds(visibleCosmeticIds, settings) } }
 
             if (constantRotation) {
                 val fullRotationMillis = 10000.0

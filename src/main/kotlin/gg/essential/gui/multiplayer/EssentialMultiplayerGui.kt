@@ -286,7 +286,11 @@ class EssentialMultiplayerGui {
                     //#if MC>=11600
                     //$$ val lastServer = newList.eventListeners.lastOrNull { it is NormalEntry }
                     //$$ newScreen.func_214287_a(lastServer)
+                    //#if MC>=12104
+                    //$$ newList.scrollY = Double.MAX_VALUE
+                    //#else
                     //$$ newList.scrollAmount = Double.MAX_VALUE
+                    //#endif
                     //#else
                     val index = newScreen.serverList.countServers() - 1
                     newScreen.selectServer(index)

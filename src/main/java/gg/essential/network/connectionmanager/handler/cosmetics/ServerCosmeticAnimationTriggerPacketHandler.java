@@ -32,7 +32,7 @@ public class ServerCosmeticAnimationTriggerPacketHandler extends PacketHandler<S
         CosmeticSlot slot = toMod(packet.getCosmeticSlot());
         String triggerName = packet.getTriggerName();
 
-        Essential.getInstance().getAnimationEffectHandler().triggerEvent(userId, slot, triggerName);
+        Essential.getInstance().getCosmeticEventEmitter().triggerEvent(userId, slot, triggerName);
     }
 
 }

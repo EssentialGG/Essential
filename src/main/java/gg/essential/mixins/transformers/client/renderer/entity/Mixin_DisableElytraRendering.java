@@ -12,7 +12,8 @@
 package gg.essential.mixins.transformers.client.renderer.entity;
 
 import com.llamalad7.mixinextras.sugar.Local;
-import gg.essential.mixins.impl.client.renderer.entity.ArmorRenderingUtil;
+import gg.essential.cosmetics.CosmeticsRenderState;
+import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.renderer.entity.layers.LayerElytra;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.inventory.EntityEquipmentSlot;
@@ -46,9 +47,12 @@ public class Mixin_DisableElytraRendering {
     ) {
         //#if MC>=12102
         //$$ if (!(state instanceof PlayerEntityRenderStateExt)) return;
-        //$$ LivingEntity entity = ((PlayerEntityRenderStateExt) state).essential$getEntity();
+        //$$ CosmeticsRenderState cState = ((PlayerEntityRenderStateExt) state).essential$getCosmetics();
+        //#else
+        if (!(entity instanceof AbstractClientPlayer)) return;
+        CosmeticsRenderState cState = new CosmeticsRenderState.Live((AbstractClientPlayer) entity);
         //#endif
-        if (ArmorRenderingUtil.shouldDisableArmor(entity, EntityEquipmentSlot.CHEST.getIndex())) {
+        if (cState.blockedArmorSlots().contains(EntityEquipmentSlot.CHEST.getIndex())) {
             info.cancel();
         }
     }

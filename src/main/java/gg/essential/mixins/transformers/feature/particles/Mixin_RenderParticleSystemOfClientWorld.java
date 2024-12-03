@@ -35,6 +35,10 @@ import static dev.folomeev.kotgl.matrix.vectors.Vectors.vecUnitY;
 import static dev.folomeev.kotgl.matrix.vectors.mutables.MutableVectors.times;
 import static gg.essential.util.HelpersKt.getPerspective;
 
+//#if MC>=12104
+//$$ import com.mojang.blaze3d.systems.RenderSystem;
+//#endif
+
 //#if MC>=11600
 //$$ import com.mojang.blaze3d.matrix.MatrixStack;
 //$$ import net.minecraft.client.renderer.IRenderTypeBuffer;
@@ -75,7 +79,9 @@ public abstract class Mixin_RenderParticleSystemOfClientWorld {
             //$$ "renderParticles",
             //#endif
         },
-        //#if MC>=12005
+        //#if MC>=12104
+        //$$ at = @At("RETURN")
+        //#elseif MC>=12005
         //$$ at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;depthMask(Z)V")
         //#elseif MC>=11700
         //$$ at = @At(value = "INVOKE", target = "Lnet/minecraft/client/util/math/MatrixStack;pop()V")
@@ -91,9 +97,14 @@ public abstract class Mixin_RenderParticleSystemOfClientWorld {
         //$$ MatrixStack matrixStackIn,
         //$$ IRenderTypeBuffer.Impl bufferIn,
         //#endif
+        //#if MC<12104
         //$$ LightTexture lightTextureIn,
+        //#endif
         //$$ ActiveRenderInfo activeRenderInfoIn,
         //$$ float partialTicks,
+        //#if MC>=12104
+        //$$ VertexConsumerProvider.Immediate bufferIn,
+        //#endif
         //#if FORGE
         //#if MC>=11700
         //$$ net.minecraft.client.renderer.culling.Frustum frustum,
@@ -180,8 +191,14 @@ public abstract class Mixin_RenderParticleSystemOfClientWorld {
         UUID cameraUuid = cameraEntity.getUniqueID();
         //#endif
 
+        ParticleSystem.VertexConsumerProvider particleVertexConsumer = new MinecraftRenderBackend.ParticleVertexConsumerProvider(
+            //#if MC>=12104
+            //$$ bufferIn
+            //#endif
+        );
+
         boolean isFirstPerson = getPerspective() == 0;
-        particleSystem.render(stack, cameraPos, cameraRot, new MinecraftRenderBackend.ParticleVertexConsumerProvider(), cameraUuid, isFirstPerson);
+        particleSystem.render(stack, cameraPos, cameraRot, particleVertexConsumer, cameraUuid, isFirstPerson);
 
         profiler.endSection();
     }
@@ -220,9 +237,14 @@ public abstract class Mixin_RenderParticleSystemOfClientWorld {
                  //$$ matrixStackIn,
                  //$$ bufferIn,
                  //#endif
-    //$$         lightTextureIn,
+            //#if MC<12104
+            //$$ lightTextureIn,
+            //#endif
     //$$         activeRenderInfoIn,
     //$$         partialTicks,
+            //#if MC>=12104
+            //$$ bufferIn,
+            //#endif
     //$$         ci
     //$$     );
     //$$ }

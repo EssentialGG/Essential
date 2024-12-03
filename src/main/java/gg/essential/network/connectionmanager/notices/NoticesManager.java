@@ -158,7 +158,11 @@ public class NoticesManager implements NetworkedManager, INoticesManager {
         for (@NotNull final Notice notice : notices) {
             this.notices.put(notice.getId(), notice);
             for (NoticeListener listener : listeners) {
-                listener.noticeAdded(notice);
+                try {
+                    listener.noticeAdded(notice);
+                } catch (Exception e) {
+                    Essential.logger.error("An error occurred within a notice listener for noticeAdded: {}", notice.getId(), e);
+                }
             }
         }
     }
@@ -168,7 +172,11 @@ public class NoticesManager implements NetworkedManager, INoticesManager {
         if (noticeIds == null || noticeIds.isEmpty()) {
             for (Notice value : notices.values()) {
                 for (NoticeListener listener : listeners) {
-                    listener.noticeRemoved(value);
+                    try {
+                        listener.noticeRemoved(value);
+                    } catch (Exception e) {
+                        Essential.logger.error("An error occurred within a notice listener for noticeRemoved: {}", value.getId(), e);
+                    }
                 }
             }
             this.notices.clear();
@@ -181,7 +189,11 @@ public class NoticesManager implements NetworkedManager, INoticesManager {
                 continue;
             }
             for (NoticeListener listener : listeners) {
-                listener.noticeRemoved(removed);
+                try {
+                    listener.noticeRemoved(removed);
+                } catch (Exception e) {
+                    Essential.logger.error("An error occurred within a notice listener for noticeRemoved: {}", removed.getId(), e);
+                }
             }
         }
     }
@@ -207,14 +219,15 @@ public class NoticesManager implements NetworkedManager, INoticesManager {
                 Packet packet = maybePacket.get();
                 if (packet instanceof ServerNoticeBulkDismissPacket) {
                     ServerNoticeBulkDismissPacket serverNoticeBulkDismissPacket = (ServerNoticeBulkDismissPacket) packet;
-                    for (String noticeId : serverNoticeBulkDismissPacket.getNoticeIds()) {
-                        this.notices.remove(noticeId);
+                    Set<String> noticeIds = serverNoticeBulkDismissPacket.getNoticeIds();
+                    if (!noticeIds.isEmpty()) {
+                        removeNotices(noticeIds);
                     }
                     for (ServerNoticeBulkDismissPacket.ErrorDetails error : serverNoticeBulkDismissPacket.getErrors()) {
                         switch (error.getReason()) {
                             case "NOTICE_NOT_FOUND":
                             case "NOTICE_ALREADY_DISMISSED": {
-                                this.notices.remove(error.getNoticeId());
+                                removeNotices(SetsKt.setOf(error.getNoticeId()));
                                 break;
                             }
                             default: {

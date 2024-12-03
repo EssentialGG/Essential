@@ -19,20 +19,23 @@ import gg.essential.connectionmanager.common.packet.cosmetic.ClientCosmeticAnima
 import gg.essential.cosmetics.*;
 import gg.essential.cosmetics.events.AnimationTarget;
 import gg.essential.cosmetics.skinmask.MaskedSkinProvider;
-import gg.essential.cosmetics.source.CosmeticsSource;
-import gg.essential.cosmetics.source.LiveCosmeticsSource;
 import gg.essential.gui.common.EmulatedUI3DPlayer;
+import gg.essential.gui.elementa.state.v2.MutableState;
+import gg.essential.gui.elementa.state.v2.Observer;
+import gg.essential.gui.elementa.state.v2.State;
 import gg.essential.handlers.GameProfileManager;
 import gg.essential.mod.cosmetics.CosmeticSlot;
 import gg.essential.model.BedrockModel;
 import gg.essential.model.PlayerMolangQuery;
+import gg.essential.model.backend.PlayerPose;
 import gg.essential.model.backend.minecraft.MinecraftRenderBackend;
 import gg.essential.model.util.PlayerPoseManager;
-import gg.essential.network.connectionmanager.cosmetics.CosmeticsManager;
 import gg.essential.util.UIdentifier;
 import gg.essential.util.UUIDUtil;
 import kotlin.Pair;
 import kotlin.Unit;
+import kotlin.collections.MapsKt;
+import kotlin.jvm.functions.Function1;
 import net.minecraft.client.entity.AbstractClientPlayer;
 import gg.essential.mixins.impl.client.entity.AbstractClientPlayerExt;
 import net.minecraft.client.entity.EntityPlayerSP;
@@ -49,7 +52,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.*;
 
+import static gg.essential.gui.elementa.state.v2.FlattenKt.flatten;
+import static gg.essential.gui.elementa.state.v2.StateKt.memo;
+import static gg.essential.gui.elementa.state.v2.StateKt.mutableStateOf;
 import static gg.essential.network.cosmetics.ConversionsKt.toInfra;
+import static gg.essential.util.Let.let;
 import static gg.essential.util.UIdentifierKt.toMC;
 
 //#if MC>=12002
@@ -63,7 +70,31 @@ public abstract class MixinAbstractClientPlayer implements AbstractClientPlayerE
     @Unique
     private final PlayerMolangQuery molangQuery = new PlayerMolangQuery((AbstractClientPlayer) (Object) this);
     @Unique
-    private CosmeticsSource cosmeticsSource;
+    private final UUID cosmeticsSourceUuid = computeCosmeticsSourceUuid();
+    @Unique
+    private final boolean skinOverriddenByServer = let(((EntityPlayer) (Object) this).getGameProfile(), gameProfile -> {
+        String values = GameProfileManager.getSafeTexturesValue(gameProfile);
+        final JsonHolder root = new JsonHolder(new String(Base64.getDecoder().decode(values)));
+        return !root.optString("profileId").isEmpty() && !gameProfile.getId().equals(UUIDUtil.formatWithDashes(root.optString("profileId")));
+    });
+    @Unique
+    private final MutableState<State<Map<CosmeticSlot, EquippedCosmetic>>> cosmeticsSourceState = mutableStateOf(
+        let(Essential.getInstance().getConnectionManager().getCosmeticsManager().getEquippedCosmeticsManager().getVisibleCosmeticsState(cosmeticsSourceUuid), cosmeticsSource -> {
+            if (!skinOverriddenByServer) {
+                return cosmeticsSource;
+            } else {
+                return memo((Function1<? super Observer, ? extends Map<CosmeticSlot, EquippedCosmetic>>) obs -> {
+                    Map<CosmeticSlot, EquippedCosmetic> cosmetics = cosmeticsSource.get(obs);
+                    if (skinOverriddenByServer && EssentialConfig.INSTANCE.getHideCosmeticsWhenServerOverridesSkinState().get(obs)) {
+                        cosmetics = MapsKt.filterKeys(cosmetics, it -> it == CosmeticSlot.EMOTE || it == CosmeticSlot.ICON);
+                    }
+                    return cosmetics;
+                });
+            }
+        })
+    );
+    @Unique
+    private final State<Map<CosmeticSlot, EquippedCosmetic>> cosmeticsSource = flatten(cosmeticsSourceState);
     @Unique
     private WearablesManager wearablesManager;
     @Unique
@@ -72,8 +103,6 @@ public abstract class MixinAbstractClientPlayer implements AbstractClientPlayerE
     private String essentialCosmeticsCape;
     @Unique
     private Pair<List<UIdentifier>, @Nullable List<UIdentifier>> essentialCosmeticsCapeResources;
-    @Unique
-    private Boolean serverSkinOverrideStatus = null;
 
     @Unique
     private final boolean[] armorRenderingSuppressed = new boolean[4];
@@ -85,7 +114,7 @@ public abstract class MixinAbstractClientPlayer implements AbstractClientPlayerE
     private boolean poseModified;
 
     @Unique
-    private float lastCosmeticsUpdateTime;
+    private PlayerPose renderedPose;
 
     // mixin needs this to be able to correctly identify field initializers
     public MixinAbstractClientPlayer() {
@@ -103,10 +132,11 @@ public abstract class MixinAbstractClientPlayer implements AbstractClientPlayerE
     //#endif
 
     @Override
-    public CosmeticsSource getCosmeticsSource() {
-        if (this.cosmeticsSource == null) {
-            // Lazily initialized in case a player entity is created before Essential is booted
-            CosmeticsManager cosmeticsManager = Essential.getInstance().getConnectionManager().getCosmeticsManager();
+    public UUID getCosmeticsSourceUuid() {
+        return cosmeticsSourceUuid;
+    }
+
+    private UUID computeCosmeticsSourceUuid() {
             AbstractClientPlayer self = (AbstractClientPlayer) (Object) this;
             UUID uuid = self.getUniqueID();
             Collection<Property> properties = self.getGameProfile().getProperties().get("essential:real_uuid");
@@ -118,14 +148,17 @@ public abstract class MixinAbstractClientPlayer implements AbstractClientPlayerE
                     Essential.logger.warn("Failed to parse fake_player uuid \"" + value + "\" for " + self.getUniqueID(), e);
                 }
             }
-            this.cosmeticsSource = new LiveCosmeticsSource(cosmeticsManager, uuid);
-        }
+            return uuid;
+    }
+
+    @Override
+    public State<Map<CosmeticSlot, EquippedCosmetic>> getCosmeticsSource() {
         return this.cosmeticsSource;
     }
 
     @Override
-    public void setCosmeticsSource(CosmeticsSource cosmeticsSource) {
-        this.cosmeticsSource = cosmeticsSource;
+    public void setCosmeticsSource(State<Map<CosmeticSlot, EquippedCosmetic>> cosmeticsSource) {
+        this.cosmeticsSourceState.set(cosmeticsSource);
     }
 
     @Override
@@ -170,24 +203,13 @@ public abstract class MixinAbstractClientPlayer implements AbstractClientPlayerE
 
     @Override
     public ResourceLocation applyEssentialCosmeticsMask(ResourceLocation skin) {
-        if (EssentialModelRenderer.cosmeticsShouldRender((AbstractClientPlayer) (Object) this)) {
+        if (EssentialModelRenderer.shouldRender((AbstractClientPlayer) (Object) this)) {
             ResourceLocation maskedSkin = maskedSkinProvider.provide(skin, getCosmeticsState().getSkinMask());
             if (maskedSkin != null) {
                 return maskedSkin;
             }
         }
         return skin;
-    }
-
-    @Override
-    public boolean isSkinOverrodeByServer() {
-        if (serverSkinOverrideStatus == null) {
-            String values = GameProfileManager.getSafeTexturesValue(((EntityPlayer) (Object) this).getGameProfile());
-            final JsonHolder root = new JsonHolder(new String(Base64.getDecoder().decode(values)));
-            serverSkinOverrideStatus = !root.optString("profileId").isEmpty() && !((EntityPlayer) (Object) this).getGameProfile().getId().equals(UUIDUtil.formatWithDashes(root.optString("profileId")));
-        }
-
-        return serverSkinOverrideStatus;
     }
 
     //#if MC>=12002
@@ -210,7 +232,7 @@ public abstract class MixinAbstractClientPlayer implements AbstractClientPlayerE
             return;
         }
 
-        if (!EssentialModelRenderer.cosmeticsShouldRender((AbstractClientPlayer) (Object) this)) {
+        if (!EssentialModelRenderer.shouldRender((AbstractClientPlayer) (Object) this)) {
             return;
         }
 
@@ -229,14 +251,6 @@ public abstract class MixinAbstractClientPlayer implements AbstractClientPlayerE
 
     @Override
     public @Nullable UIdentifier getEmissiveCapeTexture() {
-        if (!EssentialConfig.INSTANCE.getEssentialEnabled()) {
-            return null;
-        }
-
-        if (!EssentialModelRenderer.cosmeticsShouldRender((AbstractClientPlayer) (Object) this)) {
-            return null;
-        }
-
         if (essentialCosmeticsCape == null) {
             return null;
         }
@@ -267,16 +281,6 @@ public abstract class MixinAbstractClientPlayer implements AbstractClientPlayerE
     }
 
     @Override
-    public void assumeArmorRenderingSuppressed() {
-        Arrays.fill(armorRenderingSuppressed, true);
-    }
-
-    @Override
-    public void armorRenderingNotSuppressed(int slot) {
-        armorRenderingSuppressed[slot] = false;
-    }
-
-    @Override
     public boolean[] wasArmorRenderingSuppressed() {
         return armorRenderingSuppressed;
     }
@@ -298,12 +302,13 @@ public abstract class MixinAbstractClientPlayer implements AbstractClientPlayerE
     }
 
     @Override
-    public float getLastCosmeticsUpdateTime() {
-        return lastCosmeticsUpdateTime;
+    @Nullable
+    public PlayerPose getRenderedPose() {
+        return renderedPose;
     }
 
     @Override
-    public void setLastCosmeticsUpdateTime(float lastCosmeticsUpdateTime) {
-        this.lastCosmeticsUpdateTime = lastCosmeticsUpdateTime;
+    public void setRenderedPose(PlayerPose renderedPose) {
+        this.renderedPose = renderedPose;
     }
 }

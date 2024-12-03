@@ -12,7 +12,8 @@
 package gg.essential.mixins.transformers.client.renderer.entity;
 
 import com.llamalad7.mixinextras.sugar.Local;
-import gg.essential.mixins.impl.client.renderer.entity.ArmorRenderingUtil;
+import gg.essential.cosmetics.CosmeticsRenderState;
+import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.renderer.entity.layers.LayerArmorBase;
 import net.minecraft.entity.EntityLivingBase;
 import org.spongepowered.asm.mixin.Mixin;
@@ -36,7 +37,9 @@ public class Mixin_DisableArmorRendering {
     //$$ private void essential$disableArmorRendering(EntityLivingBase entityLivingBaseIn, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch, float scale, int slotIn, CallbackInfo info) {
     //$$     int slotIndex = slotIn-1;
     //#endif
-        if (ArmorRenderingUtil.shouldDisableArmor(entityLivingBaseIn, slotIndex)) {
+        if (!(entityLivingBaseIn instanceof AbstractClientPlayer)) return;
+        CosmeticsRenderState cState = new CosmeticsRenderState.Live((AbstractClientPlayer) entityLivingBaseIn);
+        if (cState.blockedArmorSlots().contains(slotIndex)) {
             info.cancel();
         }
     }

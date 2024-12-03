@@ -16,14 +16,12 @@ import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.Share;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import dev.folomeev.kotgl.matrix.vectors.Vec3;
-import gg.essential.config.EssentialConfig;
-import gg.essential.gui.common.EmulatedUI3DPlayer;
-import gg.essential.mixins.impl.client.entity.AbstractClientPlayerExt;
+import gg.essential.cosmetics.CosmeticsRenderState;
 import gg.essential.mixins.impl.client.model.CapePoseSupplier;
 import gg.essential.mixins.impl.client.model.PlayerEntityRenderStateExt;
 import gg.essential.model.backend.PlayerPose;
 import gg.essential.model.backend.minecraft.PlayerPoseKt;
-import net.minecraft.client.network.AbstractClientPlayerEntity;
+import gg.essential.model.util.PlayerPoseManager;
 import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.render.entity.feature.CapeFeatureRenderer;
 import net.minecraft.client.render.entity.model.BipedEntityModel;
@@ -68,10 +66,9 @@ public abstract class Mixin_ApplyPoseTransform_Cape implements CapePoseSupplier 
         @Local(argsOnly = true) PlayerEntityRenderState state,
         @Share("offset") LocalRef<Vec3> offset
     ) {
-        AbstractClientPlayerEntity player = ((PlayerEntityRenderStateExt) state).essential$getEntity();
-        AbstractClientPlayerExt playerExt = (AbstractClientPlayerExt) player;
-
-        if (EssentialConfig.INSTANCE.getDisableEmotes() && !(player instanceof EmulatedUI3DPlayer.EmulatedPlayer)) {
+        CosmeticsRenderState cState = ((PlayerEntityRenderStateExt) state).essential$getCosmetics();
+        PlayerPoseManager poseManager = cState.poseManager();
+        if (poseManager == null) {
             return;
         }
 
@@ -84,7 +81,7 @@ public abstract class Mixin_ApplyPoseTransform_Cape implements CapePoseSupplier 
         }
 
         PlayerPose basePose = PlayerPoseKt.withCapePose(PlayerPose.Companion.neutral(), extraOffset, bodyModel, capeModel);
-        PlayerPose transformedPose = playerExt.getPoseManager().computePose(playerExt.getWearablesManager(), basePose);
+        PlayerPose transformedPose = poseManager.computePose(cState.wearablesManager(), basePose);
 
         renderedPose = transformedPose.getCape();
 

@@ -12,9 +12,11 @@
 package gg.essential.mixins.transformers.client.renderer.entity;
 
 import com.llamalad7.mixinextras.sugar.Local;
+import gg.essential.cosmetics.CosmeticsRenderState;
 import gg.essential.mixins.impl.client.model.ModelBipedExt;
 import gg.essential.mixins.impl.client.model.ModelBipedUtil;
 import gg.essential.model.backend.PlayerPose;
+import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.model.ModelBiped;
 import net.minecraft.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
@@ -76,8 +78,11 @@ public abstract class Mixin_ApplyPoseTransform implements ModelBipedExt {
     ) {
         //#if MC>=12102
         //$$ if (!(state instanceof PlayerEntityRenderStateExt)) return;
-        //$$ Entity entity = ((PlayerEntityRenderStateExt) state).essential$getEntity();
+        //$$ CosmeticsRenderState cState = ((PlayerEntityRenderStateExt) state).essential$getCosmetics();
+        //#else
+        if (!(entity instanceof AbstractClientPlayer)) return;
+        CosmeticsRenderState cState = new CosmeticsRenderState.Live((AbstractClientPlayer) entity);
         //#endif
-        ModelBipedUtil.applyPoseTransform((ModelBiped) (Object) this, entity);
+        ModelBipedUtil.applyPoseTransform((ModelBiped) (Object) this, cState);
     }
 }

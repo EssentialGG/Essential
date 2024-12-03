@@ -12,13 +12,11 @@
 package gg.essential.mixins.transformers.client.renderer.entity;
 
 import com.llamalad7.mixinextras.sugar.Local;
-import gg.essential.config.EssentialConfig;
-import gg.essential.gui.common.EmulatedUI3DPlayer;
-import gg.essential.mixins.impl.client.entity.AbstractClientPlayerExt;
+import gg.essential.cosmetics.CosmeticsRenderState;
 import gg.essential.mixins.impl.client.model.ElytraPoseSupplier;
-import gg.essential.mixins.impl.client.model.PlayerEntityRenderStateExt;
 import gg.essential.model.backend.PlayerPose;
 import gg.essential.model.backend.minecraft.PlayerPoseKt;
+import gg.essential.model.util.PlayerPoseManager;
 import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.model.ModelElytra;
 import net.minecraft.client.model.ModelRenderer;
@@ -70,16 +68,16 @@ public abstract class Mixin_ApplyPoseTransform_Elytra implements ElytraPoseSuppl
     ) {
         //#if MC>=12102
         //$$ if (!(state instanceof PlayerEntityRenderStateExt)) return;
-        //$$ AbstractClientPlayerEntity player = ((PlayerEntityRenderStateExt) state).essential$getEntity();
+        //$$ CosmeticsRenderState cState = ((PlayerEntityRenderStateExt) state).essential$getCosmetics();
         //#else
         if (!(entity instanceof AbstractClientPlayer)) return;
-        AbstractClientPlayer player = (AbstractClientPlayer) entity;
+        CosmeticsRenderState cState = new CosmeticsRenderState.Live((AbstractClientPlayer) entity);
         //#endif
 
         if (resetPose == null) {
-            resetPose = PlayerPoseKt.withElytraPose(PlayerPose.Companion.neutral(), this.leftWing, this.rightWing, player);
+            resetPose = PlayerPoseKt.withElytraPose(PlayerPose.Companion.neutral(), this.leftWing, this.rightWing, cState);
         } else {
-            PlayerPoseKt.applyElytraPose(resetPose, this.leftWing, this.rightWing, player);
+            PlayerPoseKt.applyElytraPose(resetPose, this.leftWing, this.rightWing, cState);
         }
     }
 
@@ -96,24 +94,24 @@ public abstract class Mixin_ApplyPoseTransform_Elytra implements ElytraPoseSuppl
     ) {
         //#if MC>=12102
         //$$ if (!(state instanceof PlayerEntityRenderStateExt)) return;
-        //$$ AbstractClientPlayerEntity player = ((PlayerEntityRenderStateExt) state).essential$getEntity();
+        //$$ CosmeticsRenderState cState = ((PlayerEntityRenderStateExt) state).essential$getCosmetics();
         //#else
-        if (!(entity instanceof AbstractClientPlayerExt)) return;
-        AbstractClientPlayer player = (AbstractClientPlayer) entity;
+        if (!(entity instanceof AbstractClientPlayer)) return;
+        CosmeticsRenderState cState = new CosmeticsRenderState.Live((AbstractClientPlayer) entity);
         //#endif
-        if (EssentialConfig.INSTANCE.getDisableEmotes() && !(player instanceof EmulatedUI3DPlayer.EmulatedPlayer)) {
+        PlayerPoseManager poseManager = cState.poseManager();
+        if (poseManager != null) {
             return;
         }
-        AbstractClientPlayerExt playerExt = (AbstractClientPlayerExt) player;
 
-        PlayerPose basePose = PlayerPoseKt.withElytraPose(PlayerPose.Companion.neutral(), this.leftWing, this.rightWing, player);
-        PlayerPose transformedPose = playerExt.getPoseManager().computePose(playerExt.getWearablesManager(), basePose);
+        PlayerPose basePose = PlayerPoseKt.withElytraPose(PlayerPose.Companion.neutral(), this.leftWing, this.rightWing, cState);
+        PlayerPose transformedPose = poseManager.computePose(cState.wearablesManager(), basePose);
 
         if (basePose.equals(transformedPose)) {
             return;
         }
 
-        PlayerPoseKt.applyElytraPose(transformedPose, this.leftWing, this.rightWing, player);
+        PlayerPoseKt.applyElytraPose(transformedPose, this.leftWing, this.rightWing, cState);
     }
 
     @Override

@@ -13,18 +13,17 @@ package gg.essential.mixins.transformers.client.renderer.entity;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import gg.essential.mixins.impl.client.entity.AbstractClientPlayerExt;
+import gg.essential.cosmetics.CosmeticsRenderState;
 import gg.essential.model.backend.minecraft.MinecraftRenderBackend;
 import gg.essential.universal.UGraphics;
-import gg.essential.util.UIdentifier;
 import kotlin.Unit;
 import kotlin.jvm.functions.Function0;
+import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.model.ModelElytra;
 import net.minecraft.client.renderer.entity.layers.LayerElytra;
+import net.minecraft.util.ResourceLocation;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-
-import static gg.essential.util.UIdentifierKt.toMC;
 
 //#if MC>=11600
 //$$ import com.llamalad7.mixinextras.sugar.Local;
@@ -107,11 +106,11 @@ public abstract class Mixin_Emissive_Elytra {
         );
 
         // Emissive layer
-        if (!(entity instanceof AbstractClientPlayerExt)) {
+        if (!(entity instanceof AbstractClientPlayer)) {
             return;
         }
-        AbstractClientPlayerExt playerExt = (AbstractClientPlayerExt) entity;
-        UIdentifier emissiveTexture = playerExt.getEmissiveCapeTexture();
+        CosmeticsRenderState cState = new CosmeticsRenderState.Live((AbstractClientPlayer) entity);
+        ResourceLocation emissiveTexture = cState.emissiveCapeTexture();
         if (emissiveTexture == null) {
             return;
         }
@@ -120,7 +119,7 @@ public abstract class Mixin_Emissive_Elytra {
         //$$ original.call(
         //$$     model,
         //$$     matrixStack,
-        //$$     buffer.getBuffer(MinecraftRenderBackend.INSTANCE.getEmissiveArmorLayer(toMC(emissiveTexture))),
+        //$$     buffer.getBuffer(MinecraftRenderBackend.INSTANCE.getEmissiveArmorLayer(emissiveTexture)),
         //$$     light,
         //$$     overlay
             //#if MC<12100
@@ -132,7 +131,7 @@ public abstract class Mixin_Emissive_Elytra {
         //$$ );
         //#else
         Function0<Unit> cleanup = MinecraftRenderBackend.INSTANCE.setupEmissiveRendering();
-        UGraphics.bindTexture(0, toMC(emissiveTexture));
+        UGraphics.bindTexture(0, emissiveTexture);
         original.call(model, entity, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scale);
         cleanup.invoke();
         //#endif

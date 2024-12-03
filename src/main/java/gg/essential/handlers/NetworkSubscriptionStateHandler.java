@@ -12,8 +12,6 @@
 package gg.essential.handlers;
 
 import gg.essential.Essential;
-import gg.essential.cosmetics.source.CosmeticsSource;
-import gg.essential.cosmetics.source.LiveCosmeticsSource;
 import gg.essential.data.OnboardingData;
 import gg.essential.event.client.ClientTickEvent;
 import gg.essential.mixins.impl.client.entity.AbstractClientPlayerExt;
@@ -56,10 +54,7 @@ public class NetworkSubscriptionStateHandler {
             //#endif
                 currentTickList.add(playerEntity.getUniqueID());
                 if (playerEntity instanceof AbstractClientPlayerExt) {
-                    CosmeticsSource cosmeticsSource = ((AbstractClientPlayerExt) playerEntity).getCosmeticsSource();
-                    if (cosmeticsSource instanceof LiveCosmeticsSource) {
-                        currentTickList.add(((LiveCosmeticsSource) cosmeticsSource).getUuid());
-                    }
+                    currentTickList.add(((AbstractClientPlayerExt) playerEntity).getCosmeticsSourceUuid());
                 }
             }
         }

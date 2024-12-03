@@ -11,16 +11,12 @@
  */
 package gg.essential.mixins.impl.client.model;
 
-import gg.essential.config.EssentialConfig;
-import gg.essential.cosmetics.WearablesManager;
-import gg.essential.gui.common.EmulatedUI3DPlayer;
+import gg.essential.cosmetics.CosmeticsRenderState;
 import gg.essential.gui.emotes.EmoteWheel;
-import gg.essential.mixins.impl.client.entity.AbstractClientPlayerExt;
 import gg.essential.model.backend.PlayerPose;
 import gg.essential.model.backend.minecraft.PlayerPoseKt;
 import gg.essential.model.util.PlayerPoseManager;
 import net.minecraft.client.model.ModelBiped;
-import net.minecraft.entity.Entity;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 public class ModelBipedUtil {
@@ -46,30 +42,23 @@ public class ModelBipedUtil {
         }
     }
 
-    public static void applyPoseTransform(ModelBiped model, Entity entity) {
-        if (!(entity instanceof AbstractClientPlayerExt)) return;
+    public static void applyPoseTransform(ModelBiped model, CosmeticsRenderState cState) {
         if (EmoteWheel.isPlayerArmRendering)
             return;
 
-        AbstractClientPlayerExt playerExt = (AbstractClientPlayerExt) entity;
-        playerExt.setPoseModified(false);
+        cState.setPoseModified(false);
 
-        if (EssentialConfig.INSTANCE.getDisableEmotes() && !(entity instanceof EmulatedUI3DPlayer.EmulatedPlayer))
-            return;
-
-        WearablesManager wearablesManager = playerExt.getWearablesManager();
-        PlayerPoseManager poseManager = playerExt.getPoseManager();
-
-        poseManager.update(wearablesManager);
+        PlayerPoseManager poseManager = cState.poseManager();
+        if (poseManager == null) return;
 
         PlayerPose basePose = PlayerPoseKt.toPose(model);
-        PlayerPose transformedPose = poseManager.computePose(wearablesManager, basePose);
+        PlayerPose transformedPose = poseManager.computePose(cState.wearablesManager(), basePose);
 
         if (basePose.equals(transformedPose)) {
             return;
         }
 
         PlayerPoseKt.applyTo(transformedPose, model);
-        playerExt.setPoseModified(true);
+        cState.setPoseModified(true);
     }
 }

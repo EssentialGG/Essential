@@ -13,11 +13,10 @@ package gg.essential.mixins.transformers.client.renderer.entity;
 
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import com.llamalad7.mixinextras.sugar.Local;
+import gg.essential.cosmetics.CosmeticsRenderState;
 import gg.essential.mixins.impl.client.model.PlayerEntityRenderStateExt;
-import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.render.entity.state.BipedEntityRenderState;
 import net.minecraft.client.util.math.MatrixStack;
-import gg.essential.mixins.impl.client.renderer.entity.ArmorRenderingUtil;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.feature.ArmorFeatureRenderer;
 import net.minecraft.client.render.entity.model.BipedEntityModel;
@@ -37,7 +36,7 @@ public abstract class Mixin_DisableArmorRendering<S extends BipedEntityRenderSta
         @Local(argsOnly = true) S state
     ) {
         if (!(state instanceof PlayerEntityRenderStateExt)) return true;
-        AbstractClientPlayerEntity entity = ((PlayerEntityRenderStateExt) state).essential$getEntity();
-        return !ArmorRenderingUtil.shouldDisableArmor(entity, slot.getEntitySlotId());
+        CosmeticsRenderState cState = ((PlayerEntityRenderStateExt) state).essential$getCosmetics();
+        return !cState.blockedArmorSlots().contains(slot.getEntitySlotId());
     }
 }

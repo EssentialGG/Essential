@@ -13,7 +13,6 @@ package gg.essential.util
 
 import gg.essential.Essential
 import gg.essential.config.EssentialConfig
-import gg.essential.connectionmanager.common.packet.mod.ClientModsAnnouncePacket
 import gg.essential.data.MenuData
 import gg.essential.data.VersionData
 import gg.essential.elementa.components.Window
@@ -202,13 +201,16 @@ object AutoUpdate {
     }
 
     private fun getEssentialLoaderPlatform(): String {
+        //#if FABRIC
+        //$$ return "fabric"
+        //#else
         val version = VersionData.getMajorComponents(VersionData.getMinecraftVersion())[1].toInt()
         return when {
-            VersionData.getMinecraftPlatform() == ClientModsAnnouncePacket.Platform.FABRIC -> "fabric"
             version >= 17 -> "modlauncher9"
             version >= 14 -> "modlauncher8"
             else -> "launchwrapper"
         }
+        //#endif
     }
 
     private fun stage2GameVersion(): String {

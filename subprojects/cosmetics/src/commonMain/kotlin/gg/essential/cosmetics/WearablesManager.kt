@@ -79,6 +79,20 @@ class WearablesManager(
         updateState(state.copyWithout(slot))
     }
 
+    /** @see ModelInstance.update */
+    fun update() {
+        for ((_, model) in models) {
+            model.update()
+        }
+    }
+
+    /** @see ModelInstance.updateLocators */
+    fun updateLocators(renderedPose: PlayerPose?) {
+        for ((_, model) in models) {
+            model.updateLocators(renderedPose)
+        }
+    }
+
     fun render(
         matrixStack: UMatrixStack,
         vertexConsumerProvider: RenderBackend.VertexConsumerProvider,

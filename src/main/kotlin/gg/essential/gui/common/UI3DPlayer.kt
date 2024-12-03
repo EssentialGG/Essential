@@ -27,11 +27,10 @@ import gg.essential.cosmetics.CosmeticsState
 import gg.essential.cosmetics.EquippedCosmetic
 import gg.essential.cosmetics.WearablesManager
 import gg.essential.cosmetics.events.AnimationEventType
+import gg.essential.cosmetics.events.CosmeticEventDispatcher.dispatchEvents
 import gg.essential.cosmetics.renderForHoverOutline
 import gg.essential.cosmetics.renderCapeForHoverOutline
 import gg.essential.cosmetics.skinmask.MaskedSkinProvider
-import gg.essential.cosmetics.source.CosmeticsSource
-import gg.essential.cosmetics.source.LiveCosmeticsSource
 import gg.essential.elementa.UIComponent
 import gg.essential.elementa.dsl.pixels
 import gg.essential.elementa.state.BasicState
@@ -160,7 +159,7 @@ open class UI3DPlayer(
             cosmeticsSource = cosmeticsSource // apply cosmetics source to new player
         }
 
-    var cosmeticsSource: CosmeticsSource? = null
+    var cosmeticsSource: StateV2<Map<CosmeticSlot, EquippedCosmetic>>? = null
         set(value) {
             field = value
             if (value != null) {
@@ -438,11 +437,19 @@ open class UI3DPlayer(
 
         try {
             current = this
+            val player = player as? AbstractClientPlayer ?: return
+            val playerExt = player as? AbstractClientPlayerExt ?: return
+
+            playerExt.wearablesManager.update()
+            playerExt.poseManager.update(playerExt.wearablesManager)
+
             doDrawPlayer()
+
+            playerExt.wearablesManager.updateLocators(playerExt.renderedPose)
+            dispatchEvents(player, playerExt.wearablesManager)
 
             // An emulated player has its own dedicated particle system which we need to manually update here (that is
             // after we have rendered the player, which updates any locators).
-            val player = player
             val dedicatedParticleSystem = (player as? EmulatedUI3DPlayer.EmulatedPlayer)?.particleSystem
             dedicatedParticleSystem?.update()
 
@@ -651,7 +658,12 @@ open class UI3DPlayer(
     }
 
     private fun doDrawParticles(particleSystem: ParticleSystem) {
+        //#if MC>=12104
+        //$$ val immediate = MinecraftClient.getInstance().bufferBuilders.entityVertexConsumers
+        //$$ val vertexConsumerProvider = MinecraftRenderBackend.ParticleVertexConsumerProvider(immediate)
+        //#else
         val vertexConsumerProvider = MinecraftRenderBackend.ParticleVertexConsumerProvider()
+        //#endif
         UGraphics.enableDepth()
 
         bindWhiteLightMapTexture()
@@ -671,6 +683,10 @@ open class UI3DPlayer(
         val camera = perspectiveCamera ?: rotationAngleCamera
         val cameraPos = camera.camera.rotateBy(realRotation).plus(realPosition)
         particleSystem.render(stack, cameraPos, realRotation * camera.rotation, vertexConsumerProvider, UUID(0, 0), false)
+
+        //#if MC>=12104
+        //$$ immediate.draw()
+        //#endif
 
         UGraphics.disableDepth()
     }
@@ -705,9 +721,9 @@ open class UI3DPlayer(
         private val poseManager = PlayerPoseManager(entity)
         val particleSystem = ParticleSystem(Random(0), PlaneCollisionProvider.PlaneXZ, LightProvider.FullBright, ::playSound)
 
-        private var liveCosmeticsSource: CosmeticsSource? = null
-        private val cosmeticsSource: CosmeticsSource
-            get() = this@UI3DPlayer.cosmeticsSource ?: liveCosmeticsSource ?: CosmeticsSource.EMPTY
+        private var liveCosmeticsSource: StateV2<Map<CosmeticSlot, EquippedCosmetic>>? = null
+        private val cosmeticsSource: StateV2<Map<CosmeticSlot, EquippedCosmetic>>
+            get() = this@UI3DPlayer.cosmeticsSource ?: liveCosmeticsSource ?: stateOf(emptyMap())
         private var cosmetics: Map<CosmeticSlot, EquippedCosmetic> = emptyMap()
         val wearablesManager = WearablesManager(MinecraftRenderBackend, entity, subject.animationTargets) { _, _, -> }
 
@@ -757,6 +773,9 @@ open class UI3DPlayer(
         private fun loadTextures(profile: GameProfile) {
             //#if MC>=12002
             //$$ MinecraftClient.getInstance().skinProvider.fetchSkinTextures(profile).thenAcceptOnMainThread { skin ->
+                //#if MC>=12104
+                //$$ val skin = skin.get()
+                //#endif
             //$$     currentSkin = skin.texture
             //$$     updateSkinType(Model.byTypeOrDefault(skin.model.getName()))
             //$$     currentCape = skin.capeTexture
@@ -790,7 +809,7 @@ open class UI3DPlayer(
                 currentProfile = null
 
                 // UUID may have changed, need to update live cosmetic source accordingly
-                liveCosmeticsSource = LiveCosmeticsSource(cosmeticsManager, profileConfigured.id)
+                liveCosmeticsSource = cosmeticsManager.equippedCosmeticsManager.getVisibleCosmeticsState(profileConfigured.id)
 
                 entity.uuid = profileConfigured.id
             }
@@ -811,7 +830,8 @@ open class UI3DPlayer(
             }
 
             // Check if the equipped cosmetics or any of their settings have changed
-            val newCosmetics = cosmeticsSource.cosmetics
+            // FIXME should use State effect instead of checking every frame (though note that this field isn't a proper state yet!)
+            val newCosmetics = cosmeticsSource.getUntracked()
             if (cosmetics != newCosmetics) {
                 cosmetics = newCosmetics
                 updateCosmeticsState()
@@ -836,6 +856,8 @@ open class UI3DPlayer(
                 else -> Pair(getThirdPartyCape(), null)
             }
 
+            playerModel.update()
+            wearablesManager.update()
             poseManager.update(wearablesManager)
 
             var pose = PlayerPose.neutral()
@@ -875,6 +897,7 @@ open class UI3DPlayer(
             wearablesManager.render(stack, vertexConsumerProvider, pose, skin)
             wearablesManager.renderForHoverOutline(stack, vertexConsumerProvider, pose, skin)
 
+            wearablesManager.updateLocators(pose)
             wearablesManager.collectEvents { event ->
                 when (event) {
                     is ModelAnimationState.ParticleEvent -> particleSystem.spawn(event)

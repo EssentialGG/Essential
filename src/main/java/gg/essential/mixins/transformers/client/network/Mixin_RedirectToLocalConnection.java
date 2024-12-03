@@ -11,6 +11,8 @@
  */
 package gg.essential.mixins.transformers.client.network;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import gg.essential.Essential;
 import gg.essential.network.connectionmanager.ice.IIceManager;
 import gg.essential.network.pingproxy.ProxyPingServer;
@@ -28,7 +30,6 @@ import net.minecraft.network.NetworkManager;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
-import org.spongepowered.asm.mixin.injection.Redirect;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -75,8 +76,8 @@ public abstract class Mixin_RedirectToLocalConnection {
         return channel;
     }
 
-    @Redirect(method = CONNECT, at = @At(value = "INVOKE", target = "Lio/netty/bootstrap/Bootstrap;connect(Ljava/net/InetAddress;I)Lio/netty/channel/ChannelFuture;", remap = false))
-    private static ChannelFuture injectLocalChannel(Bootstrap bootstrap, InetAddress address, int port) throws IOException {
+    @WrapOperation(method = CONNECT, at = @At(value = "INVOKE", target = "Lio/netty/bootstrap/Bootstrap;connect(Ljava/net/InetAddress;I)Lio/netty/channel/ChannelFuture;", remap = false))
+    private static ChannelFuture injectLocalChannel(Bootstrap bootstrap, InetAddress address, int port, Operation<ChannelFuture> original) throws IOException {
         ServerData serverData = ProxyPingServerKt.getTargetServerData().get();
         if (serverData != null) {
             // PingProxy connection
@@ -102,6 +103,6 @@ public abstract class Mixin_RedirectToLocalConnection {
         }
 
         // regular connection
-        return bootstrap.connect(address, port);
+        return original.call(bootstrap, address, port);
     }
 }

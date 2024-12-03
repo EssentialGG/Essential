@@ -11,12 +11,11 @@
  */
 package gg.essential.cosmetics;
 
-import com.google.common.collect.ImmutableMap;
 import com.mojang.authlib.minecraft.MinecraftProfileTexture;
 import gg.essential.api.cosmetics.RenderCosmetic;
-import gg.essential.cosmetics.source.CosmeticsSource;
 import gg.essential.event.entity.PlayerTickEvent;
 import gg.essential.gui.common.EmulatedUI3DPlayer;
+import gg.essential.gui.elementa.state.v2.State;
 import gg.essential.mixins.impl.client.entity.AbstractClientPlayerExt;
 import gg.essential.mixins.impl.client.renderer.entity.ArmorRenderingUtil;
 import gg.essential.mod.Model;
@@ -80,7 +79,7 @@ public class PlayerWearableManager {
 
     private void updateCosmetics(AbstractClientPlayer player) {
         AbstractClientPlayerExt playerExt = (AbstractClientPlayerExt) player;
-        CosmeticsSource cosmeticsSource = playerExt.getCosmeticsSource();
+        State<Map<CosmeticSlot, EquippedCosmetic>> cosmeticsSource = playerExt.getCosmeticsSource();
         CosmeticsState oldState = playerExt.getCosmeticsState();
 
         //#if MC>=12002
@@ -90,7 +89,8 @@ public class PlayerWearableManager {
         //#endif
         Model oldSkinType = oldState.getSkinType();
 
-        ImmutableMap<CosmeticSlot, EquippedCosmetic> newCosmetics = cosmeticsSource.getCosmetics();
+        // FIXME should use State effect instead of checking every tick
+        Map<CosmeticSlot, EquippedCosmetic> newCosmetics = cosmeticsSource.getUntracked();
         Map<CosmeticSlot, EquippedCosmetic> oldCosmetics = oldState.getCosmetics();
         Set<EnumPart> newArmour = getArmourFromPlayer(player);
         Set<EnumPart> oldArmour = oldState.getArmor();

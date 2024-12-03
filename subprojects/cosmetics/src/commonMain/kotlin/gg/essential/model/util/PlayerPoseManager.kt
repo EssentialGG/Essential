@@ -97,14 +97,14 @@ class PlayerPoseManager(
      * Computes the final pose for the player based on their vanilla [basePose], equipped cosmetics,
      * the current emote and, if not yet fully transitioned, the previous emote.
      */
-    fun computePose(wearablesManager: WearablesManager, basePose: PlayerPose): PlayerPose {
+    fun computePose(wearablesManager: WearablesManager?, basePose: PlayerPose): PlayerPose {
         var transformedPose = basePose
 
         // Apply interpolated emote pose
         transformedPose = computePose(transformedPose)
 
         // Apply pose animations from all other cosmetics (if any)
-        for ((cosmetic, model) in wearablesManager.models) {
+        for ((cosmetic, model) in wearablesManager?.models ?: emptyMap()) {
             if (cosmetic.type.slot == CosmeticSlot.EMOTE) {
                 continue // already handled separately before the loop
             }

@@ -1,0 +1,2 @@
+net.minecraft.resource.metadata.ResourceMetadataSerializer net.minecraft.resource.metadata.ResourceMetadataReader
+net.minecraft.client.gui.widget.EntryListWidget getContentsHeightWithPadding() getMaxPosition()

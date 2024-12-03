@@ -51,9 +51,28 @@ fun primeCache(modelLoader: ModelLoader, assetLoader: AssetLoader, cosmetic: Cos
 }
 
 fun ConnectionManager.unlockSpsCosmetics() {
-    // Current major version of Minecraft (e.g. 1.20)
-    val currentVersion = VersionData.getMinecraftVersion().split("-", ".").take(2).joinToString(".")
-    unlock<CosmeticProperty.RequiresUnlockAction.Data.JoinSps> { it.requiredVersion == null || it.requiredVersion == currentVersion }
+    // Current version of Minecraft (e.g. 1.21.4) as array of ints, [1, 21, 4] or [1, 20]
+    val currentVersionInts = VersionData.getMinecraftVersion().split("-", ".").map {
+        it.toIntOrNull() ?: run {
+            Essential.logger.warn("When unlocking SPS cosmetic the current version could not be parsed from {}", VersionData.getMinecraftVersion())
+            return
+        }
+    }.take(3)
+
+    unlock<CosmeticProperty.RequiresUnlockAction.Data.JoinSps> { joinSPSProperty ->
+        val requiredVersionInts = joinSPSProperty.requiredVersion?.split(".")?.map {
+            it.toIntOrNull() ?: run {
+                Essential.logger.warn("When unlocking SPS cosmetic the required version could not be parsed from {}", joinSPSProperty)
+                return@unlock false
+            }
+        }?.take(3) ?: return@unlock true
+        // Major version must match
+        if (currentVersionInts.take(2) != requiredVersionInts.take(2)) return@unlock false
+        // If no required minor version, that's it
+        if (requiredVersionInts.size <= 2) return@unlock true
+        // Otherwise, check minor version
+        return@unlock (currentVersionInts.getOrNull(2) ?: 0) >= requiredVersionInts[2]
+    }
 }
 
 fun ConnectionManager.unlockServerCosmetics(address: String) {

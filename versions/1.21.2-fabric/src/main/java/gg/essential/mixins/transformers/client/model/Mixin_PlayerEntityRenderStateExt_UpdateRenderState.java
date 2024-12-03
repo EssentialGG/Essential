@@ -25,7 +25,6 @@ public abstract class Mixin_PlayerEntityRenderStateExt_UpdateRenderState {
     @Inject(method = "updateRenderState(Lnet/minecraft/client/network/AbstractClientPlayerEntity;Lnet/minecraft/client/render/entity/state/PlayerEntityRenderState;F)V", at = @At("HEAD"))
     private void updateEssentialRenderState(AbstractClientPlayerEntity entity, PlayerEntityRenderState state, float tickDelta, CallbackInfo ci) {
         PlayerEntityRenderStateExt stateExt = (PlayerEntityRenderStateExt) state;
-        stateExt.essential$setEntity(entity);
-        stateExt.essential$setTickDelta(tickDelta);
+        stateExt.essential$getCosmetics().update(entity);
     }
 }

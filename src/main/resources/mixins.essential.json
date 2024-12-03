@@ -157,7 +157,7 @@
     "events.Mixin_RenderTickEvent_LoadingScreen",
     "feature.chat.Mixin_ChatPeekScrolling",
     "feature.cosmetics.Mixin_CutoutCapeTextures",
-    "feature.cosmetics.Mixin_UpdateOffscreenPlayers",
+    "feature.cosmetics.Mixin_UpdateCosmetics",
     "feature.difficulty.client.Mixin_TrackClientDifficultyChanges",
     "feature.difficulty.server.Mixin_BroadcastServerDifficultyChanges",
     "feature.difficulty.server.Mixin_RemoveUnsafeDifficultyChecks",

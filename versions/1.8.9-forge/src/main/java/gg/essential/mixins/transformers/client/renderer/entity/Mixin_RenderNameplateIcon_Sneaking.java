@@ -12,12 +12,13 @@
 package gg.essential.mixins.transformers.client.renderer.entity;
 
 import com.llamalad7.mixinextras.sugar.Local;
+import gg.essential.cosmetics.CosmeticsRenderState;
 import gg.essential.handlers.OnlineIndicator;
 import gg.essential.universal.UMatrixStack;
+import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.entity.RendererLivingEntity;
 import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.player.EntityPlayer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -32,9 +33,10 @@ public class Mixin_RenderNameplateIcon_Sneaking<T extends EntityLivingBase> {
 
     @Inject(method = "renderName(Lnet/minecraft/entity/EntityLivingBase;DDD)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/GlStateManager;enableLighting()V"))
     private void renderEssentialIndicator(T entityIn, double x, double y, double z, CallbackInfo ci, @Local String str) {
-        if (entityIn instanceof EntityPlayer) {
+        if (entityIn instanceof AbstractClientPlayer) {
+            CosmeticsRenderState cState = new CosmeticsRenderState.Live((AbstractClientPlayer) entityIn);
             int light = (((int) OpenGlHelper.lastBrightnessY) << 16) + (int) OpenGlHelper.lastBrightnessX;
-            OnlineIndicator.drawNametagIndicator(new UMatrixStack(), entityIn, str, light);
+            OnlineIndicator.drawNametagIndicator(new UMatrixStack(), cState, str, light);
         }
     }
 }

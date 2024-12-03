@@ -13,12 +13,12 @@ package gg.essential.mixins.transformers.client.renderer.entity;
 
 import com.llamalad7.mixinextras.sugar.Local;
 import dev.folomeev.kotgl.matrix.matrices.mutables.MutableMat4;
-import gg.essential.config.EssentialConfig;
-import gg.essential.gui.common.EmulatedUI3DPlayer;
-import gg.essential.mixins.impl.client.entity.AbstractClientPlayerExt;
+import gg.essential.cosmetics.CosmeticsRenderState;
 import gg.essential.model.backend.PlayerPose;
+import gg.essential.model.util.PlayerPoseManager;
 import gg.essential.model.util.UMatrixStack;
 import gg.essential.util.GLUtil;
+import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.renderer.entity.layers.LayerEntityOnShoulder;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
@@ -51,7 +51,7 @@ public abstract class Mixin_ApplyPoseTransform_EntityOnShoulder {
 
     @Unique
     private void applyPoseTransform(
-        EntityPlayer player,
+        CosmeticsRenderState cState,
         boolean leftSide,
         //#if MC>=11600
         //$$ com.mojang.blaze3d.matrix.MatrixStack matrixStack
@@ -59,14 +59,13 @@ public abstract class Mixin_ApplyPoseTransform_EntityOnShoulder {
         float scale
         //#endif
     ) {
-        if (EssentialConfig.INSTANCE.getDisableEmotes() && !(player instanceof EmulatedUI3DPlayer.EmulatedPlayer)) {
+        PlayerPoseManager poseManager = cState.poseManager();
+        if (poseManager == null) {
             return;
         }
 
-        AbstractClientPlayerExt playerExt = (AbstractClientPlayerExt) player;
-
         PlayerPose basePose = PlayerPose.Companion.neutral();
-        PlayerPose transformedPose = playerExt.getPoseManager().computePose(playerExt.getWearablesManager(), basePose);
+        PlayerPose transformedPose = poseManager.computePose(cState.wearablesManager(), basePose);
 
         if (basePose.equals(transformedPose)) {
             return;
@@ -100,9 +99,9 @@ public abstract class Mixin_ApplyPoseTransform_EntityOnShoulder {
     //$$     @Local(argsOnly = true) PlayerEntityRenderState state,
     //$$     @Local(argsOnly = true) boolean leftSide
     //$$ ) {
-    //$$     PlayerEntity player = ((PlayerEntityRenderStateExt) state).essential$getEntity();
-    //$$     if (player == null) return;
-    //$$     applyPoseTransform(player, leftSide, matrixStack);
+    //$$     if (!(state instanceof PlayerEntityRenderStateExt)) return;
+    //$$     CosmeticsRenderState cState = ((PlayerEntityRenderStateExt) state).essential$getCosmetics();
+    //$$     applyPoseTransform(cState, leftSide, matrixStack);
     //$$ }
     //#else
     //#if MC>=11600
@@ -173,7 +172,9 @@ public abstract class Mixin_ApplyPoseTransform_EntityOnShoulder {
         org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<?> ci
         //#endif
     ) {
-        applyPoseTransform(player, leftSide,
+        if (!(player instanceof AbstractClientPlayer)) return;
+        CosmeticsRenderState cState = new CosmeticsRenderState.Live((AbstractClientPlayer) player);
+        applyPoseTransform(cState, leftSide,
             //#if MC>=11600
             //$$ matrixStack
             //#else
@@ -204,7 +205,9 @@ public abstract class Mixin_ApplyPoseTransform_EntityOnShoulder {
         //#endif
     //$$     org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci
     //$$ ) {
-    //$$     applyPoseTransform(player, leftSide, matrixStack);
+    //$$     if (!(player instanceof AbstractClientPlayerEntity)) return;
+    //$$     CosmeticsRenderState cState = new CosmeticsRenderState.Live((AbstractClientPlayerEntity) player);
+    //$$     applyPoseTransform(cState, leftSide, matrixStack);
     //$$ }
     //$$
     //$$ @Dynamic("Optifine changes arguments")
@@ -228,7 +231,9 @@ public abstract class Mixin_ApplyPoseTransform_EntityOnShoulder {
         //#endif
     //$$     org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci
     //$$ ) {
-    //$$     applyPoseTransform(player, leftSide, matrixStack);
+    //$$     if (!(player instanceof AbstractClientPlayerEntity)) return;
+    //$$     CosmeticsRenderState cState = new CosmeticsRenderState.Live((AbstractClientPlayerEntity) player);
+    //$$     applyPoseTransform(cState, leftSide, matrixStack);
     //$$ }
     //#endif
     //#endif

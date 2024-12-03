@@ -15,6 +15,7 @@ import com.mojang.authlib.GameProfile;
 import gg.essential.Essential;
 import gg.essential.config.EssentialConfig;
 import gg.essential.connectionmanager.common.enums.ProfileStatus;
+import gg.essential.cosmetics.CosmeticsRenderState;
 import gg.essential.data.OnboardingData;
 import gg.essential.gui.EssentialPalette;
 import gg.essential.mixins.ext.client.network.NetHandlerPlayClientExt;
@@ -30,7 +31,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetHandlerPlayClient;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.text.ITextComponent;
 
 //#if MC>=11800
@@ -50,11 +50,15 @@ import java.util.UUID;
 import static gg.essential.elementa.utils.ExtensionsKt.withAlpha;
 
 public class OnlineIndicator {
+    //#if MC!=11202
+    //$$ public static final ThreadLocal<Boolean> currentlyDrawingEntityName = new ThreadLocal<>();
+    //#else
     /**
      * Set while {@link #currentlyDrawingEntityName()}.
      * Only useful for 1.12.2, all other versions get the entity via regular method arguments.
      */
     public static Entity nametagEntity;
+    //#endif
 
     /**
      * When called from a {@code drawNameplate} mixin, returns whether this nameplate is the primary name nameplate, as
@@ -62,7 +66,11 @@ public class OnlineIndicator {
      * @return {@code true} if this is the primary name nameplate
      */
     public static boolean currentlyDrawingEntityName() {
+        //#if MC!=11202
+        //$$ return currentlyDrawingEntityName.get();
+        //#else
         return nametagEntity != null;
+        //#endif
     }
 
     public static void drawNametagIndicator(
@@ -70,32 +78,32 @@ public class OnlineIndicator {
         //#if MC>=11600
         //$$ IRenderTypeBuffer vertexConsumerProvider,
         //#endif
-        Entity entity,
+        CosmeticsRenderState cState,
         String str,
         int light
     ) {
 
-        if (!OnboardingData.hasAcceptedTos() || !EssentialConfig.INSTANCE.getShowEssentialIndicatorOnNametag() || !(entity instanceof EntityPlayer))
+        if (!cState.onlineIndicator()) {
             return;
+        }
 
-        ConnectionManager connectionManager = Essential.getInstance().getConnectionManager();
-        ProfileManager profileManager = connectionManager.getProfileManager();
-        UUID playerId = ((EntityPlayer) entity).getGameProfile().getId();
-        ProfileStatus status = profileManager.getStatus(playerId);
-        if (status == ProfileStatus.OFFLINE) return;
-
-        boolean alwaysOnTop = !entity.isSneaking();
+        boolean alwaysOnTop = !cState.isSneaking();
 
         int stringWidth = Minecraft.getMinecraft().fontRenderer.getStringWidth(str);
+        //#if MC>=12102
+        //$$ float vanillaX = (float)(-stringWidth) / 2f;
+        //#else
+        float vanillaX = -(float)(stringWidth / 2);
+        //#endif
         Color color = EssentialPalette.ESSENTIAL_BLUE;
         //#if MC<11600
         UGraphics.enableAlpha();
         UGraphics.disableLighting();
         UGraphics.depthMask(false);
         //#endif
-        float x1 = -(stringWidth >> 1) - 11;
+        float x1 = vanillaX - 11;
         float y1 = -1;
-        float x2 = -(stringWidth >> 1) - 1;
+        float x2 = vanillaX - 1;
         float y2 = getDiamondBackgroundYMin();
 
         //#if MC<11600
@@ -108,7 +116,9 @@ public class OnlineIndicator {
         UGraphics.tryBlendFuncSeparate(770, 771, 1,0);
 
         int backgroundOpacity = getTextBackgroundOpacity();
-        //#if MC>=11600
+        //#if MC>=12102
+        //$$ double z = -0.01;
+        //#elseif MC>=11600
         //$$ double z = 0.01;
         //#else
         double z = 0;
@@ -127,7 +137,7 @@ public class OnlineIndicator {
         vertexConsumer.pos(matrixStack, x2, y1, z).color(0, 0, 0, backgroundOpacity).tex(0, 0).light(light).endVertex();
 
         float diamondCenter = (y1 + y2) / 2 + getDiamondYOffset();
-        Diamond.drawDiamond(matrixStack, vertexConsumer, 6, -(stringWidth >> 1) + -6, diamondCenter, withAlpha(color,32).getRGB(), light);
+        Diamond.drawDiamond(matrixStack, vertexConsumer, 6, vanillaX - 6, diamondCenter, withAlpha(color,32).getRGB(), light);
 
         // On 1.16+, we get a vertex provider from the entity rendering pipeline, so we don't need to draw anything
         // manually like we do on older versions.
@@ -149,7 +159,7 @@ public class OnlineIndicator {
             //#else
             vertexConsumer = TextRenderTypeVertexConsumer.create(buffer);
             //#endif
-            Diamond.drawDiamond(matrixStack, vertexConsumer, 6, -(stringWidth >> 1) + -6, diamondCenter, color.getRGB(), light);
+            Diamond.drawDiamond(matrixStack, vertexConsumer, 6, vanillaX - 6, diamondCenter, color.getRGB(), light);
 
             //#if MC<11600
             buffer.drawDirect();

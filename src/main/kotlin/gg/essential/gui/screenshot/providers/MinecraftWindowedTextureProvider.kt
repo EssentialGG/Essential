@@ -127,7 +127,7 @@ class MinecraftWindowedTextureProvider(
         loading[path] = nextResourceLocation
         image.retain()
         upload(path) {
-            val texture = PixelBufferTexture(image, nextResourceLocation)
+            val texture = PixelBufferTexture(image)
             image.release()
             texture to nextResourceLocation
         }

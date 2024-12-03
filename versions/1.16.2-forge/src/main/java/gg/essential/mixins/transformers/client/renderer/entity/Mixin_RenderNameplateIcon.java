@@ -13,9 +13,11 @@ package gg.essential.mixins.transformers.client.renderer.entity;
 
 import com.llamalad7.mixinextras.sugar.Local;
 import com.mojang.blaze3d.matrix.MatrixStack;
+import gg.essential.cosmetics.CosmeticsRenderState;
 import gg.essential.handlers.OnlineIndicator;
 import gg.essential.universal.UMatrixStack;
 import gg.essential.universal.wrappers.message.UTextComponent;
+import net.minecraft.client.entity.player.AbstractClientPlayerEntity;
 import net.minecraft.client.renderer.IRenderTypeBuffer;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.entity.Entity;
@@ -44,7 +46,10 @@ public class Mixin_RenderNameplateIcon<T extends Entity> {
     ) {
         //#if MC>=12102
         //$$ if (!(state instanceof PlayerEntityRenderStateExt)) return;
-        //$$ Entity entity = ((PlayerEntityRenderStateExt) state).essential$getEntity();
+        //$$ CosmeticsRenderState cState = ((PlayerEntityRenderStateExt) state).essential$getCosmetics();
+        //#else
+        if (!(entity instanceof AbstractClientPlayerEntity)) return;
+        CosmeticsRenderState cState = new CosmeticsRenderState.Live((AbstractClientPlayerEntity) entity);
         //#endif
     }
 
@@ -66,10 +71,13 @@ public class Mixin_RenderNameplateIcon<T extends Entity> {
     ) {
         //#if MC>=12102
         //$$ if (!(state instanceof PlayerEntityRenderStateExt)) return;
-        //$$ Entity entity = ((PlayerEntityRenderStateExt) state).essential$getEntity();
+        //$$ CosmeticsRenderState cState = ((PlayerEntityRenderStateExt) state).essential$getCosmetics();
+        //#else
+        if (!(entity instanceof AbstractClientPlayerEntity)) return;
+        CosmeticsRenderState cState = new CosmeticsRenderState.Live((AbstractClientPlayerEntity) entity);
         //#endif
        if (OnlineIndicator.currentlyDrawingEntityName()) {
-           OnlineIndicator.drawNametagIndicator(new UMatrixStack(vMatrixStack), bufferIn, entity, new UTextComponent(name.deepCopy()).getFormattedText(), packedLightIn);
+           OnlineIndicator.drawNametagIndicator(new UMatrixStack(vMatrixStack), bufferIn, cState, new UTextComponent(name.deepCopy()).getFormattedText(), packedLightIn);
        }
     }
 }

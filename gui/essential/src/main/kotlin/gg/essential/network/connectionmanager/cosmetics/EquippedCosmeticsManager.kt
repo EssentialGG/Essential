@@ -12,6 +12,7 @@
 package gg.essential.network.connectionmanager.cosmetics
 
 import com.google.common.collect.ImmutableMap
+import com.google.common.collect.MapMaker
 import gg.essential.config.EssentialConfig
 import gg.essential.connectionmanager.common.packet.cosmetic.ServerCosmeticPlayerSettingsPacket
 import gg.essential.connectionmanager.common.packet.cosmetic.ServerCosmeticsUserEquippedPacket
@@ -19,7 +20,10 @@ import gg.essential.connectionmanager.common.packet.cosmetic.outfit.ClientCosmet
 import gg.essential.connectionmanager.common.packet.cosmetic.outfit.ServerCosmeticOutfitSelectedResponsePacket
 import gg.essential.cosmetics.EquippedCosmetic
 import gg.essential.elementa.state.v2.ReferenceHolder
+import gg.essential.gui.elementa.state.v2.MutableState
 import gg.essential.gui.elementa.state.v2.ReferenceHolderImpl
+import gg.essential.gui.elementa.state.v2.State
+import gg.essential.gui.elementa.state.v2.mutableStateOf
 import gg.essential.mod.Model
 import gg.essential.mod.Skin
 import gg.essential.mod.cosmetics.CAPE_DISABLED_COSMETIC_ID
@@ -47,6 +51,8 @@ class EquippedCosmeticsManager(
     private val refHolder: ReferenceHolder = ReferenceHolderImpl()
     private val equippedCosmetics: MutableMap<UUID, Map<CosmeticSlot, String>> = mutableMapOf()
     private val visibleCosmetics: MutableMap<UUID, ImmutableMap<CosmeticSlot, EquippedCosmetic>> = mutableMapOf()
+    private val visibleCosmeticsStates: MutableMap<UUID, MutableState<Map<CosmeticSlot, EquippedCosmetic>>> =
+        MapMaker().weakValues().makeMap()
     private val cosmeticSettings: MutableMap<UUID, Map<String, List<CosmeticSetting>>> = mutableMapOf()
     private var ownCosmeticsVisible = true
 
@@ -153,6 +159,7 @@ class EquippedCosmeticsManager(
         // Keep old instance if unchanged, so external comparisons against it can continue to take the fast path
         if (visibleCosmetics[playerId] != newValue) {
             visibleCosmetics[playerId] = newValue
+            visibleCosmeticsStates[playerId]?.set(newValue)
         }
     }
 
@@ -160,7 +167,7 @@ class EquippedCosmeticsManager(
         val cosmeticIds = equippedCosmetics[playerId] ?: return ImmutableMap.of()
         val settings = cosmeticSettings[playerId] ?: emptyMap()
 
-        val cosmeticsHidden = !ownCosmeticsVisible && playerId == ownUuid
+        val cosmeticsHidden = EssentialConfig.disableCosmetics || (!ownCosmeticsVisible && playerId == ownUuid)
 
         fun isVisible(slot: CosmeticSlot): Boolean {
             if (slot == CosmeticSlot.ICON) {
@@ -193,9 +200,17 @@ class EquippedCosmeticsManager(
         return visibleCosmetics[playerId] ?: ImmutableMap.of()
     }
 
+    fun getVisibleCosmeticsState(playerId: UUID): State<Map<CosmeticSlot, EquippedCosmetic>> {
+        return visibleCosmeticsStates.getOrPut(playerId) { mutableStateOf(visibleCosmetics[playerId] ?: emptyMap()) }
+    }
+
     override fun resetState() {
         equippedCosmetics.clear()
         visibleCosmetics.clear()
+        // Note: The visibleCosmeticsState map MUST NOT be cleared here because downstream states won't necessarily be
+        //       re-created on reconnect but should still continue to receive future updates.
+        //       It'll be cleaned up automatically as its entries become unused by virtue of having weak values.
+        visibleCosmeticsStates.values.forEach { it.set(emptyMap()) }
         cosmeticSettings.clear()
     }
 
@@ -211,6 +226,8 @@ class EquippedCosmeticsManager(
             equippedCosmetics.remove(uuid)
             visibleCosmetics.remove(uuid)
             cosmeticSettings.remove(uuid)
+            // Note: The entry MUST NOT be removed from the visibleCosmeticsState map. See comment in [resetState].
+            visibleCosmeticsStates[uuid]?.set(emptyMap())
         }
     }
 }

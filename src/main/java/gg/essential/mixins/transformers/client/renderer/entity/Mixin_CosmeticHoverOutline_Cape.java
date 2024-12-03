@@ -11,10 +11,10 @@
  */
 package gg.essential.mixins.transformers.client.renderer.entity;
 
+import gg.essential.cosmetics.CosmeticsRenderState;
 import gg.essential.cosmetics.CosmeticsState;
 import gg.essential.cosmetics.EquippedCosmetic;
 import gg.essential.gui.common.CosmeticHoverOutlineEffect;
-import gg.essential.mixins.impl.client.entity.AbstractClientPlayerExt;
 import gg.essential.mod.cosmetics.CosmeticSlot;
 import gg.essential.network.cosmetics.Cosmetic;
 import kotlin.Unit;
@@ -91,11 +91,11 @@ public abstract class Mixin_CosmeticHoverOutline_Cape
         }
 
         //#if MC>=12102
-        //$$ AbstractClientPlayerExt playerExt = (AbstractClientPlayerExt) ((PlayerEntityRenderStateExt) state).essential$getEntity();
+        //$$ CosmeticsRenderState cState = ((PlayerEntityRenderStateExt) state).essential$getCosmetics();
         //#else
-        AbstractClientPlayerExt playerExt = (AbstractClientPlayerExt) player;
+        CosmeticsRenderState cState = new CosmeticsRenderState.Live(player);
         //#endif
-        CosmeticsState cosmeticsState = playerExt.getCosmeticsState();
+        CosmeticsState cosmeticsState = cState.wearablesManager().getState();
         EquippedCosmetic equippedCosmetic = cosmeticsState.getCosmetics().get(CosmeticSlot.CAPE);
         Cosmetic cosmetic = equippedCosmetic != null ? equippedCosmetic.getCosmetic() : null;
         if (cosmetic == null) {

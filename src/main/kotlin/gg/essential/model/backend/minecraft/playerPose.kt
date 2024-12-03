@@ -16,6 +16,7 @@ import dev.folomeev.kotgl.matrix.vectors.Vec3
 import dev.folomeev.kotgl.matrix.vectors.mutables.mutableVec3
 import dev.folomeev.kotgl.matrix.vectors.mutables.negate
 import dev.folomeev.kotgl.matrix.vectors.vec4
+import gg.essential.cosmetics.CosmeticsRenderState
 import gg.essential.mixins.ext.client.model.geom.ExtraTransformHolder
 import gg.essential.mixins.impl.client.model.CapePoseSupplier
 import gg.essential.mixins.impl.client.model.ElytraPoseSupplier
@@ -24,7 +25,6 @@ import gg.essential.mixins.transformers.client.model.ModelPlayerAccessor
 import gg.essential.model.backend.PlayerPose
 import gg.essential.model.util.getRotationEulerZYX
 import gg.essential.model.util.times
-import net.minecraft.client.entity.AbstractClientPlayer
 import net.minecraft.client.model.ModelBiped
 import net.minecraft.client.model.ModelRenderer
 import net.minecraft.client.renderer.entity.RenderPlayer
@@ -225,13 +225,13 @@ fun PlayerPose.withCapePose(
 }
 //#endif
 
-fun getElytraPoseOffset(player: AbstractClientPlayer): Vec3 {
+fun getElytraPoseOffset(cState: CosmeticsRenderState): Vec3 {
     val offset = mutableVec3()
 
     //#if MC<11400
     // When sneaking, the Minecraft renderer shifts the entire model down, the elytra renderer has this assumption
     // baked in, however our Pose system does not and wants absolute coordinates.
-    if (player.isSneaking) {
+    if (cState.isSneaking()) {
         offset.y -= 0.2f /* from LayerCustomHead */ * 16 /* scale */
     }
     //#endif
@@ -245,18 +245,18 @@ fun getElytraPoseOffset(player: AbstractClientPlayer): Vec3 {
 fun PlayerPose.withElytraPose(
     leftWing: ModelRenderer,
     rightWing: ModelRenderer,
-    player: AbstractClientPlayer,
+    cState: CosmeticsRenderState,
 ): PlayerPose {
-    val offset = getElytraPoseOffset(player)
+    val offset = getElytraPoseOffset(cState)
     return copy(leftWing = leftWing.toPose().offset(offset), rightWing = rightWing.toPose().offset(offset))
 }
 
 fun PlayerPose.applyElytraPose(
     leftWing: ModelRenderer,
     rightWing: ModelRenderer,
-    player: AbstractClientPlayer,
+    cState: CosmeticsRenderState,
 ) {
-    val offset = getElytraPoseOffset(player).negate()
+    val offset = getElytraPoseOffset(cState).negate()
     this.leftWing.offset(offset).applyTo(leftWing)
     this.rightWing.offset(offset).applyTo(rightWing)
 }

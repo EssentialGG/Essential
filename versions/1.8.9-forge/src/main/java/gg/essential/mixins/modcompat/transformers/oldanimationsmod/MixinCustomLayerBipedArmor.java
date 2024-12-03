@@ -11,7 +11,8 @@
  */
 package gg.essential.mixins.modcompat.transformers.oldanimationsmod;
 
-import gg.essential.mixins.impl.client.renderer.entity.ArmorRenderingUtil;
+import gg.essential.cosmetics.CosmeticsRenderState;
+import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.entity.EntityLivingBase;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
@@ -26,7 +27,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class MixinCustomLayerBipedArmor {
     @Inject(method = "renderLayer", at = @At(value = "HEAD"), cancellable = true)
     private void essential$disableArmorRendering(
-        EntityLivingBase entityLivingBaseIn,
+        EntityLivingBase entity,
         float limbSwing,
         float limbSwingAmount,
         float partialTicks,
@@ -37,8 +38,10 @@ public class MixinCustomLayerBipedArmor {
         int slotIn,
         CallbackInfo info
     ) {
+        if (!(entity instanceof AbstractClientPlayer)) return;
+        CosmeticsRenderState cState = new CosmeticsRenderState.Live((AbstractClientPlayer) entity);
         int slotIndex = slotIn - 1;
-        if (ArmorRenderingUtil.shouldDisableArmor(entityLivingBaseIn, slotIndex)) {
+        if (cState.blockedArmorSlots().contains(slotIndex)) {
             info.cancel();
         }
     }

@@ -12,13 +12,12 @@
 package gg.essential.mixins.transformers.client.renderer.entity;
 
 import dev.folomeev.kotgl.matrix.matrices.mutables.MutableMat4;
-import gg.essential.config.EssentialConfig;
-import gg.essential.gui.common.EmulatedUI3DPlayer;
-import gg.essential.mixins.impl.client.entity.AbstractClientPlayerExt;
+import gg.essential.cosmetics.CosmeticsRenderState;
 import gg.essential.mixins.impl.client.model.CapePoseSupplier;
 import gg.essential.mixins.transformers.client.model.ModelPlayerAccessor;
 import gg.essential.model.backend.PlayerPose;
 import gg.essential.model.backend.minecraft.PlayerPoseKt;
+import gg.essential.model.util.PlayerPoseManager;
 import gg.essential.util.GLUtil;
 import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.model.ModelRenderer;
@@ -103,7 +102,9 @@ public abstract class Mixin_ApplyPoseTransform_Cape
         //#endif
         CallbackInfo ci
     ) {
-        if (emotesDisabled(player)) {
+        CosmeticsRenderState cState = new CosmeticsRenderState.Live(player);
+        PlayerPoseManager poseManager = cState.poseManager();
+        if (poseManager != null) {
             return;
         }
         // We want MC's cape transformations only, not any transformations applied outside of the renderer.
@@ -136,13 +137,14 @@ public abstract class Mixin_ApplyPoseTransform_Cape
         //#endif
         CallbackInfo ci
     ) {
-        if (emotesDisabled(player)) {
+        CosmeticsRenderState cState = new CosmeticsRenderState.Live(player);
+        PlayerPoseManager poseManager = cState.poseManager();
+        if (poseManager != null) {
             return;
         }
         //#if MC>=11600
         //$$ float scale = 1f / 16f;
         //#endif
-        AbstractClientPlayerExt playerExt = (AbstractClientPlayerExt) player;
         ModelRenderer capeModel = this.getCapeModel();
 
         // Read the matrix which MC has constructed on our freshly cleared matrix stack
@@ -175,7 +177,7 @@ public abstract class Mixin_ApplyPoseTransform_Cape
         // Compute the proper cape pose from the model and the matrix which MC constructed
         PlayerPose basePose = PlayerPoseKt.withCapePose(PlayerPose.Companion.neutral(), capeModel, capeMatrix);
         // and optionally apply animations
-        PlayerPose transformedPose = playerExt.getPoseManager().computePose(playerExt.getWearablesManager(), basePose);
+        PlayerPose transformedPose = poseManager.computePose(cState.wearablesManager(), basePose);
 
         renderedPose = transformedPose.getCape();
 
@@ -216,11 +218,6 @@ public abstract class Mixin_ApplyPoseTransform_Cape
         //#else
         return ((ModelPlayerAccessor) this.playerRenderer.getMainModel()).getCape();
         //#endif
-    }
-
-    @Unique
-    private Boolean emotesDisabled(AbstractClientPlayer player) {
-        return EssentialConfig.INSTANCE.getDisableEmotes() && !(player instanceof EmulatedUI3DPlayer.EmulatedPlayer);
     }
 
     @Override

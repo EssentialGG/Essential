@@ -12,7 +12,8 @@
 package gg.essential.mixins.transformers.client.renderer.entity;
 
 import com.llamalad7.mixinextras.sugar.Local;
-import gg.essential.mixins.impl.client.renderer.entity.ArmorRenderingUtil;
+import gg.essential.cosmetics.CosmeticsRenderState;
+import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.renderer.entity.layers.LayerCustomHead;
 import net.minecraft.entity.EntityLivingBase;
 import org.spongepowered.asm.mixin.Mixin;
@@ -57,7 +58,10 @@ public abstract class Mixin_DisablePlayerSkullRendering {
     ) {
         //#if MC>=12102
         //$$ if (!(state instanceof PlayerEntityRenderStateExt)) return;
-        //$$ LivingEntity entity = ((PlayerEntityRenderStateExt) state).essential$getEntity();
+        //$$ CosmeticsRenderState cState = ((PlayerEntityRenderStateExt) state).essential$getCosmetics();
+        //#else
+        if (!(entity instanceof AbstractClientPlayer)) return;
+        CosmeticsRenderState cState = new CosmeticsRenderState.Live((AbstractClientPlayer) entity);
         //#endif
         //#if MC<=10809
         //$$ int headSlotIndex = 2; // The slot for HEAD is 3, but we need to remove 1 to get the index.
@@ -65,7 +69,7 @@ public abstract class Mixin_DisablePlayerSkullRendering {
         int headSlotIndex = EntityEquipmentSlot.HEAD.getIndex();
         //#endif
 
-        if (ArmorRenderingUtil.shouldDisableArmor(entity, headSlotIndex)) {
+        if (cState.blockedArmorSlots().contains(headSlotIndex)) {
             ci.cancel();
         }
     }

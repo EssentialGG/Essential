@@ -21,7 +21,7 @@ import gg.essential.config.EssentialConfig;
 import gg.essential.config.EssentialConfigApiImpl;
 import gg.essential.config.McEssentialConfig;
 import gg.essential.cosmetics.PlayerWearableManager;
-import gg.essential.cosmetics.events.AnimationEffectHandler;
+import gg.essential.cosmetics.events.CosmeticEventEmitter;
 import gg.essential.data.OnboardingData;
 import gg.essential.elementa.components.image.FileImageCache;
 import gg.essential.elementa.components.image.ImageCache;
@@ -139,7 +139,7 @@ public class Essential implements EssentialAPI {
     private PlayerWearableManager playerWearableManager;
     private final GameProfileManager gameProfileManager = new GameProfileManager();
     private final MojangSkinManager skinManager = new MojangSkinManager(gameProfileManager, () -> Wardrobe.getInstance() != null);
-    private AnimationEffectHandler animationEffectHandler;
+    private CosmeticEventEmitter cosmeticEventEmitter;
     private Map<Object, Boolean> dynamicListeners = new HashMap<>();
     private EssentialGameRules gameRules;
 
@@ -304,8 +304,8 @@ public class Essential implements EssentialAPI {
         registerListener(new WindowedFullscreenHandler());
         registerListener(connectionManager.getSpsManager());
         registerListener(connectionManager.getSocialManager());
-        registerListenerRequiresEssential(animationEffectHandler = new AnimationEffectHandler());
-        registerListenerRequiresEssential((playerWearableManager = new PlayerWearableManager(connectionManager, connectionManager.getCosmeticsManager())));
+        registerListenerRequiresEssential(cosmeticEventEmitter = new CosmeticEventEmitter());
+        registerListener(playerWearableManager = new PlayerWearableManager(connectionManager, connectionManager.getCosmeticsManager()));
         registerListener(WikiToastListener.INSTANCE);
         if (!OptiFineUtil.isLoaded()) {
             registerListenerRequiresEssential(ZoomHandler.getInstance());
@@ -522,8 +522,8 @@ public class Essential implements EssentialAPI {
         return OnboardingData.INSTANCE;
     }
 
-    public AnimationEffectHandler getAnimationEffectHandler() {
-        return animationEffectHandler;
+    public CosmeticEventEmitter getCosmeticEventEmitter() {
+        return cosmeticEventEmitter;
     }
 
     public OverlayManager getOverlayManager() {

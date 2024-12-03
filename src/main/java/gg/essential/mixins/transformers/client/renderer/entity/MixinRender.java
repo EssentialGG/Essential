@@ -22,6 +22,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class MixinRender {
     @Inject(method = "renderLivingLabel", at = @At("RETURN"))
     private void setNametagEntity(CallbackInfo ci) {
+        //#if MC!=11202
+        //$$ OnlineIndicator.currentlyDrawingEntityName.set(false);
+        //#else
         OnlineIndicator.nametagEntity = null;
+        //#endif
     }
 }

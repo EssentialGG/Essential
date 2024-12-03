@@ -9,18 +9,11 @@
  * commercialize, or otherwise exploit, or create derivative works based
  * upon, this file or any other in this repository, all of which is reserved by Essential.
  */
-package gg.essential.cosmetics.source;
+package gg.essential.mixins.transformers.client.renderer;
 
-import com.google.common.collect.ImmutableMap;
-import gg.essential.mod.cosmetics.CosmeticSlot;
-import gg.essential.cosmetics.EquippedCosmetic;
-import org.jetbrains.annotations.NotNull;
+import gg.essential.mixins.DummyTarget;
+import org.spongepowered.asm.mixin.Mixin;
 
-public interface CosmeticsSource {
-    @NotNull
-    ImmutableMap<CosmeticSlot, EquippedCosmetic> getCosmetics();
-
-    boolean getShouldOverrideRenderCosmeticsCheck();
-
-    CosmeticsSource EMPTY = new ConfigurableCosmeticsSource();
+@Mixin(DummyTarget.class)
+public class MixinPlayerSkinTexture {
 }

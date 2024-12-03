@@ -374,7 +374,7 @@ class EmoteWheel : WindowScreen(
                 emoteComing = false
 
                 if (cosmeticManager.equippedCosmetics[slot] == emote.cosmetic.id) {
-                    essential.animationEffectHandler.triggerEvent(UUIDUtil.getClientUUID(), slot, "reset")
+                    essential.cosmeticEventEmitter.triggerEvent(UUIDUtil.getClientUUID(), slot, "reset")
                     connectionManager.send(ClientCosmeticAnimationTriggerPacket(slot.toInfra(), "reset"))
                 } else {
                     val outfitId = outfitManager.selectedOutfitId.getUntracked() ?: return@scheduleOnMainThread

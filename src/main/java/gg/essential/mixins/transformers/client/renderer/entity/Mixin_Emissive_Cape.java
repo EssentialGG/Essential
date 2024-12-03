@@ -14,19 +14,17 @@ package gg.essential.mixins.transformers.client.renderer.entity;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
-import gg.essential.mixins.impl.client.entity.AbstractClientPlayerExt;
+import gg.essential.cosmetics.CosmeticsRenderState;
 import gg.essential.model.backend.minecraft.MinecraftRenderBackend;
 import gg.essential.universal.UGraphics;
-import gg.essential.util.UIdentifier;
 import kotlin.Unit;
 import kotlin.jvm.functions.Function0;
 import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.model.ModelPlayer;
 import net.minecraft.client.renderer.entity.layers.LayerCape;
+import net.minecraft.util.ResourceLocation;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-
-import static gg.essential.util.UIdentifierKt.toMC;
 
 //#if MC>=12102
 //$$ import gg.essential.mixins.impl.client.model.PlayerEntityRenderStateExt;
@@ -95,11 +93,11 @@ public abstract class Mixin_Emissive_Cape {
 
         // Emissive layer
         //#if MC>=12102
-        //$$ AbstractClientPlayerExt playerExt = (AbstractClientPlayerExt) ((PlayerEntityRenderStateExt) state).essential$getEntity();
+        //$$ CosmeticsRenderState cState = ((PlayerEntityRenderStateExt) state).essential$getCosmetics();
         //#else
-        AbstractClientPlayerExt playerExt = (AbstractClientPlayerExt) player;
+        CosmeticsRenderState cState = new CosmeticsRenderState.Live(player);
         //#endif
-        UIdentifier emissiveTexture = playerExt.getEmissiveCapeTexture();
+        ResourceLocation emissiveTexture = cState.emissiveCapeTexture();
         if (emissiveTexture == null) {
             return;
         }
@@ -108,13 +106,13 @@ public abstract class Mixin_Emissive_Cape {
         //$$ original.call(
         //$$     model,
         //$$     matrixStack,
-        //$$     buffer.getBuffer(MinecraftRenderBackend.INSTANCE.getEmissiveLayer(toMC(emissiveTexture))),
+        //$$     buffer.getBuffer(MinecraftRenderBackend.INSTANCE.getEmissiveLayer(emissiveTexture)),
         //$$     light,
         //$$     overlay
         //$$ );
         //#else
         Function0<Unit> cleanup = MinecraftRenderBackend.INSTANCE.setupEmissiveRendering();
-        UGraphics.bindTexture(0, toMC(emissiveTexture));
+        UGraphics.bindTexture(0, emissiveTexture);
         original.call(model, scale);
         cleanup.invoke();
         //#endif

@@ -68,7 +68,7 @@ class Call(
                             LOGGER.error("Got unexpected reply $response for $packet")
                             cont.resume(null)
                         } else {
-                            cont.resumeWithException(UnexpectedResponseException(response))
+                            cont.resumeWithException(UnexpectedResponseException(packet, response))
                         }
                     }
                 }
@@ -100,4 +100,4 @@ class CallWithRetry(
     }
 }
 
-class UnexpectedResponseException(val response: Packet) : Exception()
+class UnexpectedResponseException(val request: Packet, val response: Packet) : Exception("Unexpected response $response for $request")

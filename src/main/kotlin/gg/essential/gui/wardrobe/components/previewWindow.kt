@@ -17,7 +17,6 @@ import gg.essential.api.gui.Slot
 import gg.essential.api.profile.wrapped
 import gg.essential.config.EssentialConfig
 import gg.essential.cosmetics.CosmeticId
-import gg.essential.cosmetics.source.ConfigurableCosmeticsSource
 import gg.essential.elementa.UIComponent
 import gg.essential.elementa.components.Window
 import gg.essential.elementa.constraints.CenterConstraint
@@ -48,7 +47,6 @@ import gg.essential.gui.elementa.state.v2.combinators.component2
 import gg.essential.gui.elementa.state.v2.combinators.map
 import gg.essential.gui.elementa.state.v2.combinators.not
 import gg.essential.gui.elementa.state.v2.combinators.or
-import gg.essential.gui.elementa.state.v2.effect
 import gg.essential.gui.elementa.state.v2.isNotEmpty
 import gg.essential.gui.elementa.state.v2.memo
 import gg.essential.gui.elementa.state.v2.mutableStateOf
@@ -91,6 +89,7 @@ import gg.essential.util.GuiUtil
 import gg.essential.util.findChildOfTypeOrNull
 import gg.essential.util.onLeftClick
 import gg.essential.util.scrollGradient
+import gg.essential.util.toState
 import java.util.UUID
 import kotlin.math.abs
 import kotlin.math.round
@@ -119,6 +118,18 @@ fun LayoutScope.previewWindowTitleBar(state: WardrobeState, modifier: Modifier) 
     }
     val text = textWithHoverability.map { it.first }
     val isOutfitMenuOpen = mutableStateOf(false)
+    val selectedEmoteHasSound = memo {
+        val emote = state.selectedEmote() ?: return@memo false
+        val variant = state.selectedPreviewingEquippedSettings()[emote.id]?.variant ?: emote.cosmetic.defaultVariantName
+
+        val model = state.modelLoader.getModel(
+            emote.cosmetic,
+            variant,
+            AssetLoader.Priority.High,
+        ).toState()() ?: return@memo false
+
+        model.soundData != null
+    }
 
     fun LayoutScope.titleBarButton(modifier: Modifier, block: LayoutScope.() -> Unit = {}): UIComponent {
         return box(modifier.width(17f).heightAspect(1f).shadow(EssentialPalette.BLACK), block)
@@ -209,7 +220,7 @@ fun LayoutScope.previewWindowTitleBar(state: WardrobeState, modifier: Modifier) 
             if_(!emoteSelected and !bundleSelected and !state.inEmoteWheel and regularContent) {
                 outfitAddButton(state)
             }
-            if_(emoteSelected and !state.editingMenuOpen and !state.inEmoteWheel) {
+            if_(selectedEmoteHasSound and !state.editingMenuOpen and !state.inEmoteWheel) {
                 titleBarButton(Modifier.color(EssentialPalette.GRAY_BUTTON).hoverColor(EssentialPalette.GRAY_BUTTON_HOVER).hoverScope()) {
                     icon({ if (EssentialConfig.playEmoteSoundsInWardrobe()) EssentialPalette.UNMUTE_10X7 else EssentialPalette.MUTE_10X7 },
                         Modifier.color(EssentialPalette.TEXT).hoverColor(EssentialPalette.TEXT_HIGHLIGHT))
@@ -379,8 +390,8 @@ private fun LayoutScope.playerPreviewInner(state: WardrobeState, modifier: Modif
             memo { state.selectedEmote()?.cosmetic },
             memo { state.selectedEmote()?.let { settings()[it.id] } },
         )
-        cosmeticsSource = ConfigurableCosmeticsSource().apply {
-            effect(stateScope) {
+        cosmeticsSource =
+            memo {
                 val cosmeticIds = (state.selectedEmote()?.let { emote ->
                     if (emoteScheduler.emoteEquipped()) mapOf(CosmeticSlot.EMOTE to emote.id) else emptyMap()
                 } ?: state.selectedBundle()?.cosmetics ?: state.equippedCosmeticsState()).toMutableMap()
@@ -389,10 +400,8 @@ private fun LayoutScope.playerPreviewInner(state: WardrobeState, modifier: Modif
                     cosmeticIds[CosmeticSlot.EMOTE] = state.purchaseConfirmationEmoteId
                 }
 
-                cosmetics = with(state) { resolveCosmeticIds(cosmeticIds, settings()) }
+                with(state) { resolveCosmeticIds(cosmeticIds, settings()) }
             }
-            shouldOverrideRenderCosmeticsCheck = true
-        }
 
         val dragging = mutableStateOf(false)
         val hovered = stateDelegatingTo(stateOf<Cosmetic?>(null))

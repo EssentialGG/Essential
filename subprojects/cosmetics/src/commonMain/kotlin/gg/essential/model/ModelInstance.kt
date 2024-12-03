@@ -59,25 +59,45 @@ class ModelInstance(
         return model.computePose(basePose, animationState, entity)
     }
 
+    private var lastUpdateTime = Float.NEGATIVE_INFINITY
+
     /**
-     * Emits new effects and updates all locators bound to this model instance.
+     * Updates the state of this model for the current frame prior to rendering.
      *
-     * This method needs to be called for models that were not rendered as part of the normal render pass (e.g. because
+     * Note that new animation events are emitted into [ModelAnimationState.pendingEvents] and the caller needs to
+     * collect them from there and forward them to the actual particle/sound/etc system at the appropriate time.
+     *
+     * Also note that this does **not** yet update the locators bound to this model instance. For that one must call
+     * [updateLocators] after rendering.
+     * This is because the position and rotation of locators depends on the final rendered player pose, which is only
+     * available after rendering.
+     * Because particle events may depend on the position of locators, they should however ideally be updated before
+     * particles are updated, rendered, and/or spawned.
+     */
+    fun update() {
+        val now = entity.lifeTime
+        if (lastUpdateTime == now) return // was already updated this frame
+        lastUpdateTime = now
+
+        essentialAnimationSystem.maybeFireTextureAnimationStartEvent()
+        essentialAnimationSystem.updateAnimationState()
+        animationState.updateEffects()
+    }
+
+    /**
+     * Updates all locators bound to this model instance.
+     *
+     * Note that this method must called for all models, even those that were not actually rendered (e.g. because
      * the corresponding player was frustum culled), so that particles bound to locators (which may be visible even
      * when the player entity that spawned them is not) are update correctly.
-     * It is safe to call on all models and will simply return without any changes if the model has already been
-     * rendered this frame.
-     *
-     * Note that new effects are merely emitted into [ModelAnimationState.pendingParticles].
-     * The caller needs to collect them from there and forward them to the actual particle system.
+     * In such cases where no reliable pose information is available, pass `null`.
      */
-    fun updateEffects() {
-        animationState.updateEffects()
-
+    fun updateLocators(renderedPose: PlayerPose?) {
         // Locators are fairly expensive to update, so only do it if we need to
         if (animationState.locatorsNeedUpdating()) {
-            val pose = PlayerPose.neutral() // no way for us to get the real pose if we didn't actually render
-                .copy(
+            val pose = renderedPose
+                // No way for us to get the real pose if we didn't actually render, let's just use the neutral pose
+                ?: PlayerPose.neutral().copy(
                     // Also no way to know if cape/elytra/etc. are visible (not if you consider modded items anyway),
                     // so we'll move those far away so any events they spawn won't be visible.
                     rightShoulderEntity = PlayerPose.Part.MISSING,
@@ -99,8 +119,6 @@ class ModelInstance(
         rootBone: Bone,
         renderMetadata: RenderMetadata,
     ) {
-        essentialAnimationSystem.maybeFireTextureAnimationStartEvent()
-        essentialAnimationSystem.updateAnimationState()
         animationState.apply(rootBone, false)
 
         for (bone in model.getBones(rootBone)) {
@@ -119,8 +137,5 @@ class ModelInstance(
             renderMetadata,
             textureAnimationSync.getAdjustedLifetime(entity.lifeTime),
         )
-
-        animationState.updateEffects()
-        animationState.updateLocators(rootBone, renderMetadata.scale)
     }
 }

@@ -13,6 +13,7 @@ package gg.essential.mixins.transformers.client.renderer.entity;
 
 import com.llamalad7.mixinextras.sugar.Local;
 import dev.folomeev.kotgl.matrix.matrices.Mat4;
+import gg.essential.cosmetics.CosmeticsRenderState;
 import gg.essential.cosmetics.EssentialModelRenderer;
 import gg.essential.gui.emotes.EmoteWheel;
 import gg.essential.handlers.OnlineIndicator;
@@ -170,7 +171,8 @@ public abstract class MixinRenderPlayer
         //#if MC<12102
         getMainModel().isChild = false;
         //#endif
-        essentialModelRenderer.render(matrixStack, vertexConsumerProvider, EnumSet.of(EnumPart.LEFT_ARM), player);
+        CosmeticsRenderState cState = new CosmeticsRenderState.Live(player);
+        essentialModelRenderer.render(matrixStack, vertexConsumerProvider, cState, EnumSet.of(EnumPart.LEFT_ARM));
         EmoteWheel.isPlayerArmRendering = false;
     }
 
@@ -198,17 +200,14 @@ public abstract class MixinRenderPlayer
         //#if MC<12102
         getMainModel().isChild = false;
         //#endif
-        essentialModelRenderer.render(matrixStack, vertexConsumerProvider, EnumSet.of(EnumPart.RIGHT_ARM), player);
+        CosmeticsRenderState cState = new CosmeticsRenderState.Live(player);
+        essentialModelRenderer.render(matrixStack, vertexConsumerProvider, cState, EnumSet.of(EnumPart.RIGHT_ARM));
         EmoteWheel.isPlayerArmRendering = false;
     }
 
     //#if MC>=12102
     //$$ @Inject(method = "renderLabelIfPresent(Lnet/minecraft/client/render/entity/state/PlayerEntityRenderState;Lnet/minecraft/text/Text;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;I)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/entity/LivingEntityRenderer;renderLabelIfPresent(Lnet/minecraft/client/render/entity/state/EntityRenderState;Lnet/minecraft/text/Text;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;I)V", ordinal = 1))
-    //$$ private void setNametagEntity(CallbackInfo ci, @Local(argsOnly = true) PlayerEntityRenderState state) {
-    //$$     OnlineIndicator.nametagEntity = ((PlayerEntityRenderStateExt) state).essential$getEntity();
-    //$$ }
-    //#else
-    //#if MC>=12005
+    //#elseif MC>=12005
     //$$ @Inject(method = "renderLabelIfPresent(Lnet/minecraft/client/network/AbstractClientPlayerEntity;Lnet/minecraft/text/Text;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;IF)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/entity/LivingEntityRenderer;renderLabelIfPresent(Lnet/minecraft/entity/Entity;Lnet/minecraft/text/Text;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;IF)V", ordinal = 1))
     //#elseif MC>=11600
     //$$ @Inject(method = "renderName(Lnet/minecraft/client/entity/player/AbstractClientPlayerEntity;Lnet/minecraft/util/text/ITextComponent;Lcom/mojang/blaze3d/matrix/MatrixStack;Lnet/minecraft/client/renderer/IRenderTypeBuffer;I)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/entity/LivingRenderer;renderName(Lnet/minecraft/entity/Entity;Lnet/minecraft/util/text/ITextComponent;Lcom/mojang/blaze3d/matrix/MatrixStack;Lnet/minecraft/client/renderer/IRenderTypeBuffer;I)V", ordinal = 1))
@@ -217,6 +216,11 @@ public abstract class MixinRenderPlayer
     //#else
     //$$ @Inject(method = "renderOffsetLivingLabel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/entity/RendererLivingEntity;renderOffsetLivingLabel(Lnet/minecraft/entity/Entity;DDDLjava/lang/String;FD)V"))
     //#endif
+    //#if MC!=11202
+    //$$ private void setNametagEntity(CallbackInfo ci) {
+    //$$     OnlineIndicator.currentlyDrawingEntityName.set(true);
+    //$$ }
+    //#else
     private void setNametagEntity(CallbackInfo ci, @Local(argsOnly = true) AbstractClientPlayer entityIn) {
         OnlineIndicator.nametagEntity = entityIn;
     }

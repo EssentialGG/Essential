@@ -16,7 +16,6 @@ import gg.essential.lib.caffeine.cache.Caffeine;
 import gg.essential.lib.caffeine.cache.RemovalCause;
 import gg.essential.lib.caffeine.cache.RemovalListener;
 import gg.essential.lib.caffeine.cache.Scheduler;
-import gg.essential.mixins.ext.client.renderer.PlayerSkinTextureExt;
 import gg.essential.universal.UImage;
 import gg.essential.universal.UMinecraft;
 import gg.essential.util.ExtensionsKt;
@@ -25,7 +24,7 @@ import gg.essential.util.Multithreading;
 import gg.essential.util.image.bitmap.Bitmap;
 import gg.essential.util.image.bitmap.UImageBitmap;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ThreadDownloadImageData;
+import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.client.renderer.texture.ITextureObject;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.resources.DefaultPlayerSkin;
@@ -38,6 +37,14 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import static gg.essential.util.image.bitmap.GuiEssentialExtensionsKt.toUImage;
+
+//#if MC>=12104
+//$$ import net.minecraft.client.texture.NativeImage;
+//$$ import net.minecraft.client.texture.NativeImageBackedTexture;
+//#else
+import gg.essential.mixins.ext.client.renderer.PlayerSkinTextureExt;
+import net.minecraft.client.renderer.ThreadDownloadImageData;
+//#endif
 
 public class MaskedSkinProvider {
     private static final DynamicTextureManager dynamicTextureManager = new DynamicTextureManager();
@@ -72,6 +79,18 @@ public class MaskedSkinProvider {
             return null; // if not, then we cannot yet apply the mask
         }
 
+        //#if MC>=12104
+        //$$ if (!(skinTexture instanceof NativeImageBackedTexture)) {
+        //$$     return null;
+        //$$ }
+        //$$
+        //$$ NativeImage skinNativeImage = ((NativeImageBackedTexture) skinTexture).getImage();
+        //$$ if (skinNativeImage == null) {
+        //$$     return null;
+        //$$ }
+        //$$
+        //$$ UImage skinImage = new UImage(skinNativeImage);
+        //#else
         // Sanity check, this should always be the case at least for vanilla
         if (!(skinTexture instanceof PlayerSkinTextureExt)) {
             return null; // this is bad, nothing we can do
@@ -86,13 +105,18 @@ public class MaskedSkinProvider {
         if (skinImage == null) {
             return null; // in that case, we cannot yet apply the mask
         }
+        //#endif
 
         // All good, compute the masked skin, store it for later, and register it with MC
         Bitmap generatedTexture = config.apply(new UImageBitmap(skinImage));
         generatedSkin = skin;
         generatedConfig = config;
         generatedId = dynamicTextureManager.generateUniqueId(generatedSkin.toString().replace(':', '/'));
+        //#if MC>=12104
+        //$$ dynamicTextureManager.register(this, generatedId, new NativeImageBackedTexture(toUImage(generatedTexture).getNativeImage()));
+        //#else
         dynamicTextureManager.register(this, generatedId, new MaskedSkinTexture(toUImage(generatedTexture)));
+        //#endif
         return generatedId;
     }
 
@@ -117,7 +141,7 @@ public class MaskedSkinProvider {
             return HelpersKt.identifier("essential", String.format(Locale.ROOT, "masked_skins/%s/%d", name, nextUniqueId++));
         }
 
-        public void register(MaskedSkinProvider provider, ResourceLocation id, MaskedSkinTexture texture) {
+        public void register(MaskedSkinProvider provider, ResourceLocation id, AbstractTexture texture) {
             Minecraft.getMinecraft().getTextureManager().loadTexture(id, texture);
             loaded.put(provider, id);
         }
@@ -135,6 +159,7 @@ public class MaskedSkinProvider {
         }
     }
 
+    //#if MC<12104
     // Intentionally using a class which extends the vanilla skin texture class for better compatibility.
     private static class MaskedSkinTexture extends ThreadDownloadImageData {
         public MaskedSkinTexture(UImage image) {
@@ -157,5 +182,6 @@ public class MaskedSkinProvider {
         }
         //#endif
     }
+    //#endif
 
 }

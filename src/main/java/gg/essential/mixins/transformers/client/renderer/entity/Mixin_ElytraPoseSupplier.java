@@ -14,6 +14,7 @@ package gg.essential.mixins.transformers.client.renderer.entity;
 
 import com.llamalad7.mixinextras.sugar.Local;
 import dev.folomeev.kotgl.matrix.vectors.Vec3;
+import gg.essential.cosmetics.CosmeticsRenderState;
 import gg.essential.mixins.impl.client.model.ElytraPoseSupplier;
 import gg.essential.model.backend.PlayerPose;
 import gg.essential.model.backend.minecraft.PlayerPoseKt;
@@ -30,6 +31,10 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+//#if MC>=12104
+//$$ import net.minecraft.component.type.EquippableComponent;
+//#endif
+
 //#if MC>=12102
 //$$ import gg.essential.mixins.impl.client.model.PlayerEntityRenderStateExt;
 //$$ import gg.essential.mixins.transformers.client.renderer.entity.equipment.EquipmentRendererAccessor;
@@ -44,7 +49,11 @@ public abstract class Mixin_ElytraPoseSupplier implements ElytraPoseSupplier {
 
     //#if MC>=12102
     //$$ private static final String RENDER_LAYER = "render(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;ILnet/minecraft/client/render/entity/state/BipedEntityRenderState;FF)V";
+    //#if MC>=12104
+    //$$ private static final String MODEL_RENDER = "Lnet/minecraft/client/render/entity/equipment/EquipmentRenderer;render(Lnet/minecraft/client/render/entity/equipment/EquipmentModel$LayerType;Lnet/minecraft/registry/RegistryKey;Lnet/minecraft/client/model/Model;Lnet/minecraft/item/ItemStack;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;ILnet/minecraft/util/Identifier;)V";
+    //#else
     //$$ private static final String MODEL_RENDER = "Lnet/minecraft/client/render/entity/equipment/EquipmentRenderer;render(Lnet/minecraft/item/equipment/EquipmentModel$LayerType;Lnet/minecraft/util/Identifier;Lnet/minecraft/client/model/Model;Lnet/minecraft/item/ItemStack;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;ILnet/minecraft/util/Identifier;)V";
+    //#endif
     //#elseif MC>=11600
     //$$ private static final String RENDER_LAYER = "render(Lcom/mojang/blaze3d/matrix/MatrixStack;Lnet/minecraft/client/renderer/IRenderTypeBuffer;ILnet/minecraft/entity/LivingEntity;FFFFFF)V";
     //#if MC>=12100
@@ -79,10 +88,17 @@ public abstract class Mixin_ElytraPoseSupplier implements ElytraPoseSupplier {
     //$$ private void setRenderedPose(
     //$$     CallbackInfo ci,
     //$$     @Local(argsOnly = true) BipedEntityRenderState state,
-    //$$     @Local(ordinal = 1) Identifier modelId
+        //#if MC>=12104
+        //$$ @Local(ordinal = 0) EquippableComponent component
+        //#else
+        //$$ @Local(ordinal = 1) Identifier modelId
+        //#endif
     //$$ ) {
     //$$     if (!(state instanceof PlayerEntityRenderStateExt)) return;
-    //$$     AbstractClientPlayerEntity player = ((PlayerEntityRenderStateExt) state).essential$getEntity();
+    //$$     CosmeticsRenderState cState = ((PlayerEntityRenderStateExt) state).essential$getCosmetics();
+        //#if MC>=12104
+        //$$ var modelId = component.assetId().get();
+        //#endif
     //$$
     //$$     boolean modelHasNoWings = ((EquipmentRendererAccessor) this.equipmentRenderer)
     //$$         .getEquipmentModelLoader()
@@ -93,13 +109,13 @@ public abstract class Mixin_ElytraPoseSupplier implements ElytraPoseSupplier {
     //#else
     private void setRenderedPose(CallbackInfo ci, @Local(argsOnly = true) EntityLivingBase entity) {
         if (!(entity instanceof AbstractClientPlayer)) return;
-        AbstractClientPlayer player = (AbstractClientPlayer) entity;
+        CosmeticsRenderState cState = new CosmeticsRenderState.Live((AbstractClientPlayer) entity);
     //#endif
 
         this.leftWingPose = ((ElytraPoseSupplier) this.modelElytra).getLeftWingPose();
         this.rightWingPose = ((ElytraPoseSupplier) this.modelElytra).getRightWingPose();
 
-        Vec3 offset = PlayerPoseKt.getElytraPoseOffset(player);
+        Vec3 offset = PlayerPoseKt.getElytraPoseOffset(cState);
         if (leftWingPose != null) leftWingPose = leftWingPose.offset(offset);
         if (rightWingPose != null) rightWingPose = rightWingPose.offset(offset);
     }

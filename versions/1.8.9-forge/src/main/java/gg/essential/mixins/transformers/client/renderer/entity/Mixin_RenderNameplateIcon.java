@@ -12,8 +12,10 @@
 package gg.essential.mixins.transformers.client.renderer.entity;
 
 import com.llamalad7.mixinextras.sugar.Local;
+import gg.essential.cosmetics.CosmeticsRenderState;
 import gg.essential.handlers.OnlineIndicator;
 import gg.essential.universal.UMatrixStack;
+import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.entity.Render;
 import net.minecraft.entity.Entity;
@@ -30,9 +32,10 @@ public class Mixin_RenderNameplateIcon<T extends Entity> {
 
     @Inject(method = "renderLivingLabel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/GlStateManager;enableLighting()V"))
     private void renderEssentialIndicator(T entityIn, String str, double x, double y, double z, int maxDistance, CallbackInfo ci) {
-       if (OnlineIndicator.currentlyDrawingEntityName()) {
+       if (OnlineIndicator.currentlyDrawingEntityName() && entityIn instanceof AbstractClientPlayer) {
+           CosmeticsRenderState cState = new CosmeticsRenderState.Live((AbstractClientPlayer) entityIn);
            int light = (((int) OpenGlHelper.lastBrightnessY) << 16) + (int) OpenGlHelper.lastBrightnessX;
-           OnlineIndicator.drawNametagIndicator(new UMatrixStack(), entityIn, str, light);
+           OnlineIndicator.drawNametagIndicator(new UMatrixStack(), cState, str, light);
        }
     }
 }

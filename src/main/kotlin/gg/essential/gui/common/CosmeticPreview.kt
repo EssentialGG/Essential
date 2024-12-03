@@ -11,18 +11,16 @@
  */
 package gg.essential.gui.common
 
-import com.google.common.collect.ImmutableMap
 import com.mojang.authlib.GameProfile
 import gg.essential.api.profile.wrapped
 import gg.essential.cosmetics.EquippedCosmetic
-import gg.essential.cosmetics.source.ConfigurableCosmeticsSource
 import gg.essential.elementa.components.UIContainer
 import gg.essential.elementa.dsl.constrain
 import gg.essential.elementa.dsl.percent
 import gg.essential.elementa.effects.ScissorEffect
 import gg.essential.elementa.state.BasicState
 import gg.essential.gui.elementa.state.v2.State
-import gg.essential.gui.elementa.state.v2.effect
+import gg.essential.gui.elementa.state.v2.memo
 import gg.essential.gui.elementa.state.v2.mutableListStateOf
 import gg.essential.gui.elementa.state.v2.stateOf
 import gg.essential.handlers.GameProfileManager
@@ -64,9 +62,9 @@ class CosmeticPreview(val cosmetic: Cosmetic, val settings: State<List<CosmeticS
                 height = 100.percent
             }
             perspectiveCamera = PerspectiveCamera.forCosmeticSlot(slot)
-            cosmeticsSource = ConfigurableCosmeticsSource().apply {
-                effect(this@CosmeticPreview) {
-                    cosmetics = ImmutableMap.Builder<CosmeticSlot, EquippedCosmetic>().apply {
+            cosmeticsSource =
+                memo {
+                    buildMap {
                         if (emoteScheduler == null || emoteScheduler.emoteEquipped()) {
                             put(slot, EquippedCosmetic(cosmetic, settings()))
                         }
@@ -74,12 +72,8 @@ class CosmeticPreview(val cosmetic: Cosmetic, val settings: State<List<CosmeticS
                             // hide third party capes for emote previews, which use the player's profile
                             put(CosmeticSlot.CAPE, EquippedCosmetic(CAPE_DISABLED_COSMETIC, emptyList()))
                         }
-                    }.build()
+                    }
                 }
-
-                // We want the player preview to be rendered with cosmetics even if the user has globally disabled them.
-                shouldOverrideRenderCosmeticsCheck = true
-            }
         }
         addChild(emulatedUI3DPlayer)
 

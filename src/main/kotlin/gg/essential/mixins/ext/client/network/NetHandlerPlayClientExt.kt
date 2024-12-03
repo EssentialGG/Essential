@@ -14,5 +14,6 @@ package gg.essential.mixins.ext.client.network
 import java.util.*
 
 interface NetHandlerPlayClientExt {
+
     fun `essential$getNameIdCache`(): Map<String, UUID>
 }

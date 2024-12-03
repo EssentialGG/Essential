@@ -11,31 +11,18 @@
  */
 package gg.essential.cosmetics;
 
-import gg.essential.config.EssentialConfig;
-import gg.essential.gui.common.EmulatedUI3DPlayer;
-import gg.essential.gui.elementa.state.v2.State;
-import gg.essential.handlers.EssentialSoundManager;
-import gg.essential.mixins.ext.client.ParticleSystemHolder;
 import gg.essential.model.EnumPart;
-import gg.essential.model.ModelAnimationState;
 import gg.essential.model.ModelInstance;
-import gg.essential.model.ParticleSystem;
-import gg.essential.model.PlayerMolangQuery;
 import gg.essential.model.backend.PlayerPose;
 import gg.essential.model.backend.RenderBackend;
 import gg.essential.model.backend.minecraft.MinecraftRenderBackend;
 import gg.essential.model.backend.minecraft.PlayerPoseKt;
 import gg.essential.network.cosmetics.Cosmetic;
 import gg.essential.universal.UMatrixStack;
-import gg.essential.universal.UMinecraft;
-import kotlin.Unit;
 import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.entity.RenderPlayer;
 import net.minecraft.client.renderer.entity.layers.LayerRenderer;
-import gg.essential.data.OnboardingData;
-import gg.essential.mixins.impl.client.entity.AbstractClientPlayerExt;
-import net.minecraft.world.World;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -43,7 +30,6 @@ import java.util.*;
 
 import static gg.essential.cosmetics.EssentialModelRendererKt.flush;
 import static gg.essential.cosmetics.EssentialModelRendererKt.renderForHoverOutline;
-import static gg.essential.gui.elementa.state.v2.StateKt.stateOf;
 import static gg.essential.util.ExtensionsKt.toCommon;
 
 //#if MC>=12102
@@ -82,68 +68,31 @@ public class EssentialModelRenderer implements LayerRenderer<AbstractClientPlaye
         this.playerRenderer = playerRenderer;
     }
 
-    // this is modified in Patcher to take Entity Render Distance into consideration, don't remove or rename
-    public static boolean cosmeticsShouldRender(AbstractClientPlayer player) {
-        if (!EssentialConfig.INSTANCE.getEssentialEnabled()) {
-            return false;
-        }
-
-        if (((AbstractClientPlayerExt) player).getCosmeticsSource().getShouldOverrideRenderCosmeticsCheck()) {
-            return true;
-        }
-
-        if (EssentialConfig.INSTANCE.getHideCosmeticsWhenServerOverridesSkin()
-            && ((AbstractClientPlayerExt) player).isSkinOverrodeByServer()) {
-            return false;
-        }
-
-        if (EssentialConfig.INSTANCE.getDisableCosmetics()) {
-            return false;
-        }
-
+    public static boolean shouldRender(AbstractClientPlayer player) {
         if (suppressCosmeticRendering) {
             return false;
         }
 
-        // If a 3rd party mod has an emulated player which doesn't override the client fields, mc.player will be null while rendering their player
-        if (UMinecraft.getMinecraft().player != null) {
-            final double distance = player.getDistanceToEntity(UMinecraft.getMinecraft().player);
-            if (distance >= 4096D) {
-                return false;
-            }
-        }
         return !player.isInvisible() && !player.isSpectator();
     }
 
     public void render(
         UMatrixStack matrixStack,
         RenderBackend.VertexConsumerProvider vertexConsumerProvider,
-        @Nullable Set<EnumPart> parts,
-        @NotNull AbstractClientPlayer player
+        @NotNull CosmeticsRenderState cState,
+        @Nullable Set<EnumPart> parts
     ) {
-        if (!OnboardingData.hasAcceptedTos() || !EssentialConfig.INSTANCE.getEssentialEnabled()) {
+        WearablesManager wearablesManager = cState.wearablesManager();
+        if (wearablesManager == null) {
             return;
         }
-
-        final AbstractClientPlayerExt abstractClientPlayerExt = (AbstractClientPlayerExt) player;
-        if (!cosmeticsShouldRender(player)) {
-            return;
-        }
-
-        WearablesManager wearablesManager = abstractClientPlayerExt.getWearablesManager();
         Map<Cosmetic, ModelInstance> models = wearablesManager.getModels();
         if (models.isEmpty()) {
             return;
         }
 
         PlayerPose pose = PlayerPoseKt.toPose(playerRenderer);
-        RenderBackend.Texture skin = new MinecraftRenderBackend.SkinTexture(
-            //#if MC>=12002
-            //$$ player.getSkinTextures().texture()
-            //#else
-            player.getLocationSkin()
-            //#endif
-        );
+        RenderBackend.Texture skin = new MinecraftRenderBackend.SkinTexture(cState.skinTexture());
 
         matrixStack.push();
 
@@ -161,7 +110,7 @@ public class EssentialModelRenderer implements LayerRenderer<AbstractClientPlaye
         //#endif
 
         //#if MC<11400
-        if (player.isSneaking() && parts == null) {
+        if (cState.isSneaking() && parts == null) {
             matrixStack.translate(0.0F, 0.2F, 0.0F); // from LayerCustomHead
         }
         //#endif
@@ -189,56 +138,17 @@ public class EssentialModelRenderer implements LayerRenderer<AbstractClientPlaye
         UGraphics.GL.popMatrix();
         //#endif
 
-        //#if MC>=12000
-        //$$ World world = player.clientWorld;
-        //#else
-        World world = player.world;
-        //#endif
-        ParticleSystem particleSystem;
-        if (player instanceof EmulatedUI3DPlayer.EmulatedPlayer) {
-            particleSystem = ((EmulatedUI3DPlayer.EmulatedPlayer) player).getParticleSystem();
-        } else if (world instanceof ParticleSystemHolder) {
-            particleSystem = ((ParticleSystemHolder) world).getParticleSystem();
-        } else {
-            particleSystem = null;
-        }
-        wearablesManager.collectEvents(event -> {
-            if (event instanceof ModelAnimationState.ParticleEvent) {
-                if (particleSystem != null) {
-                    particleSystem.spawn((ModelAnimationState.ParticleEvent) event);
-                }
-            } else if (event instanceof ModelAnimationState.SoundEvent) {
-                boolean forceGlobal;
-                State<Float> volume;
-                boolean enforceEmoteSoundSettings;
-                if (player instanceof EmulatedUI3DPlayer.EmulatedPlayer) {
-                    EmulatedUI3DPlayer component = ((EmulatedUI3DPlayer.EmulatedPlayer) player).getEmulatedUI3DPlayer();
-                    if (!component.getSounds().getUntracked()) {
-                        return Unit.INSTANCE;
-                    }
-                    forceGlobal = true;
-                    volume = component.getSoundsVolume();
-                    enforceEmoteSoundSettings = false;
-                } else {
-                    forceGlobal = false;
-                    volume = stateOf(1f);
-                    enforceEmoteSoundSettings = true;
-                }
-                EssentialSoundManager.INSTANCE.playSound((ModelAnimationState.SoundEvent) event, forceGlobal, volume, enforceEmoteSoundSettings);
-            }
-            return Unit.INSTANCE;
-        });
-
-        abstractClientPlayerExt.setLastCosmeticsUpdateTime(new PlayerMolangQuery(player).getLifeTime());
+        cState.setRenderedPose(pose);
     }
 
     @Override
     //#if MC>=11400
     //#if MC>=12102
     //$$ public void render(MatrixStack vMatrixStack, VertexConsumerProvider buffer, int light, PlayerEntityRenderState state, float limbAngle, float limbDistance) {
-    //$$     AbstractClientPlayerEntity player = ((PlayerEntityRenderStateExt) state).essential$getEntity();
+    //$$     CosmeticsRenderState cState = ((PlayerEntityRenderStateExt) state).essential$getCosmetics();
     //#else
     //$$ public void render(@NotNull MatrixStack vMatrixStack, @NotNull IRenderTypeBuffer buffer, int light, @NotNull AbstractClientPlayerEntity player, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch) {
+    //$$     CosmeticsRenderState cState = new CosmeticsRenderState.Live(player);
     //#endif
     //$$     UMatrixStack matrixStack = new UMatrixStack(vMatrixStack);
     //$$     RenderBackend.VertexConsumerProvider vertexConsumerProvider = new MinecraftRenderBackend.VertexConsumerProvider(buffer, light);
@@ -246,8 +156,9 @@ public class EssentialModelRenderer implements LayerRenderer<AbstractClientPlaye
     public void doRenderLayer(@NotNull AbstractClientPlayer player, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch, float scale) {
         UMatrixStack matrixStack = new UMatrixStack();
         RenderBackend.VertexConsumerProvider vertexConsumerProvider = new MinecraftRenderBackend.VertexConsumerProvider();
+        CosmeticsRenderState cState = new CosmeticsRenderState.Live(player);
         //#endif
-        render(matrixStack, vertexConsumerProvider, null, player);
+        render(matrixStack, vertexConsumerProvider, cState, null);
     }
 
     //#if MC < 11400

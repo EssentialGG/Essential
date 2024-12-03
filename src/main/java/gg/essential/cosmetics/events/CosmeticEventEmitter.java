@@ -11,8 +11,6 @@
  */
 package gg.essential.cosmetics.events;
 
-import gg.essential.cosmetics.source.CosmeticsSource;
-import gg.essential.cosmetics.source.LiveCosmeticsSource;
 import gg.essential.mod.cosmetics.CosmeticSlot;
 import gg.essential.model.ModelInstance;
 import gg.essential.network.cosmetics.Cosmetic;
@@ -27,9 +25,9 @@ import gg.essential.mixins.impl.client.entity.AbstractClientPlayerExt;
 import java.util.Map;
 import java.util.UUID;
 
-public class AnimationEffectHandler {
+public class CosmeticEventEmitter {
 
-    public AnimationEffectHandler() {
+    public CosmeticEventEmitter() {
 
     }
 
@@ -66,8 +64,7 @@ public class AnimationEffectHandler {
         //#endif
             if (player instanceof AbstractClientPlayerExt) {
                 AbstractClientPlayerExt playerExt = (AbstractClientPlayerExt) player;
-                CosmeticsSource cosmeticsSource = playerExt.getCosmeticsSource();
-                if (cosmeticsSource instanceof LiveCosmeticsSource && ((LiveCosmeticsSource) cosmeticsSource).getUuid().equals(uuid)) {
+                if (playerExt.getCosmeticsSourceUuid().equals(uuid)) {
                     return playerExt;
                 }
             }

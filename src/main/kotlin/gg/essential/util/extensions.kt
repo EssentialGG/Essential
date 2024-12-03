@@ -409,3 +409,10 @@ val GuiScreen?.isMainMenu: Boolean
     } else {
         false
     }
+
+// Kotlin's `.let { ... }` but for Java
+// Wrapped in an object to not accidentally shadow the original.
+object Let {
+    @JvmStatic
+    fun <T, R> let(obj: T, block: (T) -> R): R = block(obj)
+}
