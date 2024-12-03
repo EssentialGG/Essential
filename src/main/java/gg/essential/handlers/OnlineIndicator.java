@@ -51,7 +51,7 @@ import static gg.essential.elementa.utils.ExtensionsKt.withAlpha;
 
 public class OnlineIndicator {
     //#if MC!=11202
-    //$$ public static final ThreadLocal<Boolean> currentlyDrawingEntityName = new ThreadLocal<>();
+    //$$ public static final ThreadLocal<Boolean> currentlyDrawingEntityName = ThreadLocal.withInitial(() -> false);
     //#else
     /**
      * Set while {@link #currentlyDrawingEntityName()}.
